@@ -1,0 +1,43 @@
+<h1>Cargar sanción</h1>
+
+<div class="card" style="max-width: 500px;">
+  <form action="/panel/admin/sanciones" method="POST">
+    <div class="form-row">
+      <label for="torneoId">Torneo</label>
+      <select id="torneoId" name="torneoId" required>
+        <% torneos.forEach(function(t) { %>
+          <option value="<%= t.id %>"><%= t.temporada.anio %> — <%= t.nombre %></option>
+        <% }) %>
+      </select>
+    </div>
+    <div class="form-row">
+      <label for="jugadorId">Jugador (ID)</label>
+      <input type="number" id="jugadorId" name="jugadorId" required />
+    </div>
+    <div class="form-row">
+      <label for="equipoId">Equipo (ID)</label>
+      <input type="number" id="equipoId" name="equipoId" required />
+    </div>
+    <div class="form-row">
+      <label for="tipoTarjeta">Tipo</label>
+      <select id="tipoTarjeta" name="tipoTarjeta" required>
+        <option value="ROJA">Roja</option>
+        <option value="AMARILLA">Amarilla (acumulada)</option>
+      </select>
+    </div>
+    <div class="form-row">
+      <label for="fechasSuspension">Fechas de suspensión</label>
+      <input type="number" id="fechasSuspension" name="fechasSuspension" min="0" required />
+    </div>
+    <div class="form-row">
+      <label for="observaciones">Observaciones</label>
+      <textarea id="observaciones" name="observaciones" rows="3"></textarea>
+    </div>
+    <div class="form-actions">
+      <button type="submit">Guardar</button>
+    </div>
+  </form>
+  <p class="subtitle" style="margin-top:16px;">
+    Para buscar los IDs de jugador/equipo, consultá <a href="/jugadores">GET /jugadores</a> y <a href="/equipos">GET /equipos</a>.
+  </p>
+</div>

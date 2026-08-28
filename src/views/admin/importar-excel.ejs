@@ -1,0 +1,59 @@
+<h1>Importar planilla Excel</h1>
+
+<div class="card" style="max-width: 500px;">
+  <form action="/panel/admin/importar-excel" method="POST" enctype="multipart/form-data">
+    <div class="form-row">
+      <label for="torneoId">Torneo</label>
+      <select id="torneoId" name="torneoId" required>
+        <% torneos.forEach(function(t) { %>
+          <option value="<%= t.id %>"><%= t.temporada.anio %> — <%= t.nombre %></option>
+        <% }) %>
+      </select>
+    </div>
+    <div class="form-row">
+      <label for="archivo">Archivo .xlsx</label>
+      <input type="file" id="archivo" name="archivo" accept=".xlsx" required />
+    </div>
+    <div class="form-actions">
+      <button type="submit">Importar</button>
+    </div>
+  </form>
+</div>
+
+<% if (typeof resumen !== 'undefined' && resumen) { %>
+  <div class="card">
+    <h2>Resultado de la importación</h2>
+    <table>
+      <tbody>
+        <tr><td>Equipos creados</td><td class="num"><%= resumen.equiposCreados %></td></tr>
+        <tr><td>Jugadores creados</td><td class="num"><%= resumen.jugadoresCreados %></td></tr>
+        <tr><td>Partidos creados</td><td class="num"><%= resumen.partidosCreados %></td></tr>
+        <tr><td>Partidos actualizados</td><td class="num"><%= resumen.partidosActualizados %></td></tr>
+        <tr><td>Partidos omitidos (LIBRE / posición sin definir)</td><td class="num"><%= resumen.partidosOmitidos.length %></td></tr>
+        <tr><td>PR cargados</td><td class="num"><%= resumen.puntosRestadosCargados %></td></tr>
+        <tr><td>Goleadores actualizados</td><td class="num"><%= resumen.goleadoresActualizados %></td></tr>
+        <tr><td>Figuras actualizadas</td><td class="num"><%= resumen.figurasActualizadas %></td></tr>
+        <tr><td>Imbatibles actualizados</td><td class="num"><%= resumen.imbatiblesActualizados %></td></tr>
+        <tr><td>Sanciones creadas</td><td class="num"><%= resumen.sancionesCreadas %></td></tr>
+      </tbody>
+    </table>
+
+    <% if (resumen.advertencias.length > 0) { %>
+      <div class="warnings">
+        <strong>Advertencias (<%= resumen.advertencias.length %>):</strong>
+        <ul>
+          <% resumen.advertencias.forEach(function(a) { %><li><%= a %></li><% }) %>
+        </ul>
+      </div>
+    <% } %>
+
+    <% if (resumen.partidosOmitidos.length > 0) { %>
+      <div class="warnings">
+        <strong>Partidos omitidos:</strong>
+        <ul>
+          <% resumen.partidosOmitidos.forEach(function(o) { %><li>[<%= o.motivo %>] <%= o.detalle %></li><% }) %>
+        </ul>
+      </div>
+    <% } %>
+  </div>
+<% } %>

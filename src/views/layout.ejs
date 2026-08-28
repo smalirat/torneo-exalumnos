@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title><%= typeof titulo !== 'undefined' ? titulo + ' — ' : '' %>Torneo de Exalumnos</title>
+  <link rel="stylesheet" href="/public/styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a class="brand" href="/panel">Torneo de Exalumnos — Marianista</a>
+      <nav>
+        <a href="/panel/standings">Posiciones</a>
+        <a href="/panel/partidos">Partidos</a>
+        <a href="/panel/goleadores">Goleadores</a>
+        <a href="/panel/sancionados">Sancionados</a>
+        <a href="/panel/campeones">Campeones</a>
+        <% if (usuario) { %>
+          <% if (usuario.rol === 'ADMIN') { %><a href="/panel/admin">Admin</a><% } %>
+          <form action="/panel/logout" method="POST" class="inline-form">
+            <button type="submit" class="link-button">Salir</button>
+          </form>
+        <% } else { %>
+          <a href="/panel/login">Ingresar</a>
+        <% } %>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <% if (typeof ok !== 'undefined' && ok) { %><div class="flash flash-ok"><%= ok %></div><% } %>
+    <% if (typeof error !== 'undefined' && error) { %><div class="flash flash-error"><%= error %></div><% } %>
+    <%- body %>
+  </main>
+</body>
+</html>

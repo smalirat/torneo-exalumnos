@@ -1,0 +1,293 @@
+// ============================================================
+// Torneo de Exalumnos - Colegio Marianista
+// Schema de datos (Prisma / PostgreSQL)
+// ============================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------- Enums ----------
+
+enum NombreTorneo {
+  APERTURA
+  CLAUSURA
+}
+
+enum NombreCategoria {
+  A
+  B
+  C
+}
+
+enum EstadoPartido {
+  PENDIENTE
+  JUGADO
+  SUSPENDIDO
+}
+
+enum EstadoImportacion {
+  PENDIENTE
+  PROCESANDO
+  COMPLETADO
+  ERROR
+}
+
+enum RolUsuario {
+  ADMIN
+  DELEGADO
+}
+
+// ---------- Jerarquía del torneo ----------
+
+model Temporada {
+  id        Int      @id @default(autoincrement())
+  anio      Int      @unique
+  torneos   Torneo[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Torneo {
+  id            Int                @id @default(autoincrement())
+  temporadaId   Int
+  temporada     Temporada          @relation(fields: [temporadaId], references: [id])
+  nombre        NombreTorneo
+  categorias    Categoria[]
+  goleadores    Goleador[]
+  figuras       Figura[]
+  imbatibles    Imbatible[]
+  sanciones     Sancion[]
+  importaciones ImportacionExcel[]
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+
+  @@unique([temporadaId, nombre])
+}
+
+model Categoria {
+  id             Int                  @id @default(autoincrement())
+  torneoId       Int
+  torneo         Torneo               @relation(fields: [torneoId], references: [id])
+  nombre         NombreCategoria
+  zonas          Zona[]
+  inscripciones  InscripcionEquipo[]
+  partidos       Partido[]
+  campeones      Campeon[]
+  puntosRestados PuntosRestados[]
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+
+  @@unique([torneoId, nombre])
+}
+
+// Opcional: solo algunas categorías se dividen en zonas
+model Zona {
+  id             Int                  @id @default(autoincrement())
+  categoriaId    Int
+  categoria      Categoria            @relation(fields: [categoriaId], references: [id])
+  nombre         String // "Zona 1", "Zona 2"
+  inscripciones  InscripcionEquipo[]
+  partidos       Partido[]
+  puntosRestados PuntosRestados[]
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+
+  @@unique([categoriaId, nombre])
+}
+
+// ---------- Equipos y jugadores ----------
+
+// El equipo persiste entre temporadas; su categoría/zona en cada torneo
+// se define vía InscripcionEquipo, no acá.
+model Equipo {
+  id                 Int                  @id @default(autoincrement())
+  nombre             String               @unique
+  jugadores          Jugador[]
+  inscripciones      InscripcionEquipo[]
+  partidosLocal      Partido[]            @relation("PartidoLocal")
+  partidosVisitante  Partido[]            @relation("PartidoVisitante")
+  sanciones          Sancion[]
+  campeonatos        Campeon[]
+  puntosRestados     PuntosRestados[]
+  delegados          Usuario[]
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+}
+
+model InscripcionEquipo {
+  id          Int       @id @default(autoincrement())
+  equipoId    Int
+  equipo      Equipo    @relation(fields: [equipoId], references: [id])
+  categoriaId Int
+  categoria   Categoria @relation(fields: [categoriaId], references: [id])
+  zonaId      Int?
+  zona        Zona?     @relation(fields: [zonaId], references: [id])
+  createdAt   DateTime  @default(now())
+
+  // Un equipo no puede estar inscripto dos veces en la misma categoría/zona
+  @@unique([equipoId, categoriaId, zonaId])
+}
+
+model Jugador {
+  id               Int         @id @default(autoincrement())
+  nombre           String
+  equipoId         Int?
+  equipo           Equipo?     @relation(fields: [equipoId], references: [id])
+  goleadorTorneos  Goleador[]
+  figuraTorneos    Figura[]
+  imbatibleTorneos Imbatible[]
+  sanciones        Sancion[]
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+}
+
+// ---------- Partidos ----------
+
+model Partido {
+  id                Int           @id @default(autoincrement())
+  categoriaId       Int
+  categoria         Categoria     @relation(fields: [categoriaId], references: [id])
+  zonaId            Int?
+  zona              Zona?         @relation(fields: [zonaId], references: [id])
+  equipoLocalId     Int
+  equipoLocal       Equipo        @relation("PartidoLocal", fields: [equipoLocalId], references: [id])
+  equipoVisitanteId Int
+  equipoVisitante   Equipo        @relation("PartidoVisitante", fields: [equipoVisitanteId], references: [id])
+  golesLocal        Int?
+  golesVisitante    Int?
+  fecha             DateTime
+  jornada           Int // "Fecha Nº"
+  campo             String?
+  cancha            String?
+  horario           String?
+  estado            EstadoPartido @default(PENDIENTE)
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  // Ver DECISIONES.md #4: dedupe por (fecha, equipoLocal, equipoVisitante)
+  @@unique([fecha, equipoLocalId, equipoVisitanteId])
+  @@index([categoriaId, zonaId, jornada])
+}
+
+// ---------- Puntos restados (sanciones a la tabla, ver DECISIONES.md #1) ----------
+
+model PuntosRestados {
+  id          Int       @id @default(autoincrement())
+  equipoId    Int
+  equipo      Equipo    @relation(fields: [equipoId], references: [id])
+  categoriaId Int
+  categoria   Categoria @relation(fields: [categoriaId], references: [id])
+  zonaId      Int?
+  zona        Zona?     @relation(fields: [zonaId], references: [id])
+  puntos      Int // cantidad de puntos a descontar (positivo)
+  motivo      String?
+  fecha       DateTime  @default(now())
+  createdAt   DateTime  @default(now())
+}
+
+// ---------- Rankings anuales por torneo ----------
+
+model Goleador {
+  id        Int      @id @default(autoincrement())
+  jugadorId Int
+  jugador   Jugador  @relation(fields: [jugadorId], references: [id])
+  torneoId  Int
+  torneo    Torneo   @relation(fields: [torneoId], references: [id])
+  goles     Int      @default(0)
+  updatedAt DateTime @updatedAt
+
+  @@unique([jugadorId, torneoId])
+}
+
+model Figura {
+  id        Int      @id @default(autoincrement())
+  jugadorId Int
+  jugador   Jugador  @relation(fields: [jugadorId], references: [id])
+  torneoId  Int
+  torneo    Torneo   @relation(fields: [torneoId], references: [id])
+  veces     Int      @default(0)
+  updatedAt DateTime @updatedAt
+
+  @@unique([jugadorId, torneoId])
+}
+
+model Imbatible {
+  id             Int      @id @default(autoincrement())
+  jugadorId      Int
+  jugador        Jugador  @relation(fields: [jugadorId], references: [id])
+  torneoId       Int
+  torneo         Torneo   @relation(fields: [torneoId], references: [id])
+  golesRecibidos Int      @default(0)
+  updatedAt      DateTime @updatedAt
+
+  @@unique([jugadorId, torneoId])
+}
+
+// ---------- Sanciones disciplinarias ----------
+
+model Sancion {
+  id               Int      @id @default(autoincrement())
+  jugadorId        Int
+  jugador          Jugador  @relation(fields: [jugadorId], references: [id])
+  equipoId         Int
+  equipo           Equipo   @relation(fields: [equipoId], references: [id])
+  torneoId         Int
+  torneo           Torneo   @relation(fields: [torneoId], references: [id])
+  tipoTarjeta      String // "Tarjeta Roja" (string, no enum, por si se agregan tipos)
+  fechasSuspension Int
+  cumplida         Boolean  @default(false)
+  pendiente        Boolean  @default(true)
+  observaciones    String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+// ---------- Histórico de campeones ----------
+
+model Campeon {
+  id          Int       @id @default(autoincrement())
+  anio        Int
+  categoriaId Int
+  categoria   Categoria @relation(fields: [categoriaId], references: [id])
+  equipoId    Int
+  equipo      Equipo    @relation(fields: [equipoId], references: [id])
+  createdAt   DateTime  @default(now())
+
+  @@unique([anio, categoriaId])
+}
+
+// ---------- Importación de Excel ----------
+
+model ImportacionExcel {
+  id                Int               @id @default(autoincrement())
+  nombreArchivo     String
+  rutaArchivo       String // referencia al archivo guardado (no se descarta)
+  fechaCarga        DateTime          @default(now())
+  torneoId          Int
+  torneo            Torneo            @relation(fields: [torneoId], references: [id])
+  estado            EstadoImportacion @default(PENDIENTE)
+  detalleError      String?
+  filasCreadas      Int?
+  filasActualizadas Int?
+}
+
+// ---------- Auth simple por sesión ----------
+
+model Usuario {
+  id           Int        @id @default(autoincrement())
+  username     String     @unique
+  passwordHash String
+  rol          RolUsuario
+  equipoId     Int? // solo aplica si rol = DELEGADO
+  equipo       Equipo?    @relation(fields: [equipoId], references: [id])
+  createdAt    DateTime   @default(now())
+}
+// Nota: las sesiones en sí (cookie -> userId) se manejan con
+// express-session + connect-pg-simple, que crea y administra su propia
+// tabla ("session"). No hace falta modelarla en Prisma.

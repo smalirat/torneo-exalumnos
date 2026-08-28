@@ -1,0 +1,15 @@
+<h1>Panel de administración</h1>
+<p class="subtitle">Hola, <%= usuario.username %> — acciones disponibles:</p>
+
+<div class="admin-links">
+  <a href="/panel/admin/partidos/nuevo">Cargar resultado de partido</a>
+  <a href="/panel/admin/importar-excel">Importar planilla Excel</a>
+  <a href="/panel/admin/sanciones/nueva">Cargar sanción</a>
+</div>
+
+<p class="subtitle" style="margin-top:24px;">
+  Para el resto de la gestión (temporadas, torneos, categorías, zonas, equipos,
+  jugadores, campeones) usá la API directamente — este panel cubre solo las
+  acciones más frecuentes del día a día. Ver <code>README.md</code> para la lista
+  completa de endpoints.
+</p>

@@ -1,0 +1,48 @@
+<h1>Tabla de posiciones</h1>
+<p class="subtitle"><%= categoria.nombre %><%= zona ? ' - ' + zona.nombre : '' %> — <%= torneo.nombre %> <%= torneo.temporada.anio %></p>
+
+<div class="card">
+  <% if (tabla.length === 0) { %>
+    <p class="empty-state">No hay equipos inscriptos en esta categoría/zona todavía.</p>
+  <% } else { %>
+    <table>
+      <thead>
+        <tr>
+          <th class="num">Pos</th>
+          <th>Equipo</th>
+          <th class="num">PJ</th>
+          <th class="num">PG</th>
+          <th class="num">PE</th>
+          <th class="num">PP</th>
+          <th class="num">GF</th>
+          <th class="num">GE</th>
+          <th class="num">DIF</th>
+          <th class="num">PR</th>
+          <th class="num">PTOS</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% tabla.forEach(function(fila) { %>
+          <tr class="<%= fila.empatadoSinResolver ? 'empatado' : '' %>">
+            <td class="num"><%= fila.posicion %></td>
+            <td><%= fila.nombre %></td>
+            <td class="num"><%= fila.pj %></td>
+            <td class="num"><%= fila.pg %></td>
+            <td class="num"><%= fila.pe %></td>
+            <td class="num"><%= fila.pp %></td>
+            <td class="num"><%= fila.gf %></td>
+            <td class="num"><%= fila.ge %></td>
+            <td class="num"><%= fila.dif %></td>
+            <td class="num"><%= fila.pr %></td>
+            <td class="num"><strong><%= fila.ptos %></strong></td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+    <% if (tabla.some(function(f) { return f.empatadoSinResolver; })) { %>
+      <p class="subtitle" style="margin-top:12px;">Las filas resaltadas siguen empatadas tras aplicar PTOS, diferencia de gol, goles a favor y resultado entre sí.</p>
+    <% } %>
+  <% } %>
+</div>
+
+<p><a href="/panel/partidos?categoriaId=<%= categoria.id %><%= zona ? '&zonaId=' + zona.id : '' %>">Ver partidos de esta categoría</a></p>

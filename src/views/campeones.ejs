@@ -1,0 +1,31 @@
+<h1>Historial de Campeones</h1>
+
+<div class="card">
+  <h2>Máximos campeones</h2>
+  <% if (maximosCampeones.length === 0) { %>
+    <p class="empty-state">Todavía no hay campeones cargados.</p>
+  <% } else { %>
+    <table>
+      <thead><tr><th class="num">#</th><th>Equipo</th><th class="num">Títulos</th></tr></thead>
+      <tbody>
+        <% maximosCampeones.forEach(function(m, i) { %>
+          <tr><td class="num"><%= i + 1 %></td><td><%= m.nombre %></td><td class="num"><strong><%= m.titulos %></strong></td></tr>
+        <% }) %>
+      </tbody>
+    </table>
+  <% } %>
+
+  <h2>Historial por año</h2>
+  <% if (historial.length === 0) { %>
+    <p class="empty-state">Todavía no hay historial cargado.</p>
+  <% } else { %>
+    <table>
+      <thead><tr><th class="num">Año</th><th>Categoría</th><th>Campeón</th></tr></thead>
+      <tbody>
+        <% historial.forEach(function(c) { %>
+          <tr><td class="num"><%= c.anio %></td><td><%= c.categoria.nombre %></td><td><%= c.equipo.nombre %></td></tr>
+        <% }) %>
+      </tbody>
+    </table>
+  <% } %>
+</div>

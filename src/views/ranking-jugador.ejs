@@ -1,0 +1,29 @@
+<h1><%= titulo %></h1>
+<p class="subtitle"><%= torneo.nombre %> <%= torneo.temporada.anio %></p>
+
+<div class="card">
+  <% if (filas.length === 0) { %>
+    <p class="empty-state">Todavía no hay datos cargados para este torneo.</p>
+  <% } else { %>
+    <table>
+      <thead>
+        <tr>
+          <th class="num">#</th>
+          <th>Jugador</th>
+          <th>Equipo</th>
+          <th class="num"><%= columnaValor %></th>
+        </tr>
+      </thead>
+      <tbody>
+        <% filas.forEach(function(fila, i) { %>
+          <tr>
+            <td class="num"><%= i + 1 %></td>
+            <td><%= fila.jugador.nombre %></td>
+            <td><%= fila.jugador.equipo ? fila.jugador.equipo.nombre : '-' %></td>
+            <td class="num"><strong><%= fila.valor %></strong></td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  <% } %>
+</div>

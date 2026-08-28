@@ -1,0 +1,41 @@
+<h1>Partidos</h1>
+<p class="subtitle">Historial y próximos partidos.</p>
+
+<div class="card">
+  <% if (partidos.length === 0) { %>
+    <p class="empty-state">No hay partidos cargados con estos filtros.</p>
+  <% } else { %>
+    <table>
+      <thead>
+        <tr>
+          <th>Fecha</th>
+          <th class="num">Jornada</th>
+          <th>Categoría</th>
+          <th>Local</th>
+          <th class="num">Resultado</th>
+          <th>Visitante</th>
+          <th>Campo</th>
+          <th>Estado</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% partidos.forEach(function(p) { %>
+          <tr>
+            <td><%= new Date(p.fecha).toLocaleDateString('es-AR') %></td>
+            <td class="num"><%= p.jornada %></td>
+            <td><%= p.categoria.nombre %><%= p.zona ? ' - ' + p.zona.nombre : '' %></td>
+            <td><%= p.equipoLocal.nombre %></td>
+            <td class="num">
+              <% if (p.golesLocal !== null && p.golesVisitante !== null) { %>
+                <%= p.golesLocal %> - <%= p.golesVisitante %>
+              <% } else { %>—<% } %>
+            </td>
+            <td><%= p.equipoVisitante.nombre %></td>
+            <td><%= p.campo || '-' %><%= p.horario ? ' (' + p.horario + ')' : '' %></td>
+            <td><%= p.estado %></td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  <% } %>
+</div>

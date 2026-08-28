@@ -1,0 +1,63 @@
+<h1>Cargar resultado de partido</h1>
+
+<div class="card" style="max-width: 500px;">
+  <form action="/panel/admin/partidos" method="POST">
+    <div class="form-row">
+      <label for="categoriaId">Categoría</label>
+      <select id="categoriaId" name="categoriaId" required>
+        <% categorias.forEach(function(c) { %>
+          <option value="<%= c.id %>"><%= c.torneo.temporada.anio %> <%= c.torneo.nombre %> - Categoría <%= c.nombre %></option>
+        <% }) %>
+      </select>
+    </div>
+    <div class="form-row">
+      <label for="zonaId">Zona (opcional, dejar vacío si la categoría no tiene zonas)</label>
+      <input type="number" id="zonaId" name="zonaId" />
+    </div>
+    <div class="form-row">
+      <label for="equipoLocalId">Equipo local (ID)</label>
+      <input type="number" id="equipoLocalId" name="equipoLocalId" required />
+    </div>
+    <div class="form-row">
+      <label for="equipoVisitanteId">Equipo visitante (ID)</label>
+      <input type="number" id="equipoVisitanteId" name="equipoVisitanteId" required />
+    </div>
+    <div class="form-row">
+      <label for="golesLocal">Goles local</label>
+      <input type="number" id="golesLocal" name="golesLocal" min="0" />
+    </div>
+    <div class="form-row">
+      <label for="golesVisitante">Goles visitante</label>
+      <input type="number" id="golesVisitante" name="golesVisitante" min="0" />
+    </div>
+    <div class="form-row">
+      <label for="fecha">Fecha</label>
+      <input type="date" id="fecha" name="fecha" required />
+    </div>
+    <div class="form-row">
+      <label for="jornada">Jornada (Fecha Nº)</label>
+      <input type="number" id="jornada" name="jornada" min="1" required />
+    </div>
+    <div class="form-row">
+      <label for="campo">Campo</label>
+      <input type="text" id="campo" name="campo" />
+    </div>
+    <div class="form-row">
+      <label for="cancha">Cancha</label>
+      <input type="text" id="cancha" name="cancha" />
+    </div>
+    <div class="form-row">
+      <label for="horario">Horario</label>
+      <input type="text" id="horario" name="horario" />
+    </div>
+    <div class="form-actions">
+      <button type="submit">Guardar</button>
+    </div>
+  </form>
+  <p class="subtitle" style="margin-top:16px;">
+    Tip: por ahora este formulario pide los IDs de equipo directamente — para
+    buscarlos, consultá <a href="/equipos">GET /equipos</a>. Si querés, en una
+    próxima vuelta le agrego un &lt;select&gt; con los equipos inscriptos en
+    la categoría elegida.
+  </p>
+</div>

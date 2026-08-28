@@ -1,0 +1,33 @@
+<h1>Sancionados</h1>
+<p class="subtitle"><%= torneo.nombre %> <%= torneo.temporada.anio %></p>
+
+<div class="card">
+  <% if (sancionados.length === 0) { %>
+    <p class="empty-state">No hay sanciones cargadas para este torneo.</p>
+  <% } else { %>
+    <table>
+      <thead>
+        <tr>
+          <th>Jugador</th>
+          <th>Equipo</th>
+          <th>Tarjeta</th>
+          <th class="num">Fechas</th>
+          <th>Estado</th>
+          <th>Observaciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% sancionados.forEach(function(s) { %>
+          <tr>
+            <td><%= s.jugador.nombre %></td>
+            <td><%= s.equipo.nombre %></td>
+            <td><%= s.tipoTarjeta %></td>
+            <td class="num"><%= s.fechasSuspension %></td>
+            <td><%= s.cumplida ? 'Cumplida' : (s.pendiente ? 'Pendiente' : '-') %></td>
+            <td><%= s.observaciones || '-' %></td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  <% } %>
+</div>

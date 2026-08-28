@@ -1,0 +1,33 @@
+<h1>Torneo de Exalumnos — Colegio Marianista</h1>
+<p class="subtitle">Elegí un torneo para ver la tabla de posiciones, o navegá directo con el menú de arriba.</p>
+
+<div class="card">
+  <% if (torneos.length === 0) { %>
+    <p class="empty-state">Todavía no hay torneos cargados.</p>
+  <% } else { %>
+    <% torneos.forEach(function(torneo) { %>
+      <h2><%= torneo.temporada.anio %> — <%= torneo.nombre %></h2>
+      <% if (torneo.categorias.length === 0) { %>
+        <p class="empty-state">Sin categorías cargadas todavía.</p>
+      <% } else { %>
+        <p>
+          <% torneo.categorias.forEach(function(categoria) { %>
+            <% if (categoria.zonas.length === 0) { %>
+              <a class="button" href="/panel/standings?categoriaId=<%= categoria.id %>">Categoría <%= categoria.nombre %></a>
+            <% } else { %>
+              <% categoria.zonas.forEach(function(zona) { %>
+                <a class="button" href="/panel/standings?categoriaId=<%= categoria.id %>&zonaId=<%= zona.id %>">
+                  <%= categoria.nombre %> - <%= zona.nombre %>
+                </a>
+              <% }) %>
+            <% } %>
+          <% }) %>
+        </p>
+        <p><a href="/panel/goleadores?torneoId=<%= torneo.id %>">Goleadores</a> ·
+           <a href="/panel/figuras?torneoId=<%= torneo.id %>">Figuras</a> ·
+           <a href="/panel/imbatibles?torneoId=<%= torneo.id %>">Imbatibles</a> ·
+           <a href="/panel/sancionados?torneoId=<%= torneo.id %>">Sancionados</a></p>
+      <% } %>
+    <% }) %>
+  <% } %>
+</div>
