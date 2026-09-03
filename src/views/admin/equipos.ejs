@@ -1,0 +1,310 @@
+<h1>Equipos e inscripciones</h1>
+
+<p class="subtitle">
+  Los equipos existen independientemente de una temporada.
+  Desde acá podés inscribir un equipo existente o crear uno nuevo
+  y asignarlo inmediatamente a un torneo.
+</p>
+
+
+<% if (destinos.length === 0) { %>
+
+  <div class="warnings">
+    <strong>
+      No hay destinos disponibles.
+    </strong>
+
+    <p style="margin-bottom:0;">
+      Primero creá una temporada, un torneo y al menos una categoría
+      desde la gestión de estructura.
+    </p>
+  </div>
+
+<% } %>
+
+
+<!-- ====================================================== -->
+<!-- EQUIPO EXISTENTE                                      -->
+<!-- ====================================================== -->
+
+<div class="card">
+
+  <h2 style="margin-top:0;">
+    Inscribir equipo existente
+  </h2>
+
+  <p class="subtitle">
+    Elegí un equipo que ya exista en el sistema
+    y el lugar donde va a competir.
+  </p>
+
+
+  <% if (equipos.length === 0) { %>
+
+    <div class="empty-state">
+      Todavía no existen equipos.
+      Podés crear el primero desde el formulario siguiente.
+    </div>
+
+  <% } else if (destinos.length === 0) { %>
+
+    <div class="empty-state">
+      No hay categorías disponibles para inscribir equipos.
+    </div>
+
+  <% } else { %>
+
+    <form
+      action="/panel/admin/equipos/inscribir"
+      method="POST"
+    >
+
+      <div class="form-row">
+
+        <label for="equipoId">
+          Equipo
+        </label>
+
+        <select
+          id="equipoId"
+          name="equipoId"
+          required
+        >
+
+          <option value="">
+            Seleccionar equipo...
+          </option>
+
+          <% for (const equipo of equipos) { %>
+
+            <option value="<%= equipo.id %>">
+              <%= equipo.nombre %>
+            </option>
+
+          <% } %>
+
+        </select>
+
+      </div>
+
+
+      <div class="form-row">
+
+        <label for="destinoExistente">
+          Torneo / Categoría / Zona
+        </label>
+
+        <select
+          id="destinoExistente"
+          name="destino"
+          required
+        >
+
+          <option value="">
+            Seleccionar destino...
+          </option>
+
+          <% for (const destino of destinos) { %>
+
+            <option value="<%= destino.value %>">
+              <%= destino.label %>
+            </option>
+
+          <% } %>
+
+        </select>
+
+      </div>
+
+
+      <div class="form-actions">
+
+        <button type="submit">
+          Inscribir equipo
+        </button>
+
+      </div>
+
+    </form>
+
+  <% } %>
+
+</div>
+
+
+<!-- ====================================================== -->
+<!-- EQUIPO NUEVO                                          -->
+<!-- ====================================================== -->
+
+<div class="card">
+
+  <h2 style="margin-top:0;">
+    Crear equipo nuevo
+  </h2>
+
+  <p class="subtitle">
+    El equipo se crea sin jugadores y queda inscripto
+    inmediatamente en el destino seleccionado.
+  </p>
+
+
+  <% if (destinos.length === 0) { %>
+
+    <div class="empty-state">
+      Primero necesitás crear una categoría
+      desde la estructura del torneo.
+    </div>
+
+  <% } else { %>
+
+    <form
+      action="/panel/admin/equipos/crear"
+      method="POST"
+    >
+
+      <div class="form-row">
+
+        <label for="nombreEquipo">
+          Nombre del equipo
+        </label>
+
+        <input
+          id="nombreEquipo"
+          name="nombre"
+          type="text"
+          maxlength="100"
+          required
+          autocomplete="off"
+          placeholder="Ej. Los Pumas"
+        />
+
+      </div>
+
+
+      <div class="form-row">
+
+        <label for="destinoNuevo">
+          Torneo / Categoría / Zona
+        </label>
+
+        <select
+          id="destinoNuevo"
+          name="destino"
+          required
+        >
+
+          <option value="">
+            Seleccionar destino...
+          </option>
+
+          <% for (const destino of destinos) { %>
+
+            <option value="<%= destino.value %>">
+              <%= destino.label %>
+            </option>
+
+          <% } %>
+
+        </select>
+
+      </div>
+
+
+      <div class="form-actions">
+
+        <button type="submit">
+          Crear e inscribir equipo
+        </button>
+
+      </div>
+
+    </form>
+
+  <% } %>
+
+</div>
+
+
+<!-- ====================================================== -->
+<!-- INSCRIPCIONES ACTUALES                                -->
+<!-- ====================================================== -->
+
+<h2>
+  Inscripciones actuales
+</h2>
+
+
+<% if (inscripciones.length === 0) { %>
+
+  <div class="empty-state">
+    Todavía no hay equipos inscriptos.
+  </div>
+
+<% } else { %>
+
+  <table>
+
+    <thead>
+
+      <tr>
+        <th>Temporada</th>
+        <th>Torneo</th>
+        <th>Categoría</th>
+        <th>Zona</th>
+        <th>Equipo</th>
+      </tr>
+
+    </thead>
+
+
+    <tbody>
+
+      <% for (const inscripcion of inscripciones) { %>
+
+        <tr>
+
+          <td>
+            <%= inscripcion.categoria.torneo.temporada.anio %>
+          </td>
+
+          <td>
+            <%= inscripcion.categoria.torneo.nombre %>
+          </td>
+
+          <td>
+            <%= inscripcion.categoria.nombre %>
+          </td>
+
+          <td>
+            <%= inscripcion.zona
+              ? inscripcion.zona.nombre
+              : '—' %>
+          </td>
+
+          <td>
+            <strong>
+              <%= inscripcion.equipo.nombre %>
+            </strong>
+          </td>
+
+        </tr>
+
+      <% } %>
+
+    </tbody>
+
+  </table>
+
+<% } %>
+
+
+<p style="margin-top:24px;">
+
+  <a
+    class="button button-secondary"
+    href="/panel/admin"
+  >
+    Volver al admin
+  </a>
+
+</p>

@@ -1,58 +1,265 @@
 import { prisma } from '../../lib/prisma';
-import { NotFoundError, ValidationError } from '../../utils/AppError';
-import { ActualizarSancionInput, CrearSancionInput } from './sanciones.validation';
 
-async function validarReferencias(jugadorId: number, equipoId: number, torneoId: number) {
-  const [jugador, equipo, torneo] = await Promise.all([
-    prisma.jugador.findUnique({ where: { id: jugadorId } }),
-    prisma.equipo.findUnique({ where: { id: equipoId } }),
-    prisma.torneo.findUnique({ where: { id: torneoId } }),
-  ]);
-  if (!jugador) throw new NotFoundError('Jugador', jugadorId);
-  if (!equipo) throw new NotFoundError('Equipo', equipoId);
-  if (!torneo) throw new NotFoundError('Torneo', torneoId);
+import {
+  NotFoundError,
+  ValidationError,
+} from '../../utils/AppError';
+
+import {
+  ActualizarSancionInput,
+  CrearSancionInput,
+} from './sanciones.validation';
+
+
+async function validarReferencias(
+  jugadorId: number,
+  equipoId: number,
+  torneoId: number,
+) {
+  const [jugador, equipo, torneo] =
+    await Promise.all([
+      prisma.jugador.findUnique({
+        where: { id: jugadorId },
+      }),
+
+      prisma.equipo.findUnique({
+        where: { id: equipoId },
+      }),
+
+      prisma.torneo.findUnique({
+        where: { id: torneoId },
+      }),
+    ]);
+
+  if (!jugador) {
+    throw new NotFoundError(
+      'Jugador',
+      jugadorId,
+    );
+  }
+
+  if (!equipo) {
+    throw new NotFoundError(
+      'Equipo',
+      equipoId,
+    );
+  }
+
+  if (!torneo) {
+    throw new NotFoundError(
+      'Torneo',
+      torneoId,
+    );
+  }
 }
 
-export async function crearSancion(input: CrearSancionInput) {
-  await validarReferencias(input.jugadorId, input.equipoId, input.torneoId);
+
+export async function crearSancion(
+  input: CrearSancionInput,
+) {
+  await validarReferencias(
+    input.jugadorId,
+    input.equipoId,
+    input.torneoId,
+  );
 
   return prisma.sancion.create({
     data: {
-      jugadorId: input.jugadorId,
-      equipoId: input.equipoId,
-      torneoId: input.torneoId,
-      tipoTarjeta: input.tipoTarjeta,
-      fechasSuspension: input.fechasSuspension,
-      observaciones: input.observaciones,
-      // pendiente=true, cumplida=false por default (ver @default en el schema)
+      jugadorId:
+        input.jugadorId,
+
+      equipoId:
+        input.equipoId,
+
+      /*
+       * IMPORTANTE:
+       *
+       * torneoId representa el torneo DONDE SE ORIGINÓ
+       * la sanción.
+       *
+       * La vigencia de la suspensión se consulta por
+       * temporada, no solamente por este torneo.
+       */
+      torneoId:
+        input.torneoId,
+
+      tipoTarjeta:
+        input.tipoTarjeta,
+
+      fechasSuspension:
+        input.fechasSuspension,
+
+      observaciones:
+        input.observaciones,
     },
   });
 }
 
-export async function actualizarSancion(id: number, input: ActualizarSancionInput) {
-  const sancion = await prisma.sancion.findUnique({ where: { id } });
-  if (!sancion) throw new NotFoundError('Sancion', id);
 
-  if (input.cumplida === true && input.pendiente === undefined) {
-    // Si marcan la sanción como cumplida y no dijeron nada de `pendiente`,
-    // lo apagamos automáticamente — sería raro que quedara "cumplida Y
-    // pendiente" a la vez sin que el caller lo haya pedido explícitamente.
-    input = { ...input, pendiente: false };
-  }
-  if (input.pendiente === true && input.cumplida === undefined && sancion.cumplida) {
-    throw new ValidationError('No se puede volver a marcar como pendiente una sanción ya cumplida sin aclarar cumplida=false explícitamente');
+export async function actualizarSancion(
+  id: number,
+  input: ActualizarSancionInput,
+) {
+  const sancion =
+    await prisma.sancion.findUnique({
+      where: { id },
+    });
+
+  if (!sancion) {
+    throw new NotFoundError(
+      'Sancion',
+      id,
+    );
   }
 
-  return prisma.sancion.update({ where: { id }, data: input });
+  if (
+    input.cumplida === true &&
+    input.pendiente === undefined
+  ) {
+    input = {
+      ...input,
+      pendiente: false,
+    };
+  }
+
+  if (
+    input.pendiente === true &&
+    input.cumplida === undefined &&
+    sancion.cumplida
+  ) {
+    throw new ValidationError(
+      'No se puede volver a marcar como pendiente ' +
+        'una sanción ya cumplida sin aclarar ' +
+        'cumplida=false explícitamente',
+    );
+  }
+
+  return prisma.sancion.update({
+    where: { id },
+    data: input,
+  });
 }
 
-export async function listarSancionados(torneoId: number, pendiente?: boolean) {
-  const torneo = await prisma.torneo.findUnique({ where: { id: torneoId } });
-  if (!torneo) throw new NotFoundError('Torneo', torneoId);
+
+/**
+ * Aunque recibamos torneoId como contexto de navegación,
+ * las sanciones se buscan por TEMPORADA.
+ *
+ * Ejemplo:
+ *
+ * APERTURA 2026 -> roja
+ *
+ * al entrar a:
+ *
+ * CLAUSURA 2026
+ *
+ * la sanción también aparece mientras siga
+ * perteneciendo a la temporada 2026.
+ */
+export async function listarSancionados(
+  torneoId: number,
+  pendiente?: boolean,
+) {
+  const torneo =
+    await prisma.torneo.findUnique({
+      where: {
+        id: torneoId,
+      },
+    });
+
+  if (!torneo) {
+    throw new NotFoundError(
+      'Torneo',
+      torneoId,
+    );
+  }
 
   return prisma.sancion.findMany({
-    where: { torneoId, pendiente },
-    include: { jugador: true, equipo: true },
-    orderBy: [{ pendiente: 'desc' }, { createdAt: 'desc' }],
+    where: {
+      pendiente,
+
+      torneo: {
+        temporadaId:
+          torneo.temporadaId,
+      },
+    },
+
+    include: {
+      jugador: true,
+      equipo: true,
+
+      /*
+       * Lo incluimos porque ahora interesa mostrar
+       * dónde se originó la sanción.
+       */
+      torneo: {
+        include: {
+          temporada: true,
+        },
+      },
+    },
+
+    orderBy: [
+      {
+        pendiente: 'desc',
+      },
+
+      {
+        createdAt: 'desc',
+      },
+    ],
+  });
+}
+
+
+/**
+ * A diferencia de las sanciones,
+ * las AMONESTACIONES son estrictamente
+ * del torneo seleccionado.
+ */
+export async function listarAmonestados(
+  torneoId: number,
+) {
+  const torneo =
+    await prisma.torneo.findUnique({
+      where: {
+        id: torneoId,
+      },
+    });
+
+  if (!torneo) {
+    throw new NotFoundError(
+      'Torneo',
+      torneoId,
+    );
+  }
+
+  return prisma.amonestacion.findMany({
+    where: {
+      torneoId,
+    },
+
+    include: {
+      jugador: true,
+      equipo: true,
+    },
+
+    orderBy: [
+      {
+        equipo: {
+          nombre: 'asc',
+        },
+      },
+
+      {
+        cantidad: 'desc',
+      },
+
+      {
+        jugador: {
+          nombre: 'asc',
+        },
+      },
+    ],
   });
 }

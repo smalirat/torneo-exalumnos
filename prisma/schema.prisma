@@ -63,6 +63,7 @@ model Torneo {
   figuras       Figura[]
   imbatibles    Imbatible[]
   sanciones     Sancion[]
+  amonestaciones Amonestacion[]
   importaciones ImportacionExcel[]
   createdAt     DateTime           @default(now())
   updatedAt     DateTime           @updatedAt
@@ -113,6 +114,7 @@ model Equipo {
   partidosLocal      Partido[]            @relation("PartidoLocal")
   partidosVisitante  Partido[]            @relation("PartidoVisitante")
   sanciones          Sancion[]
+  amonestaciones     Amonestacion[]
   campeonatos        Campeon[]
   puntosRestados     PuntosRestados[]
   delegados          Usuario[]
@@ -143,6 +145,7 @@ model Jugador {
   figuraTorneos    Figura[]
   imbatibleTorneos Imbatible[]
   sanciones        Sancion[]
+  amonestaciones   Amonestacion[]
   createdAt        DateTime    @default(now())
   updatedAt        DateTime    @updatedAt
 }
@@ -161,8 +164,10 @@ model Partido {
   equipoVisitante   Equipo        @relation("PartidoVisitante", fields: [equipoVisitanteId], references: [id])
   golesLocal        Int?
   golesVisitante    Int?
+  penalesLocal      Int?          
+  penalesVisitante  Int?          
   fecha             DateTime
-  jornada           Int // "Fecha Nº"
+  jornada           Int           
   campo             String?
   cancha            String?
   horario           String?
@@ -170,11 +175,9 @@ model Partido {
   createdAt         DateTime      @default(now())
   updatedAt         DateTime      @updatedAt
 
-  // Ver DECISIONES.md #4: dedupe por (fecha, equipoLocal, equipoVisitante)
   @@unique([fecha, equipoLocalId, equipoVisitanteId])
   @@index([categoriaId, zonaId, jornada])
 }
-
 // ---------- Puntos restados (sanciones a la tabla, ver DECISIONES.md #1) ----------
 
 model PuntosRestados {
@@ -246,6 +249,28 @@ model Sancion {
   observaciones    String?
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
+}
+
+model Amonestacion {
+  id         Int      @id @default(autoincrement())
+
+  jugadorId  Int
+  jugador    Jugador  @relation(fields: [jugadorId], references: [id])
+
+  equipoId   Int
+  equipo     Equipo   @relation(fields: [equipoId], references: [id])
+
+  torneoId   Int
+  torneo     Torneo   @relation(fields: [torneoId], references: [id])
+
+  cantidad   Int
+
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([jugadorId, torneoId])
+
+  @@index([torneoId, equipoId])
 }
 
 // ---------- Histórico de campeones ----------

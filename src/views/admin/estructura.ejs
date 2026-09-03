@@ -1,0 +1,412 @@
+<h1>Estructura del torneo</h1>
+
+<p class="subtitle">
+  Gestioná la jerarquía en este orden:
+  <strong>
+    Temporada → Torneo → Categoría → Zona
+  </strong>.
+  Una categoría puede quedar sin zonas;
+  en ese caso funciona como categoría directa.
+</p>
+
+<% if (problemas.length > 0) { %>
+  <div class="warnings">
+    <strong>
+      Atención: hay problemas estructurales existentes
+    </strong>
+
+    <ul>
+      <% for (const problema of problemas) { %>
+        <li><%= problema %></li>
+      <% } %>
+    </ul>
+  </div>
+<% } %>
+
+
+<div class="card">
+  <h2 style="margin-top:0;">
+    1. Crear temporada
+  </h2>
+
+  <form
+    action="/panel/admin/estructura/temporadas"
+    method="POST"
+  >
+    <div class="form-row">
+      <label for="anio">Año</label>
+
+      <input
+        id="anio"
+        name="anio"
+        type="number"
+        min="2000"
+        max="2100"
+        required
+        placeholder="2026"
+      />
+    </div>
+
+    <div class="form-actions">
+      <button type="submit">
+        Crear temporada
+      </button>
+    </div>
+  </form>
+</div>
+
+
+<div class="card">
+  <h2 style="margin-top:0;">
+    2. Crear torneo
+  </h2>
+
+  <% if (temporadas.length === 0) { %>
+
+    <p class="subtitle">
+      Primero tenés que crear una temporada.
+    </p>
+
+  <% } else { %>
+
+    <form
+      action="/panel/admin/estructura/torneos"
+      method="POST"
+    >
+      <div class="form-row">
+        <label for="temporadaId">
+          Temporada
+        </label>
+
+        <select
+          id="temporadaId"
+          name="temporadaId"
+          required
+        >
+          <option value="">
+            Seleccionar...
+          </option>
+
+          <% for (const temporada of temporadas) { %>
+            <option value="<%= temporada.id %>">
+              <%= temporada.anio %>
+            </option>
+          <% } %>
+        </select>
+      </div>
+
+      <div class="form-row">
+        <label for="nombreTorneo">
+          Torneo
+        </label>
+
+        <select
+          id="nombreTorneo"
+          name="nombre"
+          required
+        >
+          <option value="">
+            Seleccionar...
+          </option>
+
+          <% for (const nombre of nombresTorneo) { %>
+            <option value="<%= nombre %>">
+              <%= nombre %>
+            </option>
+          <% } %>
+        </select>
+      </div>
+
+      <div class="form-actions">
+        <button type="submit">
+          Crear torneo
+        </button>
+      </div>
+    </form>
+
+  <% } %>
+</div>
+
+
+<%
+  const torneos = temporadas.flatMap(
+    (temporada) =>
+      temporada.torneos.map(
+        (torneo) => ({
+          temporada,
+          torneo,
+        })
+      )
+  );
+%>
+
+
+<div class="card">
+  <h2 style="margin-top:0;">
+    3. Crear categoría
+  </h2>
+
+  <% if (torneos.length === 0) { %>
+
+    <p class="subtitle">
+      Primero tenés que crear un torneo.
+    </p>
+
+  <% } else { %>
+
+    <form
+      action="/panel/admin/estructura/categorias"
+      method="POST"
+    >
+      <div class="form-row">
+        <label for="torneoId">
+          Torneo
+        </label>
+
+        <select
+          id="torneoId"
+          name="torneoId"
+          required
+        >
+          <option value="">
+            Seleccionar...
+          </option>
+
+          <% for (const item of torneos) { %>
+            <option value="<%= item.torneo.id %>">
+              <%= item.temporada.anio %>
+              —
+              <%= item.torneo.nombre %>
+            </option>
+          <% } %>
+        </select>
+      </div>
+
+      <div class="form-row">
+        <label for="nombreCategoria">
+          Categoría
+        </label>
+
+        <select
+          id="nombreCategoria"
+          name="nombre"
+          required
+        >
+          <option value="">
+            Seleccionar...
+          </option>
+
+          <% for (const nombre of nombresCategoria) { %>
+            <option value="<%= nombre %>">
+              Categoría <%= nombre %>
+            </option>
+          <% } %>
+        </select>
+      </div>
+
+      <div class="form-actions">
+        <button type="submit">
+          Crear categoría
+        </button>
+      </div>
+    </form>
+
+  <% } %>
+</div>
+
+
+<%
+  const categorias = torneos.flatMap(
+    ({ temporada, torneo }) =>
+      torneo.categorias.map(
+        (categoria) => ({
+          temporada,
+          torneo,
+          categoria,
+        })
+      )
+  );
+%>
+
+
+<div class="card">
+  <h2 style="margin-top:0;">
+    4. Crear zona
+  </h2>
+
+  <p class="subtitle">
+    Solo creá zonas si esa categoría realmente
+    se divide en grupos.
+
+    El panel no permite repetir
+    "Zona 1", "Zona 2", etc.
+    en categorías distintas del mismo torneo,
+    porque el Excel quedaría ambiguo.
+  </p>
+
+  <% if (categorias.length === 0) { %>
+
+    <p class="subtitle">
+      Primero tenés que crear una categoría.
+    </p>
+
+  <% } else { %>
+
+    <form
+      action="/panel/admin/estructura/zonas"
+      method="POST"
+    >
+      <div class="form-row">
+        <label for="categoriaId">
+          Categoría
+        </label>
+
+        <select
+          id="categoriaId"
+          name="categoriaId"
+          required
+        >
+          <option value="">
+            Seleccionar...
+          </option>
+
+          <% for (const item of categorias) { %>
+            <option value="<%= item.categoria.id %>">
+              <%= item.temporada.anio %>
+              —
+              <%= item.torneo.nombre %>
+              —
+              Categoría <%= item.categoria.nombre %>
+            </option>
+          <% } %>
+        </select>
+      </div>
+
+      <div class="form-row">
+        <label for="numeroZona">
+          Número de zona
+        </label>
+
+        <input
+          id="numeroZona"
+          name="numero"
+          type="number"
+          min="1"
+          step="1"
+          required
+          placeholder="1"
+        />
+      </div>
+
+      <div class="form-actions">
+        <button type="submit">
+          Crear zona
+        </button>
+      </div>
+    </form>
+
+  <% } %>
+</div>
+
+
+<h2>Estructura actual</h2>
+
+<% if (temporadas.length === 0) { %>
+
+  <div class="empty-state">
+    Todavía no hay temporadas creadas.
+  </div>
+
+<% } %>
+
+
+<% for (const temporada of temporadas) { %>
+
+  <div class="card">
+
+    <h2 style="margin-top:0;">
+      <%= temporada.anio %>
+    </h2>
+
+    <% if (temporada.torneos.length === 0) { %>
+
+      <p class="subtitle">
+        Sin torneos.
+      </p>
+
+    <% } %>
+
+
+    <% for (const torneo of temporada.torneos) { %>
+
+      <div
+        style="
+          border-top:1px solid #eee;
+          padding-top:14px;
+          margin-top:14px;
+        "
+      >
+        <strong>
+          <%= torneo.nombre %>
+        </strong>
+
+
+        <% if (torneo.categorias.length === 0) { %>
+
+          <p
+            class="subtitle"
+            style="margin:8px 0 0;"
+          >
+            Sin categorías.
+          </p>
+
+        <% } else { %>
+
+          <ul style="margin-bottom:0;">
+
+            <% for (const categoria of torneo.categorias) { %>
+
+              <li style="margin:8px 0;">
+
+                <strong>
+                  Categoría <%= categoria.nombre %>
+                </strong>
+
+                <% if (categoria.zonas.length === 0) { %>
+
+                  — directa, sin zonas
+
+                <% } else { %>
+
+                  —
+                  <%= categoria.zonas
+                    .map((zona) => zona.nombre)
+                    .join(', ') %>
+
+                <% } %>
+
+              </li>
+
+            <% } %>
+
+          </ul>
+
+        <% } %>
+
+      </div>
+
+    <% } %>
+
+  </div>
+
+<% } %>
+
+
+<p style="margin-top:24px;">
+  <a
+    class="button button-secondary"
+    href="/panel/admin"
+  >
+    Volver al admin
+  </a>
+</p>

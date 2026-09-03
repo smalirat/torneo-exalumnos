@@ -11,11 +11,7 @@ import { EquipoInscripto, FilaStandings, PartidoResultado, PuntoRestadoInput } f
  * solo resolvemos qué datos hay que traer de la base.
  */
 export async function obtenerStandings(categoriaId: number, zonaId?: number): Promise<FilaStandings[]> {
-  await validarCategoriaYZona(categoriaId, zonaId);
-
-  // zonaId ?? null es intencional: Prisma ignora `undefined` en el where
-  // (no filtraría por zona), pero acá SÍ queremos matchear explícitamente
-  // las inscripciones/partidos sin zona cuando no se pasó zonaId.
+await validarCategoriaYZona(categoriaId, zonaId);
   const zonaFiltro = zonaId ?? null;
 
   const [inscripciones, partidosJugados, puntosRestados] = await Promise.all([
@@ -26,7 +22,12 @@ export async function obtenerStandings(categoriaId: number, zonaId?: number): Pr
     prisma.partido.findMany({
       where: {
         categoriaId,
-        zonaId: zonaFiltro,
+        OR: [
+          { zonaId: zonaFiltro },
+          { zonaId: null } // <-- INCLUYE LOS INTERZONALES Y PROMOCIONES
+        ],
+        // <-- EXCLUYE LAS PROMOCIONES/FINALES (las guardaremos con jornada 999)
+        jornada: { lt: 900 },
         estado: EstadoPartido.JUGADO,
         golesLocal: { not: null },
         golesVisitante: { not: null },

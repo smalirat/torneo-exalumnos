@@ -1,3 +1,5 @@
+import dotenv from 'dotenv';
+dotenv.config();
 import { z } from 'zod';
 
 // Centralizamos y validamos las variables de entorno acá para que un typo

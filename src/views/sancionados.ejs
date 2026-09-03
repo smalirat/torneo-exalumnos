@@ -1,33 +1,220 @@
-<h1>Sancionados</h1>
-<p class="subtitle"><%= torneo.nombre %> <%= torneo.temporada.anio %></p>
+<h1>Disciplina</h1>
+
+<p class="subtitle">
+  <%= torneo.nombre %>
+  <%= torneo.temporada.anio %>
+</p>
+
+
+<!-- ====================================================== -->
+<!-- SANCIONADOS                                           -->
+<!-- ====================================================== -->
 
 <div class="card">
+
+  <h2 style="margin-top:0;">
+    Sancionados —
+    Temporada <%= torneo.temporada.anio %>
+  </h2>
+
+
+  <p class="subtitle">
+    Las suspensiones tienen vigencia durante toda
+    la temporada <%= torneo.temporada.anio %>,
+    independientemente del torneo donde se hayan originado.
+  </p>
+
+
   <% if (sancionados.length === 0) { %>
-    <p class="empty-state">No hay sanciones cargadas para este torneo.</p>
+
+    <p class="empty-state">
+      No hay sanciones cargadas para
+      <%= torneo.temporada.anio %>.
+    </p>
+
   <% } else { %>
+
     <table>
+
       <thead>
+
         <tr>
           <th>Jugador</th>
           <th>Equipo</th>
+
+          <th>
+            Torneo origen
+          </th>
+
           <th>Tarjeta</th>
-          <th class="num">Fechas</th>
+
+          <th class="num">
+            Fechas
+          </th>
+
           <th>Estado</th>
-          <th>Observaciones</th>
+
+          <th>
+            Observaciones
+          </th>
         </tr>
+
       </thead>
+
+
       <tbody>
+
         <% sancionados.forEach(function(s) { %>
+
           <tr>
-            <td><%= s.jugador.nombre %></td>
-            <td><%= s.equipo.nombre %></td>
-            <td><%= s.tipoTarjeta %></td>
-            <td class="num"><%= s.fechasSuspension %></td>
-            <td><%= s.cumplida ? 'Cumplida' : (s.pendiente ? 'Pendiente' : '-') %></td>
-            <td><%= s.observaciones || '-' %></td>
+
+            <td>
+              <%= s.jugador.nombre %>
+            </td>
+
+            <td>
+              <%= s.equipo.nombre %>
+            </td>
+
+            <td>
+              <%= s.torneo.nombre %>
+            </td>
+
+            <td>
+              <%= s.tipoTarjeta %>
+            </td>
+
+            <td class="num">
+              <%= s.fechasSuspension %>
+            </td>
+
+            <td>
+
+              <% if (s.cumplida) { %>
+
+                Cumplida
+
+              <% } else if (s.pendiente) { %>
+
+                <strong>Pendiente</strong>
+
+              <% } else { %>
+
+                —
+
+              <% } %>
+
+            </td>
+
+            <td>
+              <%= s.observaciones || '—' %>
+            </td>
+
           </tr>
+
         <% }) %>
+
       </tbody>
+
     </table>
+
   <% } %>
+
+</div>
+
+
+<!-- ====================================================== -->
+<!-- AMONESTADOS                                           -->
+<!-- ====================================================== -->
+
+<div class="card">
+
+  <h2 style="margin-top:0;">
+    Amonestados —
+    Torneo <%= torneo.nombre %>
+  </h2>
+
+
+  <p class="subtitle">
+    Las amarillas corresponden exclusivamente
+    al torneo <%= torneo.nombre %>
+    <%= torneo.temporada.anio %>.
+  </p>
+
+
+  <% if (amonestados.length === 0) { %>
+
+    <p class="empty-state">
+      No hay amonestaciones cargadas
+      para este torneo.
+    </p>
+
+  <% } else { %>
+
+    <%
+      const porEquipo = {};
+
+      for (const a of amonestados) {
+        if (!porEquipo[a.equipo.id]) {
+          porEquipo[a.equipo.id] = {
+            equipo: a.equipo,
+            jugadores: [],
+          };
+        }
+
+        porEquipo[a.equipo.id]
+          .jugadores
+          .push(a);
+      }
+    %>
+
+
+    <% Object.values(porEquipo).forEach(function(grupo) { %>
+
+      <h3 style="margin-top:24px;">
+        <%= grupo.equipo.nombre %>
+      </h3>
+
+
+      <table>
+
+        <thead>
+
+          <tr>
+            <th>Jugador</th>
+
+            <th class="num">
+              Amarillas
+            </th>
+          </tr>
+
+        </thead>
+
+
+        <tbody>
+
+          <% grupo.jugadores.forEach(function(a) { %>
+
+            <tr>
+
+              <td>
+                <%= a.jugador.nombre %>
+              </td>
+
+              <td class="num">
+                <%= a.cantidad %>
+              </td>
+
+            </tr>
+
+          <% }) %>
+
+        </tbody>
+
+      </table>
+
+    <% }) %>
+
+  <% } %>
+
 </div>

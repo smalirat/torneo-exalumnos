@@ -6,7 +6,7 @@ import { listarPartidos } from '../partidos/partidos.service';
 import { listarGoleadores } from '../goleadores/goleadores.service';
 import { listarFiguras } from '../figuras/figuras.service';
 import { listarImbatibles } from '../imbatibles/imbatibles.service';
-import { listarSancionados } from '../sanciones/sanciones.service';
+import {   listarAmonestados, listarSancionados } from '../sanciones/sanciones.service';
 import { obtenerHistorialCampeones } from '../campeones/campeones.service';
 import { asyncViewHandler } from './vistaErrorHandler';
 
@@ -108,14 +108,49 @@ vistasRouter.get(
 vistasRouter.get(
   '/sancionados',
   asyncViewHandler(async (req, res) => {
-    const torneoId = Number(req.query.torneoId);
-    if (!torneoId) {
-      res.redirect('/panel');
-      return;
-    }
-    const [sancionados, torneo] = await Promise.all([listarSancionados(torneoId), obtenerTorneoOrFallar(torneoId)]);
-    res.render('sancionados', { titulo: 'Sancionados', sancionados, torneo });
-  }),
+      const torneoId =
+        Number(
+          req.query.torneoId,
+        );
+
+      if (!torneoId) {
+        res.redirect(
+          '/panel',
+        );
+
+        return;
+      }
+
+      const [
+        sancionados,
+        amonestados,
+        torneo,
+      ] =
+        await Promise.all([
+          listarSancionados(
+            torneoId,
+          ),
+          listarAmonestados(
+            torneoId,
+          ),
+          obtenerTorneoOrFallar(
+            torneoId,
+          ),
+        ]);
+
+      res.render(
+        'sancionados',
+        {
+          titulo:
+            'Disciplina',
+
+          sancionados,
+          amonestados,
+          torneo,
+        },
+      );
+    },
+  ),
 );
 
 vistasRouter.get(

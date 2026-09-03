@@ -24,7 +24,7 @@ interface StatsAcumuladas {
  * - los puntos restados (PR) de esa categoría/zona
  *
  * Regla de desempate (ver DECISIONES.md #2, pendiente de tu confirmación):
- *   1. PTOS (puntos por partidos - PR)
+ *   1. PTOS (puntos por partidos + PR)
  *   2. DIF (GF - GE)
  *   3. GF
  *   4. Si quedan exactamente 2 equipos empatados tras 1-3: resultado entre sí
@@ -35,6 +35,7 @@ interface StatsAcumuladas {
  * Es una función PURA: no toca la base de datos, no tiene I/O. Así se puede
  * testear exhaustivamente sin levantar Postgres.
  */
+
 export function calcularTablaPosiciones(
   equipos: EquipoInscripto[],
   partidosJugados: PartidoResultado[],
@@ -103,7 +104,7 @@ export function calcularTablaPosiciones(
         ge: s.ge,
         dif: s.gf - s.ge,
         pr,
-        ptos: ptosPartidos - pr,
+        ptos: ptosPartidos + pr,
       };
     },
   );

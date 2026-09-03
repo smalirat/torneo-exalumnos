@@ -57,7 +57,7 @@ import { campeonesRouter, historialCampeonesRouter } from './campeones/campeones
 router.use('/campeones', campeonesRouter);
 router.use('/historial-campeones', historialCampeonesRouter);
 
-import { excelImportRouter } from './excel-import/excelImport.routes';
+import { excelImportRouter } from './excel/imports/excelImport.routes';
 router.use('/torneos', excelImportRouter); // agrega POST /torneos/:id/importar-excel al mismo router base
 
 // Se va completando a medida que agreguemos cada módulo:

@@ -1,0 +1,9 @@
+Las amarillas se manejan bien. Los sancionados por torneo tambien, pero se lee mal el excel.
+
+Automatizar sanciones?
+Revisar como usar campeones!!
+    (Excel o por separado?)
+
+
+Embellecer front
+    (Agrega una pagina para campeones)

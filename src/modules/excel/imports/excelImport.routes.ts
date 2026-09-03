@@ -3,9 +3,9 @@ import path from 'path';
 import { Router } from 'express';
 import multer from 'multer';
 import { RolUsuario } from '@prisma/client';
-import { asyncHandler } from '../../middleware/asyncHandler';
-import { requireRole } from '../../middleware/auth';
-import { ValidationError } from '../../utils/AppError';
+import { asyncHandler } from '../../../middleware/asyncHandler';
+import { requireRole } from '../../../middleware/auth';
+import { ValidationError } from '../../../utils/AppError';
 import { importarExcelParamsSchema } from './excelImport.validation';
 import { importarExcel } from './excelImport.service';
 
@@ -21,7 +21,7 @@ const storage = multer.diskStorage({
   },
 });
 
-const upload = multer({
+export const upload = multer({
   storage,
   limits: { fileSize: 10 * 1024 * 1024 }, // 10MB, de sobra para este uso
   fileFilter: (_req, file, cb) => {
