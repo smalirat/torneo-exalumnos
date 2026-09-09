@@ -53,6 +53,15 @@ router.use('/sanciones', sancionesRouter);
 import { sancionadosRouter } from './sanciones/sancionados.routes';
 router.use('/sancionados', sancionadosRouter);
 
+import { amonestacionesRouter } from './amonestaciones/amonestaciones.routes';
+router.use('/amonestaciones', amonestacionesRouter);
+
+import { puntosRestadosRouter } from './puntosRestados/puntosRestados.routes';
+router.use('/puntos-restados', puntosRestadosRouter);
+
+import { estadisticasRouter } from './estadisticas/estadisticas.routes';
+router.use('/estadisticas', estadisticasRouter);
+
 import { campeonesRouter, historialCampeonesRouter } from './campeones/campeones.routes';
 router.use('/campeones', campeonesRouter);
 router.use('/historial-campeones', historialCampeonesRouter);

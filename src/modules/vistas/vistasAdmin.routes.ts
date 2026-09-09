@@ -20,7 +20,7 @@ import { crearPartidoSchema } from '../partidos/partidos.validation';
 import { crearPartido } from '../partidos/partidos.service';
 
 import { crearSancionSchema } from '../sanciones/sanciones.validation';
-import { crearSancion } from '../sanciones/sanciones.service';
+import { crearSancion, eliminarSancion } from '../sanciones/sanciones.service';
 
 import { importarExcel } from '../excel/imports/excelImport.service';
 import { upload } from '../excel/imports/excelImport.routes';
@@ -34,14 +34,23 @@ import {
   crearTemporadaDesdeAdmin,
   crearTorneoDesdeAdmin,
   crearZonaDesdeAdmin,
+  eliminarCategoriaDesdeAdmin,
+  eliminarTemporadaDesdeAdmin,
+  eliminarTorneoDesdeAdmin,
+  eliminarZonaDesdeAdmin,
   obtenerEstructuraAdmin,
 } from './estructuraAdmin.service';
 
 import {
   crearEquipoEInscribirDesdeAdmin,
+  eliminarEquipoDesdeAdmin,
   inscribirEquipoExistenteDesdeAdmin,
   obtenerGestionEquiposAdmin,
 } from './equiposAdmin.service';
+
+import { eliminarInscripcion } from '../inscripciones/inscripciones.service';
+
+import { adminOperativoRouter } from './adminOperativo.routes';
 
 export const vistasAdminRouter = Router();
 
@@ -617,13 +626,38 @@ vistasAdminRouter.post(
 vistasAdminRouter.get(
   '/sanciones/nueva',
   asyncViewHandler(async (_req, res) => {
-    const torneos =
-      await torneosParaSelect();
+    const [torneos, sanciones] = await Promise.all([
+      torneosParaSelect(),
+      prisma.sancion.findMany({
+        include: {
+          jugador: true,
+          equipo: true,
+          torneo: { include: { temporada: true } },
+        },
+        orderBy: [{ torneo: { temporada: { anio: 'desc' } } }, { createdAt: 'desc' }],
+        take: 50,
+      }),
+    ]);
 
     res.render('admin/sancion-nueva', {
       titulo: 'Cargar sanción',
       torneos,
+      sanciones,
+      ok: _req.query.ok,
+      error: _req.query.error,
     });
+  }),
+);
+
+vistasAdminRouter.post(
+  '/sanciones/:id/eliminar',
+  asyncViewHandler(async (req, res) => {
+    try {
+      await eliminarSancion(Number(req.params.id));
+      redirectConMensaje(res, '/panel/admin/sanciones/nueva', 'Sanción eliminada.');
+    } catch (err) {
+      redirectConMensaje(res, '/panel/admin/sanciones/nueva', '', err);
+    }
   }),
 );
 
@@ -663,3 +697,99 @@ vistasAdminRouter.post(
     }
   }),
 );
+
+// ============================================================
+// BAJAS DE ESTRUCTURA (con protección de datos dependientes)
+// ============================================================
+
+function redirectConMensaje(res: Response, urlBase: string, ok: string, err?: unknown) {
+  if (err) {
+    res.redirect(
+      urlBase +
+        '?error=' +
+        encodeURIComponent(mensajeErrorFormulario(err)),
+    );
+    return;
+  }
+
+  res.redirect(
+    urlBase +
+      '?ok=' +
+      encodeURIComponent(ok),
+  );
+}
+
+vistasAdminRouter.post(
+  '/estructura/temporadas/:id/eliminar',
+  asyncViewHandler(async (req, res) => {
+    try {
+      await eliminarTemporadaDesdeAdmin(Number(req.params.id));
+      redirectConMensaje(res, '/panel/admin/estructura', 'Temporada eliminada.');
+    } catch (err) {
+      redirectConMensaje(res, '/panel/admin/estructura', '', err);
+    }
+  }),
+);
+
+vistasAdminRouter.post(
+  '/estructura/torneos/:id/eliminar',
+  asyncViewHandler(async (req, res) => {
+    try {
+      await eliminarTorneoDesdeAdmin(Number(req.params.id));
+      redirectConMensaje(res, '/panel/admin/estructura', 'Torneo eliminado.');
+    } catch (err) {
+      redirectConMensaje(res, '/panel/admin/estructura', '', err);
+    }
+  }),
+);
+
+vistasAdminRouter.post(
+  '/estructura/categorias/:id/eliminar',
+  asyncViewHandler(async (req, res) => {
+    try {
+      await eliminarCategoriaDesdeAdmin(Number(req.params.id));
+      redirectConMensaje(res, '/panel/admin/estructura', 'Categoría eliminada.');
+    } catch (err) {
+      redirectConMensaje(res, '/panel/admin/estructura', '', err);
+    }
+  }),
+);
+
+vistasAdminRouter.post(
+  '/estructura/zonas/:id/eliminar',
+  asyncViewHandler(async (req, res) => {
+    try {
+      await eliminarZonaDesdeAdmin(Number(req.params.id));
+      redirectConMensaje(res, '/panel/admin/estructura', 'Zona eliminada.');
+    } catch (err) {
+      redirectConMensaje(res, '/panel/admin/estructura', '', err);
+    }
+  }),
+);
+
+vistasAdminRouter.post(
+  '/equipos/:id/eliminar',
+  asyncViewHandler(async (req, res) => {
+    try {
+      await eliminarEquipoDesdeAdmin(Number(req.params.id));
+      redirectConMensaje(res, '/panel/admin/equipos', 'Equipo eliminado.');
+    } catch (err) {
+      redirectConMensaje(res, '/panel/admin/equipos', '', err);
+    }
+  }),
+);
+
+vistasAdminRouter.post(
+  '/equipos/inscripciones/:id/eliminar',
+  asyncViewHandler(async (req, res) => {
+    try {
+      await eliminarInscripcion(Number(req.params.id));
+      redirectConMensaje(res, '/panel/admin/equipos', 'Inscripción eliminada.');
+    } catch (err) {
+      redirectConMensaje(res, '/panel/admin/equipos', '', err);
+    }
+  }),
+);
+
+// Pantallas operativas (partidos, jugadores, disciplina, campeones, eventos).
+vistasAdminRouter.use(adminOperativoRouter);

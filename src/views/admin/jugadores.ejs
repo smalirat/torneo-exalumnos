@@ -1,0 +1,107 @@
+<h1>Jugadores</h1>
+
+<p class="subtitle">
+  CRUD de jugadores por equipo: creá, renombrá, reasigná de equipo o eliminá.
+</p>
+
+<!-- Filtro por equipo -->
+<div class="card">
+  <h2 style="margin-top:0;">Filtrar por equipo</h2>
+  <form action="/panel/admin/jugadores" method="GET">
+    <div class="form-row">
+      <label for="equipoId">Equipo</label>
+      <select id="equipoId" name="equipoId">
+        <option value="">Todos los equipos</option>
+        <% for (const equipo of equipos) { %>
+          <option value="<%= equipo.id %>" <%= Number(equipoId) === equipo.id ? 'selected' : '' %>><%= equipo.nombre %></option>
+        <% } %>
+      </select>
+    </div>
+    <div class="form-actions">
+      <button type="submit">Filtrar</button>
+    </div>
+  </form>
+</div>
+
+<!-- Crear jugador -->
+<div class="card">
+  <h2 style="margin-top:0;">Crear jugador</h2>
+  <form action="/panel/admin/jugadores" method="POST">
+    <div class="form-row">
+      <label for="nombre">Nombre</label>
+      <input id="nombre" name="nombre" type="text" maxlength="100" required autocomplete="off" />
+    </div>
+    <div class="form-row">
+      <label for="equipoId">Equipo</label>
+      <select id="equipoId" name="equipoId" required>
+        <option value="">Seleccionar equipo...</option>
+        <% for (const equipo of equipos) { %>
+          <option value="<%= equipo.id %>" <%= Number(equipoId) === equipo.id ? 'selected' : '' %>><%= equipo.nombre %></option>
+        <% } %>
+      </select>
+    </div>
+    <div class="form-actions">
+      <button type="submit">Crear jugador</button>
+    </div>
+  </form>
+</div>
+
+<!-- Listado con edición inline -->
+<h2>Jugadores (<%= jugadores.length %>)</h2>
+
+<% if (jugadores.length === 0) { %>
+  <div class="empty-state">
+    No hay jugadores para mostrar.
+  </div>
+<% } else { %>
+  <table>
+    <thead>
+      <tr>
+        <th>Jugador</th>
+        <th>Equipo</th>
+        <th>Acciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% for (const jugador of jugadores) { %>
+        <%
+          const formEditar = 'editar-jugador-' + jugador.id;
+          const formEliminar = 'eliminar-jugador-' + jugador.id;
+          const nombreSeguro = jugador.nombre.replace(/"/g, '');
+        %>
+        <tr>
+          <td>
+            <input form="<%= formEditar %>" type="text" name="nombre" value="<%= jugador.nombre %>" maxlength="100" required />
+          </td>
+          <td>
+            <select form="<%= formEditar %>" name="equipoId">
+              <option value="">Sin equipo</option>
+              <% for (const equipo of equipos) { %>
+                <option value="<%= equipo.id %>" <%= jugador.equipoId === equipo.id ? 'selected' : '' %>><%= equipo.nombre %></option>
+              <% } %>
+            </select>
+          </td>
+          <td>
+            <button form="<%= formEditar %>" type="submit" class="button button-small">Guardar</button>
+            <button form="<%= formEliminar %>" type="submit" class="button button-danger button-small" onclick="return confirm('¿Eliminar a $selected?');" >Eliminar</button>
+          </td>
+        </tr>
+      <% } %>
+    </tbody>
+  </table>
+
+  <% for (const jugador of jugadores) { %>
+    <form id="<%= 'editar-jugador-' + jugador.id %>" action="/panel/admin/jugadores/<%= jugador.id %>" method="POST" hidden></form>
+    <form id="<%= 'eliminar-jugador-' + jugador.id %>" action="/panel/admin/jugadores/<%= jugador.id %>/eliminar" method="POST" hidden></form>
+    <script>
+      (function () {
+        var btn = document.querySelector('[form="eliminar-jugador-<%= jugador.id %>"]');
+        btn.onclick = function () { return confirm('¿Eliminar a <%= nombreSeguro %>?'); };
+      })();
+    </script>
+  <% } %>
+<% } %>
+
+<p style="margin-top:24px;">
+  <a class="button button-secondary" href="/panel/admin">Volver al admin</a>
+</p>

@@ -5,6 +5,7 @@
     <div class="form-row">
       <label for="torneoId">Torneo</label>
       <select id="torneoId" name="torneoId" required>
+        <option value="">Seleccionar...</option>
         <% torneos.forEach(function(t) { %>
           <option value="<%= t.id %>"><%= t.temporada.anio %> — <%= t.nombre %></option>
         <% }) %>
@@ -40,4 +41,44 @@
   <p class="subtitle" style="margin-top:16px;">
     Para buscar los IDs de jugador/equipo, consultá <a href="/jugadores">GET /jugadores</a> y <a href="/equipos">GET /equipos</a>.
   </p>
+</div>
+
+<!-- Sanciones cargadas -->
+<div class="card">
+  <h2 style="margin-top:0;">Sanciones cargadas</h2>
+
+  <% if (sanciones.length === 0) { %>
+    <p class="empty-state">Todavía no hay sanciones cargadas.</p>
+  <% } else { %>
+    <table>
+      <thead>
+        <tr>
+          <th>Torneo</th>
+          <th>Jugador</th>
+          <th>Equipo</th>
+          <th>Tipo</th>
+          <th>Estado</th>
+          <th class="num">Fechas</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% sanciones.forEach(function(s) { %>
+          <tr>
+            <td><%= s.torneo.temporada.anio %> <%= s.torneo.nombre %></td>
+            <td><%= s.jugador.nombre %></td>
+            <td><%= s.equipo.nombre %></td>
+            <td><%= s.tipoTarjeta === 'ROJA' ? 'Roja' : 'Amarilla' %></td>
+            <td><%= s.estado %></td>
+            <td class="num"><%= s.fechasSuspension %></td>
+            <td>
+              <form action="/panel/admin/sanciones/<%= s.id %>/eliminar" method="POST" onsubmit="return confirm('¿Eliminar esta sanción?');">
+                <button type="submit" class="button button-danger button-small">Eliminar</button>
+              </form>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  <% } %>
 </div>

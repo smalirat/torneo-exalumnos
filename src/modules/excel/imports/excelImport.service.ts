@@ -346,96 +346,68 @@ async function procesarSancionados(
   }
 
 
-  const sanciones =
-    parsearSancionados(
-      hoja.matriz,
+  const sanciones = parsearSancionados(hoja.matriz);
+
+  for (const fila of sanciones) {
+    const { equipo, creado: equipoCreado } = await buscarOCrearEquipo(
+      prisma,
+      fila.equipoNombre,
     );
-
-
-  for (
-    const fila
-    of sanciones
-  ) {
-
-    const {
-      equipo,
-      creado: equipoCreado,
-    } =
-      await buscarOCrearEquipo(
-        prisma,
-        fila.equipoNombre,
-      );
-
 
     if (equipoCreado) {
       resumen.equiposCreados++;
     }
 
-
-    const {
-      jugador,
-      creado: jugadorCreado,
-    } =
-      await buscarOCrearJugador(
-        prisma,
-        fila.jugadorNombre,
-        equipo.id,
-      );
-
+    const { jugador, creado: jugadorCreado } = await buscarOCrearJugador(
+      prisma,
+      fila.jugadorNombre,
+      equipo.id,
+    );
 
     if (jugadorCreado) {
       resumen.jugadoresCreados++;
     }
 
-
-    const existente =
-      await prisma.sancion.findFirst({
-        where: {
-          jugadorId:
-            jugador.id,
-
-          torneoId,
-
-          tipoTarjeta:
-            fila.tipoTarjeta,
-
-          fechasSuspension:
-            fila.fechasSuspension,
-        },
-      });
-
-
-    if (existente) {
-      continue;
-    }
-
-
-    await prisma.sancion.create({
-      data: {
-        jugadorId:
-          jugador.id,
-
-        equipoId:
-          equipo.id,
-          
+    const existente = await prisma.sancion.findFirst({
+      where: {
+        jugadorId: jugador.id,
         torneoId,
-
-        tipoTarjeta:
-          fila.tipoTarjeta,
-
-        fechasSuspension:
-          fila.fechasSuspension,
-
-        observaciones:
-          fila.observaciones ??
-          undefined,
+        tipoTarjeta: fila.tipoTarjeta,
+        fechasSuspension: fila.fechasSuspension,
       },
     });
 
+    if (existente) {
+      if (existente.estado !== fila.estado || existente.fechasCumplidas !== fila.fechasCumplidas) {
+        await prisma.sancion.update({
+          where: { id: existente.id },
+          data: {
+            estado: fila.estado,
+            fechasCumplidas: fila.fechasCumplidas,
+            observaciones: fila.observaciones ?? undefined,
+          },
+        });
+      }
+      continue;
+    }
+
+    await prisma.sancion.create({
+      data: {
+        jugadorId: jugador.id,
+        equipoId: equipo.id,
+        torneoId,
+        tipoTarjeta: fila.tipoTarjeta,
+        fechasSuspension: fila.fechasSuspension,
+        fechasCumplidas: fila.fechasCumplidas,
+        estado: fila.estado,
+        observaciones: fila.observaciones ?? undefined,
+      },
+    });
 
     resumen.sancionesCreadas++;
   }
 }
+
 
 export interface ArchivoImportacion {
   buffer: Buffer;

@@ -252,6 +252,7 @@
         <th>Categoría</th>
         <th>Zona</th>
         <th>Equipo</th>
+        <th>Acciones</th>
       </tr>
 
     </thead>
@@ -285,6 +286,18 @@
             <strong>
               <%= inscripcion.equipo.nombre %>
             </strong>
+          </td>
+
+          <td>
+            <form
+              action="/panel/admin/equipos/inscripciones/<%= inscripcion.id %>/eliminar"
+              method="POST"
+              onsubmit="return confirm('¿Eliminar la inscripción de <%= inscripcion.equipo.nombre.replace(/"/g, '') %>?');"
+            >
+              <button type="submit" class="button button-danger button-small">
+                Eliminar inscripción
+              </button>
+            </form>
           </td>
 
         </tr>

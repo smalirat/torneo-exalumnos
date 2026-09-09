@@ -1,0 +1,210 @@
+<h1>Disciplina</h1>
+
+<p class="subtitle">
+  Carga manual de amarillas y quitas de puntos aplicadas por el tribunal.
+  También podés corregir una carga errónea con los botones de quitar/eliminar.
+</p>
+
+<!-- ====================================================== -->
+<!-- CARGAR AMARILLA                                        -->
+<!-- ====================================================== -->
+
+<div class="card">
+  <h2 style="margin-top:0;">Cargar amarilla</h2>
+
+  <form action="/panel/admin/disciplina/amonestaciones" method="POST">
+    <div class="form-row">
+      <label for="torneoId">Torneo</label>
+      <select id="torneoId" name="torneoId" required>
+        <option value="">Seleccionar...</option>
+        <% for (const t of torneos) { %>
+          <option value="<%= t.id %>"><%= t.temporada.anio %> — <%= t.nombre %></option>
+        <% } %>
+      </select>
+    </div>
+    <div class="form-row">
+      <label for="equipoId">Equipo</label>
+      <select id="equipoId" name="equipoId" required>
+        <option value="">Seleccionar...</option>
+        <% for (const equipo of equipos) { %>
+          <option value="<%= equipo.id %>"><%= equipo.nombre %></option>
+        <% } %>
+      </select>
+    </div>
+    <div class="form-row">
+      <label for="jugadorId">Jugador</label>
+      <select id="jugadorId" name="jugadorId" required>
+        <option value="">Primero elegí el equipo...</option>
+        <% for (const jugador of jugadores) { %>
+          <option value="<%= jugador.id %>" data-equipo="<%= jugador.equipoId %>"><%= jugador.nombre %></option>
+        <% } %>
+      </select>
+    </div>
+    <div class="form-row">
+      <label for="cantidad">Cantidad (tarjetas)</label>
+      <input id="cantidad" name="cantidad" type="number" min="1" value="1" />
+    </div>
+    <div class="form-actions">
+      <button type="submit">Registrar amarilla</button>
+    </div>
+  </form>
+</div>
+
+<!-- ====================================================== -->
+<!-- AMARILLAS ACTUALES                                     -->
+<!-- ====================================================== -->
+
+<h2>Amarillas actuales</h2>
+
+<% if (amonestaciones.length === 0) { %>
+  <div class="empty-state">No hay amarillas cargadas.</div>
+<% } else { %>
+  <%
+    const porEquipo = {};
+    for (const a of amonestaciones) {
+      const equipoId = a.equipo.id;
+      if (!porEquipo[equipoId]) {
+        porEquipo[equipoId] = { equipo: a.equipo, jugadores: [] };
+      }
+      porEquipo[equipoId].jugadores.push(a);
+    }
+  %>
+
+  <% Object.values(porEquipo).forEach(function(grupo) { %>
+    <div class="card">
+      <h3 style="margin-top:0;"><%= grupo.equipo.nombre %></h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Jugador</th>
+            <th class="num">Amarillas</th>
+            <th>Torneo</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% grupo.jugadores.forEach(function(a) { %>
+            <tr>
+              <td><%= a.jugador.nombre %></td>
+              <td class="num"><strong><%= a.cantidad %></strong></td>
+              <td><%= a.torneo.nombre %> <%= a.torneo.temporada.anio %></td>
+              <td>
+                <form action="/panel/admin/amonestaciones/<%= a.id %>/eliminar" method="POST" onsubmit="return confirm('¿Quitar una amarilla a <%= a.jugador.nombre.replace(/"/g, '') %>?');">
+                  <button type="submit" class="button button-danger button-small">Quitar amarilla</button>
+                </form>
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+  <% }) %>
+<% } %>
+
+<!-- ====================================================== -->
+<!-- CARGAR QUITA DE PUNTOS                                 -->
+<!-- ====================================================== -->
+
+<div class="card">
+  <h2 style="margin-top:0;">Cargar quita de puntos (tribunal)</h2>
+
+  <form action="/panel/admin/disciplina/puntos-restados" method="POST">
+    <div class="form-row">
+      <label for="destino">Torneo / Categoría / Zona</label>
+      <select id="destino" name="destino" required>
+        <option value="">Seleccionar...</option>
+        <% for (const destino of destinos) { %>
+          <option value="<%= destino.value %>"><%= destino.label %></option>
+        <% } %>
+      </select>
+    </div>
+    <div class="form-row">
+      <label for="equipoIdQuita">Equipo</label>
+      <select id="equipoIdQuita" name="equipoId" required>
+        <option value="">Seleccionar...</option>
+        <% for (const equipo of equipos) { %>
+          <option value="<%= equipo.id %>"><%= equipo.nombre %></option>
+        <% } %>
+      </select>
+    </div>
+    <div class="form-row">
+      <label for="puntos">Puntos a descontar</label>
+      <input id="puntos" name="puntos" type="number" min="1" required />
+    </div>
+    <div class="form-row">
+      <label for="motivo">Motivo</label>
+      <textarea id="motivo" name="motivo" rows="2" maxlength="500"></textarea>
+    </div>
+    <div class="form-actions">
+      <button type="submit">Cargar quita de puntos</button>
+    </div>
+  </form>
+</div>
+
+<!-- ====================================================== -->
+<!-- QUITAS DE PUNTOS ACTUALES                              -->
+<!-- ====================================================== -->
+
+<h2>Quitas de puntos actuales</h2>
+
+<% if (puntosRestados.length === 0) { %>
+  <div class="empty-state">No hay quitas de puntos cargadas.</div>
+<% } else { %>
+  <table>
+    <thead>
+      <tr>
+        <th>Fecha</th>
+        <th>Equipo</th>
+        <th>Torneo / Categoría / Zona</th>
+        <th class="num">Puntos</th>
+        <th>Motivo</th>
+        <th>Acciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% for (const pr of puntosRestados) { %>
+        <tr>
+          <td><%= new Date(pr.fecha).toLocaleDateString('es-AR') %></td>
+          <td><strong><%= pr.equipo.nombre %></strong></td>
+          <td>
+            <%= pr.categoria.torneo.temporada.anio %> <%= pr.categoria.torneo.nombre %> — Categoría <%= pr.categoria.nombre %><%= pr.zona ? ' — ' + pr.zona.nombre : '' %>
+          </td>
+          <td class="num"><strong>-<%= pr.puntos %></strong></td>
+          <td><%= pr.motivo || '—' %></td>
+          <td>
+            <form action="/panel/admin/puntos-restados/<%= pr.id %>/eliminar" method="POST" onsubmit="return confirm('¿Eliminar esta quita de puntos?');">
+              <button type="submit" class="button button-danger button-small">Eliminar</button>
+            </form>
+          </td>
+        </tr>
+      <% } %>
+    </tbody>
+  </table>
+<% } %>
+
+<p style="margin-top:24px;">
+  <a class="button button-secondary" href="/panel/admin">Volver al admin</a>
+</p>
+
+<script>
+  (function () {
+    var equipoSelect = document.getElementById('equipoId');
+    var jugadorSelect = document.getElementById('jugadorId');
+    if (!equipoSelect || !jugadorSelect) return;
+
+    function filtrarJugadores() {
+      var equipoId = equipoSelect.value;
+      for (var i = 0; i < jugadorSelect.options.length; i++) {
+        var opcion = jugadorSelect.options[i];
+        opcion.hidden = equipoId !== '' && opcion.dataset.equipo !== equipoId;
+      }
+      if (equipoId !== '' && jugadorSelect.selectedIndex !== -1) {
+        var sel = jugadorSelect.options[jugadorSelect.selectedIndex];
+        if (sel.hidden) jugadorSelect.value = '';
+      }
+    }
+
+    equipoSelect.addEventListener('change', filtrarJugadores);
+    filtrarJugadores();
+  })();
+</script>

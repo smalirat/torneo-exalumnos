@@ -53,3 +53,6 @@ prisma/*.db-journal
 # Docker / local volumes
 postgres-data/
 pgdata/
+
+#Agents
+opencode.json

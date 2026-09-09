@@ -1,0 +1,133 @@
+<h1>Eventos de partido</h1>
+
+<p class="subtitle">
+  Flujo unificado: guardás el resultado del partido y en la misma pantalla
+  asignás goles, el MVP (figura) y amarillas. Cada envío incrementa el
+  contador anual del jugador en el torneo.
+</p>
+
+<div class="card" style="max-width: 500px;">
+  <form action="/panel/admin/eventos" method="GET">
+    <div class="form-row">
+      <label for="torneoId">Torneo</label>
+      <select id="torneoId" name="torneoId" required>
+        <option value="">Seleccionar...</option>
+        <% for (const t of torneos) { %>
+          <option value="<%= t.id %>" <%= Number(torneoId) === t.id ? 'selected' : '' %>><%= t.temporada.anio %> — <%= t.nombre %></option>
+        <% } %>
+      </select>
+    </div>
+    <div class="form-row">
+      <label for="jornada">Jornada</label>
+      <input id="jornada" name="jornada" type="number" min="1" value="<%= jornada || '' %>" required />
+    </div>
+    <div class="form-actions">
+      <button type="submit">Ver partidos</button>
+    </div>
+  </form>
+</div>
+
+<% if (partidos.length === 0) { %>
+  <div class="empty-state">
+    Seleccioná un torneo y una jornada para ver los partidos.
+  </div>
+<% } %>
+
+<% for (const p of partidos) { %>
+
+  <div class="card">
+    <h2 style="margin-top:0;">
+      Jornada <%= p.jornada %> — <%= p.categoria.nombre %><%= p.zona ? ' · ' + p.zona.nombre : '' %>
+    </h2>
+
+    <p class="subtitle" style="margin-top:0;">
+      <strong><%= p.equipoLocal.nombre %></strong> vs <strong><%= p.equipoVisitante.nombre %></strong>
+      — <%= new Date(p.fecha).toLocaleString('es-AR', { dateStyle: 'short', timeStyle: 'short' }) %>
+      <% if (p.golesLocal !== null && p.golesVisitante !== null) { %>
+        — Resultado actual: <%= p.golesLocal %> - <%= p.golesVisitante %>
+      <% } %>
+    </p>
+
+    <form action="/panel/admin/eventos/partidos/<%= p.id %>" method="POST">
+      <input type="hidden" name="torneoId" value="<%= p.categoria.torneoId %>" />
+      <input type="hidden" name="jornada" value="<%= p.jornada %>" />
+
+      <div class="form-row">
+        <label for="golesLocal-<%= p.id %>">Goles <%= p.equipoLocal.nombre %></label>
+        <input id="golesLocal-<%= p.id %>" name="golesLocal" type="number" min="0" value="<%= p.golesLocal ?? '' %>" />
+      </div>
+
+      <div class="form-row">
+        <label for="golesVisitante-<%= p.id %>">Goles <%= p.equipoVisitante.nombre %></label>
+        <input id="golesVisitante-<%= p.id %>" name="golesVisitante" type="number" min="0" value="<%= p.golesVisitante ?? '' %>" />
+      </div>
+
+      <div class="event-row">
+        <div>
+          <label for="goleadorLocal-<%= p.id %>">Goleador <%= p.equipoLocal.nombre %> (+1 gol)</label>
+          <select id="goleadorLocal-<%= p.id %>" name="goleadorLocalId">
+            <option value="">—</option>
+            <% p.equipoLocal.jugadores.forEach(function(j) { %>
+              <option value="<%= j.id %>"><%= j.nombre %></option>
+            <% }) %>
+          </select>
+        </div>
+
+        <div>
+          <label for="goleadorVisitante-<%= p.id %>">Goleador <%= p.equipoVisitante.nombre %> (+1 gol)</label>
+          <select id="goleadorVisitante-<%= p.id %>" name="goleadorVisitanteId">
+            <option value="">—</option>
+            <% p.equipoVisitante.jugadores.forEach(function(j) { %>
+              <option value="<%= j.id %>"><%= j.nombre %></option>
+            <% }) %>
+          </select>
+        </div>
+      </div>
+
+      <div class="event-row">
+        <div>
+          <label for="figura-<%= p.id %>">Figura del partido (+1 MVP)</label>
+          <select id="figura-<%= p.id %>" name="figuraId">
+            <option value="">—</option>
+            <optgroup label="<%= p.equipoLocal.nombre %>">
+              <% p.equipoLocal.jugadores.forEach(function(j) { %>
+                <option value="<%= j.id %>"><%= j.nombre %></option>
+              <% }) %>
+            </optgroup>
+            <optgroup label="<%= p.equipoVisitante.nombre %>">
+              <% p.equipoVisitante.jugadores.forEach(function(j) { %>
+                <option value="<%= j.id %>"><%= j.nombre %></option>
+              <% }) %>
+            </optgroup>
+          </select>
+        </div>
+
+        <div>
+          <label for="amarilla-<%= p.id %>">Amarilla (+1 tarjeta)</label>
+          <select id="amarilla-<%= p.id %>" name="amarillaId">
+            <option value="">—</option>
+            <optgroup label="<%= p.equipoLocal.nombre %>">
+              <% p.equipoLocal.jugadores.forEach(function(j) { %>
+                <option value="<%= j.id %>"><%= j.nombre %></option>
+              <% }) %>
+            </optgroup>
+            <optgroup label="<%= p.equipoVisitante.nombre %>">
+              <% p.equipoVisitante.jugadores.forEach(function(j) { %>
+                <option value="<%= j.id %>"><%= j.nombre %></option>
+              <% }) %>
+            </optgroup>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button type="submit">Guardar resultado y eventos</button>
+      </div>
+    </form>
+  </div>
+
+<% } %>
+
+<p style="margin-top:24px;">
+  <a class="button button-secondary" href="/panel/admin">Volver al admin</a>
+</p>

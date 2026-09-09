@@ -41,79 +41,38 @@
         <tr>
           <th>Jugador</th>
           <th>Equipo</th>
-
-          <th>
-            Torneo origen
-          </th>
-
+          <th>Torneo origen</th>
           <th>Tarjeta</th>
-
-          <th class="num">
-            Fechas
-          </th>
-
+          <th class="num">Fechas </th>
+          <th class="num">Cumplidas</th> 
           <th>Estado</th>
-
-          <th>
-            Observaciones
-          </th>
+          <th>Observaciones</th>
         </tr>
-
       </thead>
-
-
+      
       <tbody>
-
         <% sancionados.forEach(function(s) { %>
-
           <tr>
-
+            <td><%= s.jugador.nombre %></td>
+            <td><%= s.equipo.nombre %></td>
+            <td><%= s.torneo.nombre %></td>
+            <td><%= s.tipoTarjeta %></td>
+            <td class="num"><%= s.fechasSuspension !== null ? s.fechasSuspension : '—' %></td>
+            <td class="num"><%= s.fechasCumplidas !== null ? s.fechasCumplidas : '—' %></td>
             <td>
-              <%= s.jugador.nombre %>
-            </td>
-
-            <td>
-              <%= s.equipo.nombre %>
-            </td>
-
-            <td>
-              <%= s.torneo.nombre %>
-            </td>
-
-            <td>
-              <%= s.tipoTarjeta %>
-            </td>
-
-            <td class="num">
-              <%= s.fechasSuspension %>
-            </td>
-
-            <td>
-
-              <% if (s.cumplida) { %>
-
+              <% if (s.estado === 'CUMPLIDA') { %>
                 Cumplida
-
-              <% } else if (s.pendiente) { %>
-
+              <% } else if (s.estado === 'PENDIENTE') { %>
                 <strong>Pendiente</strong>
-
+              <% } else if (s.estado === 'EN_TRIBUNAL') { %>
+                <strong>A Tribunal</strong>
               <% } else { %>
-
                 —
-
               <% } %>
-
             </td>
-
-            <td>
-              <%= s.observaciones || '—' %>
-            </td>
-
+            <td><%= s.observaciones || '—' %></td>
           </tr>
-
         <% }) %>
-
       </tbody>
 
     </table>

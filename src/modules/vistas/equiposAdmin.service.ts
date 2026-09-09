@@ -420,3 +420,42 @@ export async function crearEquipoEInscribirDesdeAdmin(
     },
   );
 }
+
+// ============================================================
+// Eliminar equipo (solo si no tiene datos asociados)
+// ============================================================
+
+export async function eliminarEquipoDesdeAdmin(id: number) {
+  const equipo = await prisma.equipo.findUnique({
+    where: { id },
+    include: {
+      inscripciones: { select: { id: true } },
+      jugadores: { select: { id: true } },
+      delegados: { select: { id: true } },
+      partidosLocal: { select: { id: true } },
+      partidosVisitante: { select: { id: true } },
+    },
+  });
+  if (!equipo) throw new NotFoundError('Equipo', id);
+
+  const dependencias = [
+    ['inscripciones', equipo.inscripciones.length],
+    ['jugadores', equipo.jugadores.length],
+    ['usuarios delegados', equipo.delegados.length],
+    ['partidos como local', equipo.partidosLocal.length],
+    ['partidos como visitante', equipo.partidosVisitante.length],
+  ] as const;
+
+  const presentes = dependencias
+    .filter(([, cantidad]) => cantidad > 0)
+    .map(([nombre, cantidad]) => `${nombre} (${cantidad})`);
+
+  if (presentes.length > 0) {
+    throw new ConflictError(
+      `No se puede eliminar el equipo "${equipo.nombre}": ` +
+        `todavía tiene ${presentes.join(', ')}.`,
+    );
+  }
+
+  return prisma.equipo.delete({ where: { id } });
+}

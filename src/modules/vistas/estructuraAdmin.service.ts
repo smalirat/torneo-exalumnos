@@ -352,3 +352,107 @@ export async function crearZonaDesdeAdmin(input: CrearZonaInput) {
     nombre,
   });
 }
+
+// ------------------------------------------------------------
+// Bajas (solo se permiten si no hay datos debajo)
+// ------------------------------------------------------------
+
+export async function eliminarTemporadaDesdeAdmin(id: number) {
+  const temporada = await prisma.temporada.findUnique({
+    where: { id },
+    include: { torneos: { select: { id: true } } },
+  });
+  if (!temporada) throw new NotFoundError('Temporada', id);
+
+  if (temporada.torneos.length > 0) {
+    throw new ConflictError(
+      `No se puede eliminar la temporada ${temporada.anio}: ` +
+        `todavía tiene ${temporada.torneos.length} torneo(s). Eliminá primero la estructura inferior.`,
+    );
+  }
+
+  return prisma.temporada.delete({ where: { id } });
+}
+
+export async function eliminarTorneoDesdeAdmin(id: number) {
+  const torneo = await prisma.torneo.findUnique({
+    where: { id },
+    include: { categorias: { select: { id: true } } },
+  });
+  if (!torneo) throw new NotFoundError('Torneo', id);
+
+  if (torneo.categorias.length > 0) {
+    throw new ConflictError(
+      `No se puede eliminar el torneo ${torneo.nombre}: ` +
+        `todavía tiene ${torneo.categorias.length} categoría(s).`,
+    );
+  }
+
+  return prisma.torneo.delete({ where: { id } });
+}
+
+export async function eliminarCategoriaDesdeAdmin(id: number) {
+  const categoria = await prisma.categoria.findUnique({
+    where: { id },
+    include: {
+      zonas: { select: { id: true } },
+      inscripciones: { select: { id: true } },
+      partidos: { select: { id: true } },
+      campeones: { select: { id: true } },
+      puntosRestados: { select: { id: true } },
+    },
+  });
+  if (!categoria) throw new NotFoundError('Categoria', id);
+
+  const dependencias = [
+    ['zonas', categoria.zonas.length],
+    ['equipos inscriptos', categoria.inscripciones.length],
+    ['partidos', categoria.partidos.length],
+    ['campeones', categoria.campeones.length],
+    ['quitas de puntos', categoria.puntosRestados.length],
+  ] as const;
+
+  const presentes = dependencias
+    .filter(([, cantidad]) => cantidad > 0)
+    .map(([nombre, cantidad]) => `${nombre} (${cantidad})`);
+
+  if (presentes.length > 0) {
+    throw new ConflictError(
+      `No se puede eliminar la Categoría ${categoria.nombre}: ` +
+        `todavía tiene ${presentes.join(', ')}.`,
+    );
+  }
+
+  return prisma.categoria.delete({ where: { id } });
+}
+
+export async function eliminarZonaDesdeAdmin(id: number) {
+  const zona = await prisma.zona.findUnique({
+    where: { id },
+    include: {
+      inscripciones: { select: { id: true } },
+      partidos: { select: { id: true } },
+      puntosRestados: { select: { id: true } },
+    },
+  });
+  if (!zona) throw new NotFoundError('Zona', id);
+
+  const dependencias = [
+    ['equipos inscriptos', zona.inscripciones.length],
+    ['partidos', zona.partidos.length],
+    ['quitas de puntos', zona.puntosRestados.length],
+  ] as const;
+
+  const presentes = dependencias
+    .filter(([, cantidad]) => cantidad > 0)
+    .map(([nombre, cantidad]) => `${nombre} (${cantidad})`);
+
+  if (presentes.length > 0) {
+    throw new ConflictError(
+      `No se puede eliminar ${zona.nombre}: ` +
+        `todavía tiene ${presentes.join(', ')}.`,
+    );
+  }
+
+  return prisma.zona.delete({ where: { id } });
+}

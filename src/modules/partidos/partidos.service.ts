@@ -135,6 +135,16 @@ export async function actualizarPartido(id: number, input: ActualizarPartidoInpu
   });
 }
 
+export async function eliminarPartido(id: number): Promise<void> {
+  const partido = await prisma.partido.findUnique({ where: { id } });
+  if (!partido) {
+    throw new NotFoundError('Partido', id);
+  }
+  // Las tablas de posiciones se calculan al vuelo (standings.calculator.ts),
+  // así que al borrar un partido cargado por error no queda nada por recomputar.
+  await prisma.partido.delete({ where: { id } });
+}
+
 export interface FiltrosPartidos {
   equipoId?: number;
   categoriaId?: number;

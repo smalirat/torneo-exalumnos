@@ -12,7 +12,7 @@ export const crearSancionSchema = z.object({
   equipoId: z.coerce.number().int().positive(),
   torneoId: z.coerce.number().int().positive(),
   tipoTarjeta: tipoTarjetaSchema,
-  fechasSuspension: z.coerce.number().int().min(0),
+  fechasSuspension: z.coerce.number().int().min(0).nullable().optional(), 
   observaciones: z.string().trim().max(500).optional(),
 });
 export type CrearSancionInput = z.infer<typeof crearSancionSchema>;

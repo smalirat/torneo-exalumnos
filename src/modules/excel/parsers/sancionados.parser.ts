@@ -10,15 +10,11 @@ import {
 export interface FilaSancionado {
   jugadorNombre: string;
   equipoNombre: string;
-
-  tipoTarjeta:
-    | 'ROJA'
-    | 'AMARILLA';
-
-  fechasSuspension: number;
-
-  observaciones:
-    string | null;
+  tipoTarjeta: 'ROJA' | 'AMARILLA';
+  fechasSuspension: number | null;
+  fechasCumplidas: number; 
+  estado: 'PENDIENTE' | 'CUMPLIDA' | 'EN_TRIBUNAL';
+  observaciones: string | null;
 }
 
 
@@ -46,6 +42,16 @@ const COLUMNAS_EXPULSADOS:
     'FECHAS',
     'FECHAS SUSPENSION',
     'FECHAS DE SUSPENSION',
+  ],
+
+  CUMPLIDA: [
+    'CUMPLIDA',
+    'FECHAS CUMPLIDAS'
+  ],
+
+  PENDIENTE: [
+    'PENDIENTE',
+    'ESTADO'
   ],
 
   OBSERVACIONES: [
@@ -88,23 +94,6 @@ function fechasPorAmonestaciones(
 // AMONESTADOS
 // ============================================================
 
-/**
- * Lee TODOS los jugadores que figuran debajo de:
- *
- * AMONESTADOS Torneo APERTURA
- *
- * incluyendo:
- *
- * 1 amarilla
- * 2 amarillas
- * 3 amarillas
- * 4 amarillas
- * ...
- *
- * Esto es distinto de parsearSancionados(),
- * porque tener amarillas no implica necesariamente
- * estar suspendido.
- */
 export function parsearAmonestados(
   matriz: Matriz,
 ): FilaAmonestado[] {
@@ -199,10 +188,6 @@ export function parsearAmonestados(
             cantidadRaw,
           ) || 0;
 
-    /*
-     * Una fila con 0 amarillas no aporta
-     * nada a la tabla.
-     */
     if (cantidad <= 0) {
       continue;
     }
@@ -224,7 +209,6 @@ export function parsearAmonestados(
   return resultado;
 }
 
-
 // ============================================================
 // SANCIONADOS
 // ============================================================
@@ -236,7 +220,6 @@ export function parsearSancionados(
   const resultado:
     FilaSancionado[] = [];
 
-
   const idxExpulsados =
     matriz.findIndex(
       (fila) =>
@@ -246,7 +229,6 @@ export function parsearSancionados(
             'EXPULSADOS',
         ),
     );
-
 
   const idxAmonestados =
     matriz.findIndex(
@@ -259,11 +241,6 @@ export function parsearSancionados(
               ),
         ),
     );
-
-
-  // ==========================================================
-  // EXPULSADOS
-  // ==========================================================
 
   if (idxExpulsados !== -1) {
     const finBloque =
@@ -282,58 +259,8 @@ export function parsearSancionados(
     );
   }
 
-
-  // ==========================================================
-  // SUSPENSIONES POR ACUMULACIÓN DE AMARILLAS
-  // ==========================================================
-
-  const amonestados =
-    parsearAmonestados(
-      matriz,
-    );
-
-  for (
-    const amonestado
-    of amonestados
-  ) {
-    const fechas =
-      fechasPorAmonestaciones(
-        amonestado.amarillas,
-      );
-
-    /*
-     * 1, 2 o 3 amarillas:
-     *
-     * aparecen en la tabla de amonestados,
-     * pero NO constituyen todavía
-     * una suspensión.
-     */
-    if (fechas <= 0) {
-      continue;
-    }
-
-    resultado.push({
-      jugadorNombre:
-        amonestado.jugadorNombre,
-
-      equipoNombre:
-        amonestado.equipoNombre,
-
-      tipoTarjeta:
-        'AMARILLA',
-
-      fechasSuspension:
-        fechas,
-
-      observaciones:
-        `${amonestado.amarillas} amarillas acumuladas`,
-    });
-  }
-
-
   return resultado;
 }
-
 
 // ============================================================
 // EXPULSADOS
@@ -357,13 +284,11 @@ function parsearBloqueExpulsados(
     return [];
   }
 
-
   const cols =
     mapearColumnas(
       bloque[idxHeader],
       COLUMNAS_EXPULSADOS,
     );
-
 
   if (
     cols.JUGADOR === undefined ||
@@ -372,10 +297,8 @@ function parsearBloqueExpulsados(
     return [];
   }
 
-
   const filas:
     FilaSancionado[] = [];
-
 
   for (
     let i = idxHeader + 1;
@@ -386,13 +309,11 @@ function parsearBloqueExpulsados(
     const fila =
       bloque[i];
 
-
     if (
       esFilaIgnorable(fila)
     ) {
       continue;
     }
-
 
     if (
       fila.some(
@@ -406,13 +327,11 @@ function parsearBloqueExpulsados(
       break;
     }
 
-
     const jugador =
       fila[cols.JUGADOR];
 
     const equipo =
       fila[cols.EQUIPO];
-
 
     if (
       !jugador ||
@@ -421,52 +340,45 @@ function parsearBloqueExpulsados(
       continue;
     }
 
+    const fechasRaw = cols.FECHAS !== undefined ? fila[cols.FECHAS] : null;
+    const fechas = (fechasRaw === null || fechasRaw === '') ? null : Number(fechasRaw);
 
-    const fechasRaw =
-      cols.FECHAS !== undefined
-        ? fila[cols.FECHAS]
-        : null;
+    const cumplidasRaw = cols.CUMPLIDA !== undefined ? fila[cols.CUMPLIDA] : null;
+    const fechasCumplidas = typeof cumplidasRaw === 'number' ? cumplidasRaw : Number(cumplidasRaw) || 0;
 
+    let estadoReal: 'PENDIENTE' | 'CUMPLIDA' | 'EN_TRIBUNAL' = 'PENDIENTE';
+    if (cols.PENDIENTE !== undefined && fila[cols.PENDIENTE] != null) {
+      const rawPendiente = String(fila[cols.PENDIENTE]).trim().toUpperCase();
+      if (rawPendiente.includes('TRIBUNAL')) {
+        estadoReal = 'EN_TRIBUNAL';
+      } else if (rawPendiente.includes('CUMPLI') || rawPendiente === '0') {
+        estadoReal = 'CUMPLIDA';
+      }
+    }
 
-    const fechas =
-      typeof fechasRaw ===
-      'number'
-        ? fechasRaw
-        : Number(
-            fechasRaw,
-          ) || 1;
+    let observacionesReal: string | null = null;
+    if (cols.OBSERVACIONES !== undefined && fila[cols.OBSERVACIONES] != null) {
+      const textoObs = String(fila[cols.OBSERVACIONES]).trim();
+      if (textoObs !== '') {
+        observacionesReal = textoObs;
+      }
+    }
 
+    let tipoTarjeta: 'ROJA' | 'AMARILLA' = 'ROJA';
+    if (observacionesReal && observacionesReal.toUpperCase().includes('AMARILLA')) {
+      tipoTarjeta = 'AMARILLA';
+    }
 
     filas.push({
-      jugadorNombre:
-        String(jugador)
-          .trim(),
-
-      equipoNombre:
-        String(equipo)
-          .trim(),
-
-      tipoTarjeta:
-        'ROJA',
-
-      fechasSuspension:
-        fechas,
-
-      observaciones:
-        cols.OBSERVACIONES !==
-          undefined &&
-        fila[
-          cols.OBSERVACIONES
-        ]
-          ? String(
-              fila[
-                cols.OBSERVACIONES
-              ],
-            ).trim()
-          : null,
+      jugadorNombre: String(jugador).trim(),
+      equipoNombre: String(equipo).trim(),
+      tipoTarjeta: tipoTarjeta, 
+      fechasSuspension: fechas, 
+      fechasCumplidas: fechasCumplidas,
+      estado: estadoReal,
+      observaciones: observacionesReal,
     });
   }
-
 
   return filas;
 }

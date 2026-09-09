@@ -3,7 +3,7 @@ import { RolUsuario } from '@prisma/client';
 import { asyncHandler } from '../../middleware/asyncHandler';
 import { requireRole } from '../../middleware/auth';
 import { crearPartidoSchema, actualizarPartidoSchema, partidosQuerySchema } from './partidos.validation';
-import { crearPartido, actualizarPartido, listarPartidos } from './partidos.service';
+import { crearPartido, actualizarPartido, eliminarPartido, listarPartidos } from './partidos.service';
 
 export const partidosRouter = Router();
 
@@ -25,6 +25,16 @@ partidosRouter.post(
     const input = crearPartidoSchema.parse(req.body);
     const partido = await crearPartido(input);
     res.status(201).json(partido);
+  }),
+);
+
+// Admin: eliminación de un partido cargado por error
+partidosRouter.delete(
+  '/:id',
+  requireRole(RolUsuario.ADMIN),
+  asyncHandler(async (req, res) => {
+    await eliminarPartido(Number(req.params.id));
+    res.status(204).send();
   }),
 );
 

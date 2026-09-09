@@ -96,6 +96,15 @@ export async function crearSancion(
 }
 
 
+export async function eliminarSancion(id: number): Promise<void> {
+  const sancion = await prisma.sancion.findUnique({ where: { id } });
+  if (!sancion) {
+    throw new NotFoundError('Sancion', id);
+  }
+  await prisma.sancion.delete({ where: { id } });
+}
+
+
 export async function actualizarSancion(
   id: number,
   input: ActualizarSancionInput,
@@ -176,7 +185,7 @@ export async function listarSancionados(
 
   return prisma.sancion.findMany({
     where: {
-      pendiente,
+      estado: { in: ['PENDIENTE', 'EN_TRIBUNAL'] },
 
       torneo: {
         temporadaId:
@@ -188,10 +197,6 @@ export async function listarSancionados(
       jugador: true,
       equipo: true,
 
-      /*
-       * Lo incluimos porque ahora interesa mostrar
-       * dónde se originó la sanción.
-       */
       torneo: {
         include: {
           temporada: true,
@@ -201,7 +206,7 @@ export async function listarSancionados(
 
     orderBy: [
       {
-        pendiente: 'desc',
+        estado: 'desc',
       },
 
       {

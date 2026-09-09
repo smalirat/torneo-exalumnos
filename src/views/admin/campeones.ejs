@@ -1,0 +1,97 @@
+<h1>Campeones (admin)</h1>
+
+<p class="subtitle">
+  Carga manual del campeón (o campeones) de cada año y categoría.
+  El histórico se muestra en <a href="/panel/campeones">la página pública de campeones</a>.
+</p>
+
+<!-- Cargar campeón -->
+<div class="card">
+  <h2 style="margin-top:0;">Cargar campeón</h2>
+
+  <form action="/panel/admin/campeones" method="POST">
+    <div class="form-row">
+      <label for="anio">Año</label>
+      <input id="anio" name="anio" type="number" min="2000" max="2100" value="<%= anioActual %>" required />
+    </div>
+    <div class="form-row">
+      <label for="categoriaId">Categoría</label>
+      <select id="categoriaId" name="categoriaId" required>
+        <option value="">Seleccionar...</option>
+        <% for (const categoria of categorias) { %>
+          <option value="<%= categoria.id %>">
+            <%= categoria.torneo.temporada.anio %> <%= categoria.torneo.nombre %> — Categoría <%= categoria.nombre %>
+          </option>
+        <% } %>
+      </select>
+    </div>
+    <div class="form-row">
+      <label for="equipoId">Equipo campeón</label>
+      <select id="equipoId" name="equipoId" required>
+        <option value="">Seleccionar...</option>
+        <% for (const equipo of equipos) { %>
+          <option value="<%= equipo.id %>"><%= equipo.nombre %></option>
+        <% } %>
+      </select>
+    </div>
+    <div class="form-actions">
+      <button type="submit">Guardar campeón</button>
+    </div>
+  </form>
+</div>
+
+<!-- Máximos campeones -->
+<div class="card">
+  <h2 style="margin-top:0;">Máximos campeones</h2>
+
+  <% if (maximosCampeones.length === 0) { %>
+    <p class="empty-state">Todavía no hay campeones cargados.</p>
+  <% } else { %>
+    <table>
+      <thead><tr><th class="num">#</th><th>Equipo</th><th class="num">Títulos</th></tr></thead>
+      <tbody>
+        <% maximosCampeones.forEach(function(m, i) { %>
+          <tr><td class="num"><%= i + 1 %></td><td><%= m.nombre %></td><td class="num"><strong><%= m.titulos %></strong></td></tr>
+        <% }) %>
+      </tbody>
+    </table>
+  <% } %>
+</div>
+
+<!-- Historial con baja -->
+<div class="card">
+  <h2 style="margin-top:0;">Historial por año</h2>
+
+  <% if (historial.length === 0) { %>
+    <p class="empty-state">No hay historial cargado.</p>
+  <% } else { %>
+    <table>
+      <thead>
+        <tr>
+          <th class="num">Año</th>
+          <th>Categoría</th>
+          <th>Campeón</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% historial.forEach(function(c) { %>
+          <tr>
+            <td class="num"><%= c.anio %></td>
+            <td>Categoría <%= c.categoria.nombre %> (<%= c.categoria.torneo.nombre %>)</td>
+            <td><strong><%= c.equipo.nombre %></strong></td>
+            <td>
+              <form action="/panel/admin/campeones/<%= c.id %>/eliminar" method="POST" onsubmit="return confirm('¿Eliminar este campeón?');">
+                <button type="submit" class="button button-danger button-small">Eliminar</button>
+              </form>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  <% } %>
+</div>
+
+<p style="margin-top:24px;">
+  <a class="button button-secondary" href="/panel/admin">Volver al admin</a>
+</p>

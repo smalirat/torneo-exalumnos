@@ -1,0 +1,71 @@
+<h1>Partidos</h1>
+
+<p class="subtitle">
+  Listado completo con opción de eliminar un partido cargado por error.
+  La eliminación es definitiva: la tabla de posiciones se recalcula sola.
+</p>
+
+<div class="admin-links">
+  <a href="/panel/admin/partidos/nuevo">Cargar resultado de partido</a>
+  <a href="/panel/admin/eventos">Eventos de partido (resultado + stats)</a>
+</div>
+
+<% if (partidos.length === 0) { %>
+
+  <div class="empty-state">
+    Todavía no hay partidos cargados.
+  </div>
+
+<% } else { %>
+
+  <table>
+
+    <thead>
+      <tr>
+        <th>Fecha</th>
+        <th>Torneo</th>
+        <th>Categoría</th>
+        <th>Zona</th>
+        <th>Local</th>
+        <th class="num">Resultado</th>
+        <th>Visitante</th>
+        <th class="num">Jornada</th>
+        <th>Estado</th>
+        <th>Acciones</th>
+      </tr>
+    </thead>
+
+    <tbody>
+      <% for (const p of partidos) { %>
+        <tr>
+          <td><%= new Date(p.fecha).toLocaleDateString('es-AR') %></td>
+          <td><%= p.categoria.torneo.nombre %> <%= p.categoria.torneo.temporada.anio %></td>
+          <td>Categoría <%= p.categoria.nombre %></td>
+          <td><%= p.zona ? p.zona.nombre : '—' %></td>
+          <td><strong><%= p.equipoLocal.nombre %></strong></td>
+          <td class="num">
+            <% if (p.golesLocal !== null && p.golesVisitante !== null) { %>
+              <%= p.golesLocal %> - <%= p.golesVisitante %>
+            <% } else { %>
+              —
+            <% } %>
+          </td>
+          <td><strong><%= p.equipoVisitante.nombre %></strong></td>
+          <td class="num"><%= p.jornada %></td>
+          <td><%= p.estado %></td>
+          <td>
+            <form action="/panel/admin/partidos/<%= p.id %>/eliminar" method="POST" onsubmit="return confirm('¿Eliminar este partido? Esta acción no se puede deshacer.');">
+              <button type="submit" class="button button-danger">Eliminar</button>
+            </form>
+          </td>
+        </tr>
+      <% } %>
+    </tbody>
+
+  </table>
+
+<% } %>
+
+<p style="margin-top:24px;">
+  <a class="button button-secondary" href="/panel/admin">Volver al admin</a>
+</p>
