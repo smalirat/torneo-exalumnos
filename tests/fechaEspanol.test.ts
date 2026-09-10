@@ -1,4 +1,4 @@
-import { parsearFechaEnEspanol } from '../../src/modules/excel-import/utils/fechaEspanol';
+import { parsearFechaEnEspanol } from '../src/modules/excel/parsers/fechaEspanol';
 
 describe('parsearFechaEnEspanol', () => {
   it('parsea "Domingo 29 de Marzo" + año -> Date real', () => {

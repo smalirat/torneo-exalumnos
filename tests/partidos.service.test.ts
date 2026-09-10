@@ -1,14 +1,14 @@
 import { EstadoPartido } from '@prisma/client';
-import { prisma } from '../../src/lib/prisma';
-import { crearPartido, actualizarPartido } from '../../src/modules/partidos/partidos.service';
-import { ConflictError, NotFoundError, ValidationError } from '../../src/utils/AppError';
+import { prisma } from '../src/lib/prisma';
+import { crearPartido, actualizarPartido } from '../src/modules/partidos/partidos.service';
+import { ConflictError, NotFoundError, ValidationError } from '../src/utils/AppError';
 
 // Mockeamos Prisma completo: estos son tests de LÓGICA DE NEGOCIO
 // (duplicados, inferencia de estado, validaciones), no de integración
 // con Postgres. Los tests de integración con DB real van aparte (ver
 // tests/partidos/partidos.routes.integration.test.ts, a agregar cuando
 // tengas una DB de test levantada).
-jest.mock('../../src/lib/prisma', () => ({
+jest.mock('../src/lib/prisma', () => ({
   prisma: {
     categoria: { findUnique: jest.fn() },
     zona: { findUnique: jest.fn() },

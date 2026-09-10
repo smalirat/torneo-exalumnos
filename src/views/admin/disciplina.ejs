@@ -1,7 +1,7 @@
 <h1>Disciplina</h1>
 
 <p class="subtitle">
-  Carga manual de amarillas y quitas de puntos aplicadas por el tribunal.
+  Carga manual de amarillas y puntos de presentismo (PR: suman en la tabla).
   También podés corregir una carga errónea con los botones de quitar/eliminar.
 </p>
 
@@ -102,13 +102,13 @@
 <% } %>
 
 <!-- ====================================================== -->
-<!-- CARGAR QUITA DE PUNTOS                                 -->
+<!-- CARGAR PRESENTISMO                                   -->
 <!-- ====================================================== -->
 
 <div class="card">
-  <h2 style="margin-top:0;">Cargar quita de puntos (tribunal)</h2>
+  <h2 style="margin-top:0;">Cargar puntos de presentismo</h2>
 
-  <form action="/panel/admin/disciplina/puntos-restados" method="POST">
+  <form action="/panel/admin/disciplina/puntos-presentismo" method="POST">
     <div class="form-row">
       <label for="destino">Torneo / Categoría / Zona</label>
       <select id="destino" name="destino" required>
@@ -128,7 +128,7 @@
       </select>
     </div>
     <div class="form-row">
-      <label for="puntos">Puntos a descontar</label>
+      <label for="puntos">Puntos de presentismo (suman)</label>
       <input id="puntos" name="puntos" type="number" min="1" required />
     </div>
     <div class="form-row">
@@ -136,19 +136,19 @@
       <textarea id="motivo" name="motivo" rows="2" maxlength="500"></textarea>
     </div>
     <div class="form-actions">
-      <button type="submit">Cargar quita de puntos</button>
+      <button type="submit">Cargar presentismo</button>
     </div>
   </form>
 </div>
 
 <!-- ====================================================== -->
-<!-- QUITAS DE PUNTOS ACTUALES                              -->
+<!-- PRESENTISMO ACTUAL                                   -->
 <!-- ====================================================== -->
 
-<h2>Quitas de puntos actuales</h2>
+<h2>Presentismo actual</h2>
 
-<% if (puntosRestados.length === 0) { %>
-  <div class="empty-state">No hay quitas de puntos cargadas.</div>
+<% if (puntosPresentismo.length === 0) { %>
+  <div class="empty-state">No hay puntos de presentismo cargados.</div>
 <% } else { %>
   <table>
     <thead>
@@ -162,17 +162,17 @@
       </tr>
     </thead>
     <tbody>
-      <% for (const pr of puntosRestados) { %>
+      <% for (const pr of puntosPresentismo) { %>
         <tr>
           <td><%= new Date(pr.fecha).toLocaleDateString('es-AR') %></td>
           <td><strong><%= pr.equipo.nombre %></strong></td>
           <td>
             <%= pr.categoria.torneo.temporada.anio %> <%= pr.categoria.torneo.nombre %> — Categoría <%= pr.categoria.nombre %><%= pr.zona ? ' — ' + pr.zona.nombre : '' %>
           </td>
-          <td class="num"><strong>-<%= pr.puntos %></strong></td>
+          <td class="num"><strong>+<%= pr.puntos %></strong></td>
           <td><%= pr.motivo || '—' %></td>
           <td>
-            <form action="/panel/admin/puntos-restados/<%= pr.id %>/eliminar" method="POST" onsubmit="return confirm('¿Eliminar esta quita de puntos?');">
+            <form action="/panel/admin/puntos-presentismo/<%= pr.id %>/eliminar" method="POST" onsubmit="return confirm('¿Eliminar este presentismo?');">
               <button type="submit" class="button button-danger button-small">Eliminar</button>
             </form>
           </td>

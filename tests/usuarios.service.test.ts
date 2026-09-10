@@ -1,10 +1,10 @@
 import bcrypt from 'bcrypt';
-import { prisma } from '../../src/lib/prisma';
-import { crearUsuario } from '../../src/modules/usuarios/usuarios.service';
-import { crearUsuarioSchema } from '../../src/modules/usuarios/usuarios.validation';
-import { ConflictError, NotFoundError } from '../../src/utils/AppError';
+import { prisma } from '../src/lib/prisma';
+import { crearUsuario } from '../src/modules/usuarios/usuarios.service';
+import { crearUsuarioSchema } from '../src/modules/usuarios/usuarios.validation';
+import { ConflictError, NotFoundError } from '../src/utils/AppError';
 
-jest.mock('../../src/lib/prisma', () => ({
+jest.mock('../src/lib/prisma', () => ({
   prisma: {
     usuario: { findUnique: jest.fn(), create: jest.fn() },
     equipo: { findUnique: jest.fn() },

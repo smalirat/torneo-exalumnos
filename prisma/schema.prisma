@@ -37,6 +37,16 @@ enum EstadoSancion {
   EN_TRIBUNAL
 }
 
+// Un año puede tener varios campeones por categoría: Apertura,
+// Clausura y (si se juega) la Final anual entre ambos. La historia
+// importada del Excel no dice qué formato había: DESCONOCIDO.
+enum InstanciaCampeon {
+  APERTURA
+  CLAUSURA
+  FINAL_ANUAL
+  DESCONOCIDO
+}
+
 enum EstadoImportacion {
   PENDIENTE
   PROCESANDO
@@ -86,7 +96,7 @@ model Categoria {
   inscripciones  InscripcionEquipo[]
   partidos       Partido[]
   campeones      Campeon[]
-  puntosRestados PuntosRestados[]
+  puntosPresentismo PuntosPresentismo[]
   createdAt      DateTime             @default(now())
   updatedAt      DateTime             @updatedAt
 
@@ -101,7 +111,7 @@ model Zona {
   nombre         String // "Zona 1", "Zona 2"
   inscripciones  InscripcionEquipo[]
   partidos       Partido[]
-  puntosRestados PuntosRestados[]
+  puntosPresentismo PuntosPresentismo[]
   createdAt      DateTime             @default(now())
   updatedAt      DateTime             @updatedAt
 
@@ -122,7 +132,7 @@ model Equipo {
   sanciones          Sancion[]
   amonestaciones     Amonestacion[]
   campeonatos        Campeon[]
-  puntosRestados     PuntosRestados[]
+  puntosPresentismo     PuntosPresentismo[]
   delegados          Usuario[]
   createdAt          DateTime             @default(now())
   updatedAt          DateTime             @updatedAt
@@ -184,9 +194,9 @@ model Partido {
   @@unique([fecha, equipoLocalId, equipoVisitanteId])
   @@index([categoriaId, zonaId, jornada])
 }
-// ---------- Puntos restados (sanciones a la tabla, ver DECISIONES.md #1) ----------
+// ---------- Puntos de presentismo (PR, ver DECISIONES.md #1) ----------
 
-model PuntosRestados {
+model PuntosPresentismo {
   id          Int       @id @default(autoincrement())
   equipoId    Int
   equipo      Equipo    @relation(fields: [equipoId], references: [id])
@@ -194,7 +204,7 @@ model PuntosRestados {
   categoria   Categoria @relation(fields: [categoriaId], references: [id])
   zonaId      Int?
   zona        Zona?     @relation(fields: [zonaId], references: [id])
-  puntos      Int // cantidad de puntos a descontar (positivo)
+  puntos      Int // puntos de presentismo: se SUMAN a los de cancha (positivo)
   motivo      String?
   fecha       DateTime  @default(now())
   createdAt   DateTime  @default(now())
@@ -288,9 +298,10 @@ model Campeon {
   categoria   Categoria @relation(fields: [categoriaId], references: [id])
   equipoId    Int
   equipo      Equipo    @relation(fields: [equipoId], references: [id])
+  instancia   InstanciaCampeon @default(DESCONOCIDO)
   createdAt   DateTime  @default(now())
 
-  @@unique([anio, categoriaId])
+  @@unique([anio, categoriaId, instancia])
 }
 
 // ---------- Importación de Excel ----------

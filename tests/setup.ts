@@ -5,6 +5,9 @@ import path from 'path';
 // si no existe, dotenv no falla, simplemente no sobreescribe nada.
 config({ path: path.resolve(__dirname, '../.env.test') });
 
-// Fallback para que jest no explote si todavía no configuraste .env.test
+// Fallback para que jest no explote si todavía no configuraste .env.test.
+// Solo necesita pasar la validación de env.ts; los tests mockean Prisma
+// y nunca abren una conexión real.
 process.env.SESSION_SECRET ||= 'test-secret-not-for-production';
-process.env.DATABASE_URL ||= process.env.DATABASE_URL_TEST || '';
+process.env.DATABASE_URL ||=
+  process.env.DATABASE_URL_TEST || 'postgresql://postgres:postgres@localhost:5433/torneo_test?schema=public';

@@ -3,7 +3,7 @@ import { prisma } from '../../lib/prisma';
 import { NotFoundError } from '../../utils/AppError';
 import { validarCategoriaYZona } from '../common/validarCategoriaZona';
 import { calcularTablaPosiciones } from './standings.calculator';
-import { EquipoInscripto, FilaStandings, PartidoResultado, PuntoRestadoInput } from './standings.types';
+import { EquipoInscripto, FilaStandings, PartidoResultado, PuntoPresentismoInput } from './standings.types';
 
 /**
  * Devuelve la tabla de posiciones de una categoría (y, si aplica, zona).
@@ -14,7 +14,7 @@ export async function obtenerStandings(categoriaId: number, zonaId?: number): Pr
 await validarCategoriaYZona(categoriaId, zonaId);
   const zonaFiltro = zonaId ?? null;
 
-  const [inscripciones, partidosJugados, puntosRestados] = await Promise.all([
+  const [inscripciones, partidosJugados, puntosPresentismo] = await Promise.all([
     prisma.inscripcionEquipo.findMany({
       where: { categoriaId, zonaId: zonaFiltro },
       include: { equipo: true },
@@ -33,7 +33,7 @@ await validarCategoriaYZona(categoriaId, zonaId);
         golesVisitante: { not: null },
       },
     }),
-    prisma.puntosRestados.findMany({
+    prisma.puntosPresentismo.findMany({
       where: { categoriaId, zonaId: zonaFiltro },
     }),
   ]);
@@ -51,7 +51,7 @@ await validarCategoriaYZona(categoriaId, zonaId);
     golesVisitante: p.golesVisitante as number,
   }));
 
-  const pr: PuntoRestadoInput[] = puntosRestados.map((p) => ({
+  const pr: PuntoPresentismoInput[] = puntosPresentismo.map((p) => ({
     equipoId: p.equipoId,
     puntos: p.puntos,
   }));

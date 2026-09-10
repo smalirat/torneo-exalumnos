@@ -1,5 +1,5 @@
-import { parsearFixture } from '../../src/modules/excel-import/parsers/proxPartido.parser';
-import { Matriz } from '../../src/modules/excel-import/xlsxHelpers';
+import { parsearFixture } from '../src/modules/excel/parsers/proxPartido.parser';
+import { Matriz } from '../src/modules/excel/xlsxHelpers';
 
 // Estructura real confirmada contra el Excel real de la liga: el header
 // ("Campo | Cancha | Horario | Equipo | | vs | Equipo | | Categoría") se
@@ -31,10 +31,15 @@ describe('parsearFixture', () => {
         categoriaLabel: 'ZONA 1',
         equipoLocal: 'GULP',
         equipoVisitante: 'BOCHA FC',
+        golesLocal: null,
+        golesVisitante: null,
+        penalesLocal: null,
+        penalesVisitante: null,
         campo: 'Siberia',
         cancha: '3',
         horario: '9:00 hs',
         fechaTexto: '29 de Marzo',
+        torneoLabel: '',
       },
     ]);
   });

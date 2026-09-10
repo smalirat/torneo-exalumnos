@@ -1,9 +1,9 @@
 import bcrypt from 'bcrypt';
-import { prisma } from '../../src/lib/prisma';
-import { login } from '../../src/modules/auth/auth.service';
-import { UnauthorizedError } from '../../src/utils/AppError';
+import { prisma } from '../src/lib/prisma';
+import { login } from '../src/modules/auth/auth.service';
+import { UnauthorizedError } from '../src/utils/AppError';
 
-jest.mock('../../src/lib/prisma', () => ({
+jest.mock('../src/lib/prisma', () => ({
   prisma: { usuario: { findUnique: jest.fn() } },
 }));
 jest.mock('bcrypt');

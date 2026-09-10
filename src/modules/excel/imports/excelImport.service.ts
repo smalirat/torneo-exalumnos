@@ -21,7 +21,7 @@ export interface ResumenImportacion {
     motivo: string;
     detalle: string;
   }[];
-  puntosRestadosCargados: number;
+  puntosPresentismoCargados: number;
   goleadoresActualizados: number;
   figurasActualizadas: number;
   imbatiblesActualizados: number;
@@ -39,7 +39,7 @@ function resumenVacio(): ResumenImportacion {
     partidosCreados: 0,
     partidosActualizados: 0,
     partidosOmitidos: [],
-    puntosRestadosCargados: 0,
+    puntosPresentismoCargados: 0,
     goleadoresActualizados: 0,
     figurasActualizadas: 0,
     imbatiblesActualizados: 0,
@@ -69,7 +69,7 @@ async function procesarTablaPosiciones(libro: ReturnType<typeof leerLibro>, torn
     // Idempotencia: si reimportás el mismo Excel corregido, no queremos ir
     // acumulando PR de la corrida anterior — reemplazamos los PR de esa
     // categoría/zona por los que trae este archivo.
-    await prisma.puntosRestados.deleteMany({ where: { categoriaId: resuelto.categoriaId, zonaId: resuelto.zonaId } });
+    await prisma.puntosPresentismo.deleteMany({ where: { categoriaId: resuelto.categoriaId, zonaId: resuelto.zonaId } });
 
     for (const filaEquipo of bloque.filas) {
       const { equipo, creado } = await buscarOCrearEquipo(prisma, filaEquipo.equipoNombre);
@@ -85,7 +85,7 @@ async function procesarTablaPosiciones(libro: ReturnType<typeof leerLibro>, torn
       }
 
       if (filaEquipo.pr !== 0) {
-        await prisma.puntosRestados.create({
+        await prisma.puntosPresentismo.create({
           data: {
             equipoId: equipo.id,
             categoriaId: resuelto.categoriaId,
@@ -94,7 +94,7 @@ async function procesarTablaPosiciones(libro: ReturnType<typeof leerLibro>, torn
             motivo: `Importado de Excel (hoja "${hoja.nombre}")`,
           },
         });
-        resumen.puntosRestadosCargados++;
+        resumen.puntosPresentismoCargados++;
       }
     }
   }

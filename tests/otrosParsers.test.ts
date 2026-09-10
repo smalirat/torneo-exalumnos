@@ -1,7 +1,7 @@
-import { parsearTablaPosiciones } from '../../src/modules/excel-import/parsers/tablaPosiciones.parser';
-import { parsearRankingJugador } from '../../src/modules/excel-import/parsers/rankingJugador.parser';
-import { parsearSancionados } from '../../src/modules/excel-import/parsers/sancionados.parser';
-import { Matriz } from '../../src/modules/excel-import/xlsxHelpers';
+import { parsearTablaPosiciones } from '../src/modules/excel/parsers/tablaPosiciones.parser';
+import { parsearRankingJugador } from '../src/modules/excel/parsers/rankingJugador.parser';
+import { parsearAmonestados, parsearSancionados } from '../src/modules/excel/parsers/sancionados.parser';
+import { Matriz } from '../src/modules/excel/xlsxHelpers';
 
 describe('parsearTablaPosiciones', () => {
   it('extrae EQUIPO + PR de zonas apiladas verticalmente (formato "Categoría")', () => {
@@ -88,7 +88,7 @@ describe('parsearRankingJugador', () => {
 });
 
 describe('parsearSancionados', () => {
-  it('parsea EXPULSADOS como ROJA', () => {
+  it('parsea EXPULSADOS como ROJA con estado y fechas cumplidas', () => {
     const matriz: Matriz = [
       ['EXPULSADOS'],
       ['JUGADOR', 'EQUIPO', 'FECHAS'],
@@ -101,53 +101,23 @@ describe('parsearSancionados', () => {
         equipoNombre: 'GULP',
         tipoTarjeta: 'ROJA',
         fechasSuspension: 2,
+        fechasCumplidas: 0,
+        estado: 'PENDIENTE',
         observaciones: null,
       },
     ]);
   });
 
-  it('convierte AMONESTADOS (amarillas) a fechas de suspensión: 4=1, 8=2', () => {
+  it('ignora la sección AMONESTADOS (va por parsearAmonestados, no genera Sancion)', () => {
     const matriz: Matriz = [
       ['AMONESTADOS'],
       ['JUGADOR', 'EQUIPO', 'AMARILLAS'],
       ['Juan Pérez', 'GULP', 4],
-      ['Pedro Gómez', 'BOCHA FC', 8],
-      ['Luis Ruiz', 'LOS PIBES', 2], // todavía no llega al umbral
     ];
-    const filas = parsearSancionados(matriz);
-
-    expect(filas).toEqual([
-      {
-        jugadorNombre: 'Juan Pérez',
-        equipoNombre: 'GULP',
-        tipoTarjeta: 'AMARILLA',
-        fechasSuspension: 1,
-        observaciones: '4 amarillas acumuladas',
-      },
-      {
-        jugadorNombre: 'Pedro Gómez',
-        equipoNombre: 'BOCHA FC',
-        tipoTarjeta: 'AMARILLA',
-        fechasSuspension: 2,
-        observaciones: '8 amarillas acumuladas',
-      },
-    ]);
-    // Luis Ruiz con 2 amarillas no genera Sancion todavía
-    expect(filas.find((f) => f.jugadorNombre === 'Luis Ruiz')).toBeUndefined();
+    expect(parsearSancionados(matriz)).toEqual([]);
   });
 
-  it('reconoce el label real "AMONESTADOS Torneo APERTURA" (con texto extra)', () => {
-    const matriz: Matriz = [
-      ['AMONESTADOS Torneo APERTURA'],
-      ['JUGADOR', 'EQUIPO', 'AMARILLAS'],
-      ['Juan Pérez', 'GULP', 4],
-    ];
-    const filas = parsearSancionados(matriz);
-    expect(filas).toHaveLength(1);
-    expect(filas[0].tipoTarjeta).toBe('AMARILLA');
-  });
-
-  it('parsea ambas secciones cuando están en la misma hoja', () => {
+  it('parsea solo EXPULSADOS cuando ambas secciones están en la misma hoja', () => {
     const matriz: Matriz = [
       ['EXPULSADOS'],
       ['JUGADOR', 'EQUIPO', 'FECHAS'],
@@ -157,7 +127,44 @@ describe('parsearSancionados', () => {
       ['Pedro Gómez', 'BOCHA FC', 4],
     ];
     const filas = parsearSancionados(matriz);
-    expect(filas).toHaveLength(2);
-    expect(filas.map((f) => f.tipoTarjeta).sort()).toEqual(['AMARILLA', 'ROJA']);
+    expect(filas).toHaveLength(1);
+    expect(filas[0].tipoTarjeta).toBe('ROJA');
+  });
+});
+
+describe('parsearAmonestados', () => {
+  it('extrae jugador/equipo/cantidad de amarillas (el importador hace upsert directo)', () => {
+    const matriz: Matriz = [
+      ['AMONESTADOS'],
+      ['JUGADOR', 'EQUIPO', 'AMARILLAS'],
+      ['Juan Pérez', 'GULP', 4],
+      ['Pedro Gómez', 'BOCHA FC', 8],
+      ['Luis Ruiz', 'LOS PIBES', 2],
+    ];
+    expect(parsearAmonestados(matriz)).toEqual([
+      { jugadorNombre: 'Juan Pérez', equipoNombre: 'GULP', amarillas: 4 },
+      { jugadorNombre: 'Pedro Gómez', equipoNombre: 'BOCHA FC', amarillas: 8 },
+      { jugadorNombre: 'Luis Ruiz', equipoNombre: 'LOS PIBES', amarillas: 2 },
+    ]);
+  });
+
+  it('reconoce el label real "AMONESTADOS Torneo APERTURA" (con texto extra)', () => {
+    const matriz: Matriz = [
+      ['AMONESTADOS Torneo APERTURA'],
+      ['JUGADOR', 'EQUIPO', 'AMARILLAS'],
+      ['Juan Pérez', 'GULP', 4],
+    ];
+    const filas = parsearAmonestados(matriz);
+    expect(filas).toHaveLength(1);
+    expect(filas[0]).toEqual({ jugadorNombre: 'Juan Pérez', equipoNombre: 'GULP', amarillas: 4 });
+  });
+
+  it('devuelve array vacío si no hay sección AMONESTADOS', () => {
+    const matriz: Matriz = [
+      ['EXPULSADOS'],
+      ['JUGADOR', 'EQUIPO', 'FECHAS'],
+      ['Juan Pérez', 'GULP', 1],
+    ];
+    expect(parsearAmonestados(matriz)).toEqual([]);
   });
 });

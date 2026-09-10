@@ -81,15 +81,6 @@ const COLUMNAS_AMONESTADOS:
 };
 
 
-function fechasPorAmonestaciones(
-  cantidad: number,
-): number {
-  return Math.floor(
-    cantidad / 4,
-  );
-}
-
-
 // ============================================================
 // AMONESTADOS
 // ============================================================

@@ -20,10 +20,10 @@
     <p class="empty-state">Todavía no hay historial cargado.</p>
   <% } else { %>
     <table>
-      <thead><tr><th class="num">Año</th><th>Categoría</th><th>Campeón</th></tr></thead>
+      <thead><tr><th class="num">Año</th><th>Categoría</th><th>Instancia</th><th>Campeón</th></tr></thead>
       <tbody>
         <% historial.forEach(function(c) { %>
-          <tr><td class="num"><%= c.anio %></td><td><%= c.categoria.nombre %></td><td><%= c.equipo.nombre %></td></tr>
+          <tr><td class="num"><%= c.anio %></td><td><%= c.categoria.nombre %></td><td><%= c.instancia === 'FINAL_ANUAL' ? 'Final' : c.instancia === 'DESCONOCIDO' ? 's/d' : c.instancia %></td><td><%= c.equipo.nombre %></td></tr>
         <% }) %>
       </tbody>
     </table>

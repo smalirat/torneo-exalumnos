@@ -2,7 +2,7 @@ import {
   EquipoInscripto,
   FilaStandings,
   PartidoResultado,
-  PuntoRestadoInput,
+  PuntoPresentismoInput,
 } from './standings.types';
 
 interface StatsAcumuladas {
@@ -21,10 +21,10 @@ interface StatsAcumuladas {
  * - los equipos inscriptos en esa categoría/zona (incluye equipos sin partidos jugados)
  * - los partidos YA JUGADOS de esa categoría/zona (el caller filtra por estado=JUGADO
  *   antes de llamar acá — esta función no sabe nada de "estado", solo suma lo que le pasan)
- * - los puntos restados (PR) de esa categoría/zona
+ * - los puntos de presentismo (PR) de esa categoría/zona
  *
  * Regla de desempate (ver DECISIONES.md #2, pendiente de tu confirmación):
- *   1. PTOS (puntos por partidos + PR)
+ *   1. PTOS (puntos por partidos + PR: el presentismo SUMA, no resta)
  *   2. DIF (GF - GE)
  *   3. GF
  *   4. Si quedan exactamente 2 equipos empatados tras 1-3: resultado entre sí
@@ -39,7 +39,7 @@ interface StatsAcumuladas {
 export function calcularTablaPosiciones(
   equipos: EquipoInscripto[],
   partidosJugados: PartidoResultado[],
-  puntosRestados: PuntoRestadoInput[],
+  puntosPresentismo: PuntoPresentismoInput[],
 ): FilaStandings[] {
   const stats = new Map<number, StatsAcumuladas>();
   for (const equipo of equipos) {
@@ -85,7 +85,7 @@ export function calcularTablaPosiciones(
   }
 
   const prPorEquipo = new Map<number, number>();
-  for (const pr of puntosRestados) {
+  for (const pr of puntosPresentismo) {
     prPorEquipo.set(pr.equipoId, (prPorEquipo.get(pr.equipoId) ?? 0) + pr.puntos);
   }
 

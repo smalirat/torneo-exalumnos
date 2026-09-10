@@ -14,7 +14,7 @@ export interface PartidoResultado {
   golesVisitante: number;
 }
 
-export interface PuntoRestadoInput {
+export interface PuntoPresentismoInput {
   equipoId: number;
   puntos: number;
 }

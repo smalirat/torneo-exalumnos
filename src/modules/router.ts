@@ -56,8 +56,8 @@ router.use('/sancionados', sancionadosRouter);
 import { amonestacionesRouter } from './amonestaciones/amonestaciones.routes';
 router.use('/amonestaciones', amonestacionesRouter);
 
-import { puntosRestadosRouter } from './puntosRestados/puntosRestados.routes';
-router.use('/puntos-restados', puntosRestadosRouter);
+import { puntosPresentismoRouter } from './puntosPresentismo/puntosPresentismo.routes';
+router.use('/puntos-presentismo', puntosPresentismoRouter);
 
 import { estadisticasRouter } from './estadisticas/estadisticas.routes';
 router.use('/estadisticas', estadisticasRouter);

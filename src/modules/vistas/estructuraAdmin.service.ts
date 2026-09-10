@@ -325,7 +325,7 @@ export async function crearZonaDesdeAdmin(input: CrearZonaInput) {
         },
       }),
 
-      prisma.puntosRestados.count({
+      prisma.puntosPresentismo.count({
         where: {
           categoriaId: categoria.id,
           zonaId: null,
@@ -399,7 +399,7 @@ export async function eliminarCategoriaDesdeAdmin(id: number) {
       inscripciones: { select: { id: true } },
       partidos: { select: { id: true } },
       campeones: { select: { id: true } },
-      puntosRestados: { select: { id: true } },
+      puntosPresentismo: { select: { id: true } },
     },
   });
   if (!categoria) throw new NotFoundError('Categoria', id);
@@ -409,7 +409,7 @@ export async function eliminarCategoriaDesdeAdmin(id: number) {
     ['equipos inscriptos', categoria.inscripciones.length],
     ['partidos', categoria.partidos.length],
     ['campeones', categoria.campeones.length],
-    ['quitas de puntos', categoria.puntosRestados.length],
+    ['puntos de presentismo', categoria.puntosPresentismo.length],
   ] as const;
 
   const presentes = dependencias
@@ -432,7 +432,7 @@ export async function eliminarZonaDesdeAdmin(id: number) {
     include: {
       inscripciones: { select: { id: true } },
       partidos: { select: { id: true } },
-      puntosRestados: { select: { id: true } },
+      puntosPresentismo: { select: { id: true } },
     },
   });
   if (!zona) throw new NotFoundError('Zona', id);
@@ -440,7 +440,7 @@ export async function eliminarZonaDesdeAdmin(id: number) {
   const dependencias = [
     ['equipos inscriptos', zona.inscripciones.length],
     ['partidos', zona.partidos.length],
-    ['quitas de puntos', zona.puntosRestados.length],
+    ['puntos de presentismo', zona.puntosPresentismo.length],
   ] as const;
 
   const presentes = dependencias

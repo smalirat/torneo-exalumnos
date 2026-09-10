@@ -34,6 +34,14 @@
         <% } %>
       </select>
     </div>
+    <div class="form-row">
+      <label for="instancia">Instancia</label>
+      <select id="instancia" name="instancia" required>
+        <option value="APERTURA">Apertura</option>
+        <option value="CLAUSURA">Clausura</option>
+        <option value="FINAL_ANUAL">Final anual</option>
+      </select>
+    </div>
     <div class="form-actions">
       <button type="submit">Guardar campeón</button>
     </div>
@@ -70,6 +78,7 @@
         <tr>
           <th class="num">Año</th>
           <th>Categoría</th>
+          <th>Instancia</th>
           <th>Campeón</th>
           <th>Acciones</th>
         </tr>
@@ -79,6 +88,7 @@
           <tr>
             <td class="num"><%= c.anio %></td>
             <td>Categoría <%= c.categoria.nombre %> (<%= c.categoria.torneo.nombre %>)</td>
+            <td><%= c.instancia === 'FINAL_ANUAL' ? 'Final' : c.instancia === 'DESCONOCIDO' ? 's/d' : c.instancia %></td>
             <td><strong><%= c.equipo.nombre %></strong></td>
             <td>
               <form action="/panel/admin/campeones/<%= c.id %>/eliminar" method="POST" onsubmit="return confirm('¿Eliminar este campeón?');">

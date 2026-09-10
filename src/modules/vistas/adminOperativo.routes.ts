@@ -20,8 +20,8 @@ import { actualizarJugadorSchema, crearJugadorSchema } from '../jugadores/jugado
 import { eliminarAmonestacion, registrarAmonestacion } from '../amonestaciones/amonestaciones.service';
 import { registrarAmonestacionSchema } from '../amonestaciones/amonestaciones.validation';
 
-import { crearPuntosRestados, eliminarPuntosRestados } from '../puntosRestados/puntosRestados.service';
-import { crearPuntosRestadosSchema } from '../puntosRestados/puntosRestados.validation';
+import { crearPuntosPresentismo, eliminarPuntosPresentismo } from '../puntosPresentismo/puntosPresentismo.service';
+import { crearPuntosPresentismoSchema } from '../puntosPresentismo/puntosPresentismo.validation';
 
 import { actualizarEstadisticas } from '../estadisticas/estadisticas.service';
 
@@ -177,11 +177,11 @@ adminOperativoRouter.post('/jugadores/:id/eliminar', asyncViewHandler(async (req
 }));
 
 // ============================================================
-// DISCIPLINA (amarillas + quita de puntos)
+// DISCIPLINA (amarillas + presentismo)
 // ============================================================
 
 adminOperativoRouter.get('/disciplina', asyncViewHandler(async (_req, res) => {
-  const [torneos, equipos, jugadores, categorias, amonestaciones, puntosRestados] = await Promise.all([
+  const [torneos, equipos, jugadores, categorias, amonestaciones, puntosPresentismo] = await Promise.all([
     torneosParaSelect(),
     prisma.equipo.findMany({ orderBy: { nombre: 'asc' } }),
     prisma.jugador.findMany({ where: { equipoId: { not: null } }, include: { equipo: true }, orderBy: { nombre: 'asc' } }),
@@ -190,7 +190,7 @@ adminOperativoRouter.get('/disciplina', asyncViewHandler(async (_req, res) => {
       include: { jugador: true, equipo: true, torneo: { include: { temporada: true } } },
       orderBy: [{ equipo: { nombre: 'asc' } }, { jugador: { nombre: 'asc' } }],
     }),
-    prisma.puntosRestados.findMany({
+    prisma.puntosPresentismo.findMany({
       include: { equipo: true, categoria: { include: { torneo: { include: { temporada: true } } } }, zona: true },
       orderBy: { fecha: 'desc' },
     }),
@@ -203,7 +203,7 @@ adminOperativoRouter.get('/disciplina', asyncViewHandler(async (_req, res) => {
     jugadores,
     destinos: categorias,
     amonestaciones,
-    puntosRestados,
+    puntosPresentismo,
     ok: _req.query.ok,
     error: _req.query.error,
   });
@@ -228,28 +228,28 @@ adminOperativoRouter.post('/amonestaciones/:id/eliminar', asyncViewHandler(async
   }
 }));
 
-adminOperativoRouter.post('/disciplina/puntos-restados', asyncViewHandler(async (req, res) => {
+adminOperativoRouter.post('/disciplina/puntos-presentismo', asyncViewHandler(async (req, res) => {
   try {
     const destino = String(req.body.destino ?? '');
     const { categoriaId, zonaId } = await resolverDestinoAdministrativo(destino);
 
-    const input = crearPuntosRestadosSchema.parse({
+    const input = crearPuntosPresentismoSchema.parse({
       equipoId: req.body.equipoId,
       categoriaId,
       zonaId,
       puntos: req.body.puntos,
       motivo: req.body.motivo,
     });
-    await crearPuntosRestados(input);
-    redirectConMensaje(res, '/panel/admin/disciplina', 'Quita de puntos cargada.');
+    await crearPuntosPresentismo(input);
+    redirectConMensaje(res, '/panel/admin/disciplina', 'Presentismo cargado.');
   } catch (err) {
     redirectConMensaje(res, '/panel/admin/disciplina', '', err);
   }
 }));
 
-adminOperativoRouter.post('/puntos-restados/:id/eliminar', asyncViewHandler(async (req, res) => {
+adminOperativoRouter.post('/puntos-presentismo/:id/eliminar', asyncViewHandler(async (req, res) => {
   try {
-    await eliminarPuntosRestados(Number(req.params.id));
+    await eliminarPuntosPresentismo(Number(req.params.id));
     redirectConMensaje(res, '/panel/admin/disciplina', 'Quita de puntos eliminada.');
   } catch (err) {
     redirectConMensaje(res, '/panel/admin/disciplina', '', err);

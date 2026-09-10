@@ -29,7 +29,7 @@ export interface ResultadoParseoFixture {
 
 const REGEX_PLACEHOLDER = /^\d+\s*(ER|ERO|DO|TO|MO)?\s*(ZONA|GRUPO|CATEGORIA)/i;
 const REGEX_LIBRE = /^LIBRE\b/i;
-const REGEX_JORNADA = /FECHA\s*N[ ]?\.?\s*(\d+)/i;
+const REGEX_JORNADA = /FECHA\s*N[ ]?\.?[º°oO]?\.?\s*(\d+)/i;
 const REGEX_TEXTO_FECHA = /\d{1,2}\s+DE\s+[A-Z ]+/i;
 
 export function parsearFixture(matriz: Matriz): ResultadoParseoFixture {
@@ -70,20 +70,29 @@ export function parsearFixture(matriz: Matriz): ResultadoParseoFixture {
 
     let jornada: number | null = null;
     let fechaTexto: string | null = null;
-    
+
+    // Solo miramos las filas de ESTE bloque (entre el header anterior y
+    // este): si subiéramos más, robaríamos la "Fecha Nº" del bloque
+    // anterior en vez de continuar la numeración (+1) cuando el bloque
+    // actual no trae número propio (ej. "Promoción Final Interzonal").
+    const limiteZona = b > 0 ? indicesHeader[b - 1] : -1;
     // Buscamos hacia atrás con un rango extendido (10 filas) para capturar los títulos de TORNEO
-    for (let l = idxHeader - 1; l >= Math.max(0, idxHeader - 10); l--) {
+    for (let l = idxHeader - 1; l > limiteZona && l >= idxHeader - 10; l--) {
       const filaLabel = matriz[l];
       if (esFilaIgnorable(filaLabel)) continue;
-      const textoCompleto = filaLabel.filter((c) => c !== null && c !== '').join(' ').toUpperCase();
+      const textoOriginal = filaLabel.filter((c) => c !== null && c !== '').join(' ');
+      const textoCompleto = textoOriginal.toUpperCase();
 
       if (textoCompleto.includes('TORNEO APERTURA')) torneoActual = 'APERTURA';
       if (textoCompleto.includes('TORNEO CLAUSURA')) torneoActual = 'CLAUSURA';
 
       const matchJornada = textoCompleto.match(REGEX_JORNADA);
       if (matchJornada && !jornada) jornada = Number(matchJornada[1]);
-      
-      const matchFecha = textoCompleto.match(REGEX_TEXTO_FECHA);
+
+      // fechaTexto conserva el caseo original del Excel ("29 de Marzo",
+      // no "29 DE MARZO"): es texto de display y además lo parseamos a
+      // Date en el importador de forma case-insensitive.
+      const matchFecha = textoOriginal.match(REGEX_TEXTO_FECHA);
       if (matchFecha && !fechaTexto) fechaTexto = matchFecha[0];
     }
 

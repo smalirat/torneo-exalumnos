@@ -1,9 +1,13 @@
 import { Router } from 'express';
+import fs from 'fs';
 import { RolUsuario } from '@prisma/client';
 import { asyncHandler } from '../../middleware/asyncHandler';
 import { requireRole } from '../../middleware/auth';
+import { ValidationError } from '../../utils/AppError';
 import { crearCampeonSchema, actualizarCampeonSchema, historialCampeonesQuerySchema } from './campeones.validation';
 import { crearCampeon, actualizarCampeon, eliminarCampeon, obtenerHistorialCampeones } from './campeones.service';
+import { upload } from '../excel/imports/excelImport.routes';
+import { importarHistoria } from '../excel/imports/historiaImport.service';
 
 export const campeonesRouter = Router();
 
@@ -31,6 +35,22 @@ campeonesRouter.delete(
   asyncHandler(async (req, res) => {
     await eliminarCampeon(Number(req.params.id));
     res.status(204).send();
+  }),
+);
+
+// Importa la hoja HISTORIA de un .xlsx: crea Temporada + Torneo +
+// Categoría por campeón y los equipos viejos (solo nombre, sin
+// jugadores). Idempotente: reimportar no duplica.
+campeonesRouter.post(
+  '/importar-historia',
+  requireRole(RolUsuario.ADMIN),
+  upload.single('archivo'),
+  asyncHandler(async (req, res) => {
+    if (!req.file) {
+      throw new ValidationError('Falta el archivo (campo "archivo" en el form-data)');
+    }
+    const resumen = await importarHistoria(fs.readFileSync(req.file.path));
+    res.status(201).json(resumen);
   }),
 );
 

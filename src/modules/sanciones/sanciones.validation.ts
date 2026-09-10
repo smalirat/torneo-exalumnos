@@ -19,8 +19,8 @@ export type CrearSancionInput = z.infer<typeof crearSancionSchema>;
 
 export const actualizarSancionSchema = z.object({
   fechasSuspension: z.coerce.number().int().min(0).optional(),
-  cumplida: z.boolean().optional(),
-  pendiente: z.boolean().optional(),
+  fechasCumplidas: z.coerce.number().int().min(0).optional(),
+  estado: z.enum(['PENDIENTE', 'CUMPLIDA', 'EN_TRIBUNAL']).optional(),
   observaciones: z.string().trim().max(500).optional(),
 });
 export type ActualizarSancionInput = z.infer<typeof actualizarSancionSchema>;

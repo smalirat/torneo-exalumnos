@@ -1,5 +1,5 @@
-import { calcularTablaPosiciones } from '../../src/modules/standings/standings.calculator';
-import { EquipoInscripto, PartidoResultado, PuntoRestadoInput } from '../../src/modules/standings/standings.types';
+import { calcularTablaPosiciones } from '../src/modules/standings/standings.calculator';
+import { EquipoInscripto, PartidoResultado, PuntoPresentismoInput } from '../src/modules/standings/standings.types';
 
 const equipo = (id: number, nombre: string): EquipoInscripto => ({ equipoId: id, nombre });
 
@@ -124,32 +124,32 @@ describe('calcularTablaPosiciones', () => {
     expect(new Set(empatados.map((e) => e.posicion)).size).toBe(1);
   });
 
-  it('aplica PR (puntos restados) descontando del total de PTOS antes de ordenar', () => {
+  it('aplica PR (presentismo) sumando al total de PTOS antes de ordenar', () => {
     const equipos = [equipo(1, 'A'), equipo(2, 'B')];
     const partidos: PartidoResultado[] = [
       { equipoLocalId: 1, equipoVisitanteId: 2, golesLocal: 1, golesVisitante: 0 },
     ];
-    const puntosRestados: PuntoRestadoInput[] = [{ equipoId: 1, puntos: 5 }];
-    const resultado = calcularTablaPosiciones(equipos, partidos, puntosRestados);
+    const puntosPresentismo: PuntoPresentismoInput[] = [{ equipoId: 1, puntos: 5 }];
+    const resultado = calcularTablaPosiciones(equipos, partidos, puntosPresentismo);
 
     const a = resultado.find((r) => r.equipoId === 1)!;
-    expect(a.ptos).toBe(3 - 5); // -2
+    expect(a.ptos).toBe(3 + 5); // 8
     expect(a.pr).toBe(5);
-    // B (0 puntos, sin PR) queda por encima de A (-2 puntos)
-    expect(resultado.findIndex((r) => r.equipoId === 2)).toBeLessThan(
-      resultado.findIndex((r) => r.equipoId === 1),
+    // A (8 puntos, con presentismo) queda por encima de B (0 puntos)
+    expect(resultado.findIndex((r) => r.equipoId === 1)).toBeLessThan(
+      resultado.findIndex((r) => r.equipoId === 2),
     );
   });
 
-  it('acumula varios PuntosRestados del mismo equipo', () => {
+  it('acumula varios PuntosPresentismo del mismo equipo', () => {
     const equipos = [equipo(1, 'A')];
-    const puntosRestados: PuntoRestadoInput[] = [
+    const puntosPresentismo: PuntoPresentismoInput[] = [
       { equipoId: 1, puntos: 3 },
       { equipoId: 1, puntos: 2 },
     ];
-    const resultado = calcularTablaPosiciones(equipos, [], puntosRestados);
+    const resultado = calcularTablaPosiciones(equipos, [], puntosPresentismo);
     expect(resultado[0].pr).toBe(5);
-    expect(resultado[0].ptos).toBe(-5);
+    expect(resultado[0].ptos).toBe(5);
   });
 
   it('recalcula desde cero: la corrección de un resultado no arrastra el valor viejo', () => {

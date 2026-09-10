@@ -1,6 +1,10 @@
 
-Revisar como usar campeones!!
-    (Excel o por separado?)
+"Two flags: historical titles are attributed to APERTURA (the sheet doesn't say Apertura/Clausura 
+— one constant to change if you ever know better), 
+and teams are matched case-insensitively so GULP/BOCHA FC reuse existing rows while MERENGUETENGUE etc. get created fresh."
+
+Autogenerar partidos?
+    Autogenerar partidos interzonales y zonales seguro, pero lo haria post frontend.
 
 
 Embellecer front

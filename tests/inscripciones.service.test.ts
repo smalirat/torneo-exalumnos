@@ -1,21 +1,29 @@
-import { prisma } from '../../src/lib/prisma';
-import { crearInscripcion } from '../../src/modules/inscripciones/inscripciones.service';
-import { ConflictError, NotFoundError } from '../../src/utils/AppError';
+import { prisma } from '../src/lib/prisma';
+import { crearInscripcion } from '../src/modules/inscripciones/inscripciones.service';
+import { ConflictError, NotFoundError } from '../src/utils/AppError';
 
-jest.mock('../../src/lib/prisma', () => ({
-  prisma: {
-    equipo: { findUnique: jest.fn() },
-    categoria: { findUnique: jest.fn() },
-    zona: { findUnique: jest.fn() },
-    inscripcionEquipo: { findFirst: jest.fn(), create: jest.fn() },
-  },
-}));
+jest.mock('../src/lib/prisma', () => {
+  const equipo = { findUnique: jest.fn() };
+  const categoria = { findUnique: jest.fn() };
+  const zona = { findUnique: jest.fn() };
+  const inscripcionEquipo = { findFirst: jest.fn(), create: jest.fn() };
+  // crearInscripcion envuelve todo en prisma.$transaction: en tests
+  // ejecutamos el callback directamente con los mismos delegados mockeados.
+  const tx = { equipo, categoria, zona, inscripcionEquipo };
+  return {
+    prisma: {
+      ...tx,
+      $transaction: jest.fn((cb: (t: typeof tx) => unknown) => cb(tx)),
+    },
+  };
+});
 
 const mockedPrisma = prisma as unknown as {
   equipo: { findUnique: jest.Mock };
   categoria: { findUnique: jest.Mock };
   zona: { findUnique: jest.Mock };
   inscripcionEquipo: { findFirst: jest.Mock; create: jest.Mock };
+  $transaction: jest.Mock;
 };
 
 const input = { equipoId: 1, categoriaId: 10 };
@@ -23,7 +31,7 @@ const input = { equipoId: 1, categoriaId: 10 };
 beforeEach(() => {
   jest.clearAllMocks();
   mockedPrisma.equipo.findUnique.mockResolvedValue({ id: 1, nombre: 'GULP' });
-  mockedPrisma.categoria.findUnique.mockResolvedValue({ id: 10, torneoId: 100, nombre: 'A' });
+  mockedPrisma.categoria.findUnique.mockResolvedValue({ id: 10, torneoId: 100, nombre: 'A', zonas: [] });
   mockedPrisma.inscripcionEquipo.findFirst.mockResolvedValue(null);
   mockedPrisma.inscripcionEquipo.create.mockImplementation(({ data }) => Promise.resolve({ id: 1, ...data }));
 });

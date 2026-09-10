@@ -122,24 +122,12 @@ export async function actualizarSancion(
   }
 
   if (
-    input.cumplida === true &&
-    input.pendiente === undefined
-  ) {
-    input = {
-      ...input,
-      pendiente: false,
-    };
-  }
-
-  if (
-    input.pendiente === true &&
-    input.cumplida === undefined &&
-    sancion.cumplida
+    input.estado === 'PENDIENTE' &&
+    sancion.estado === 'CUMPLIDA'
   ) {
     throw new ValidationError(
       'No se puede volver a marcar como pendiente ' +
-        'una sanción ya cumplida sin aclarar ' +
-        'cumplida=false explícitamente',
+        'una sanción ya cumplida',
     );
   }
 
@@ -183,9 +171,18 @@ export async function listarSancionados(
     );
   }
 
+  // Sin filtro explícito mostramos lo vigente (pendientes + tribunal),
+  // que es lo que usan la vista pública y el panel.
+  const estados =
+    pendiente === undefined
+      ? (['PENDIENTE', 'EN_TRIBUNAL'] as const)
+      : pendiente
+        ? (['PENDIENTE', 'EN_TRIBUNAL'] as const)
+        : (['CUMPLIDA'] as const);
+
   return prisma.sancion.findMany({
     where: {
-      estado: { in: ['PENDIENTE', 'EN_TRIBUNAL'] },
+      estado: { in: [...estados] },
 
       torneo: {
         temporadaId:

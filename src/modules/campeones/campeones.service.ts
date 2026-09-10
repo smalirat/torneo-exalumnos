@@ -10,9 +10,9 @@ export async function crearCampeon(input: CrearCampeonInput) {
   if (!categoria) throw new NotFoundError('Categoria', input.categoriaId);
   if (!equipo) throw new NotFoundError('Equipo', input.equipoId);
 
-  // @@unique([anio, categoriaId]) del schema protege el duplicado a nivel DB
-  // (409 UNIQUE_CONSTRAINT vía errorHandler si ya hay un campeón cargado
-  // para ese año + categoría).
+  // @@unique([anio, categoriaId, instancia]) del schema protege el duplicado
+  // a nivel DB (409 UNIQUE_CONSTRAINT vía errorHandler si ya hay un campeón
+  // cargado para ese año + categoría + instancia).
   return prisma.campeon.create({ data: input });
 }
 
@@ -43,26 +43,41 @@ export interface MaximoCampeon {
 /**
  * Ranking de "máximos campeones": se calcula agrupando la tabla Campeon,
  * como pediste — no existe una entidad/tabla aparte para esto.
+ *
+ * Un año cuenta UNA vez por equipo aunque tenga varias filas (ej. ganó
+ * Apertura y la Final: 2 filas en persistencia, pero para el usuario fue
+ * campeón una sola vez ese año). Por eso se agrupa por año+categoría
+ * distintos, no por cantidad de filas.
  */
 export async function obtenerMaximosCampeones(categoriaId?: number): Promise<MaximoCampeon[]> {
-  const agrupado = await prisma.campeon.groupBy({
-    by: ['equipoId'],
+  const filas = await prisma.campeon.findMany({
     where: categoriaId !== undefined ? { categoriaId } : undefined,
-    _count: { equipoId: true },
+    select: { anio: true, categoriaId: true, equipoId: true },
   });
 
-  if (agrupado.length === 0) return [];
+  if (filas.length === 0) return [];
+
+  const aniosPorEquipo = new Map<number, Set<string>>();
+  for (const f of filas) {
+    const clave = `${f.anio}|${f.categoriaId}`;
+    let set = aniosPorEquipo.get(f.equipoId);
+    if (!set) {
+      set = new Set();
+      aniosPorEquipo.set(f.equipoId, set);
+    }
+    set.add(clave);
+  }
 
   const equipos = await prisma.equipo.findMany({
-    where: { id: { in: agrupado.map((a: { equipoId: number }) => a.equipoId) } },
+    where: { id: { in: [...aniosPorEquipo.keys()] } },
   });
   const nombrePorId = new Map(equipos.map((e: { id: number; nombre: string }) => [e.id, e.nombre]));
 
-  return agrupado
-    .map((a: { equipoId: number; _count: { equipoId: number } }) => ({
-      equipoId: a.equipoId,
-      nombre: nombrePorId.get(a.equipoId) ?? '(equipo desconocido)',
-      titulos: a._count.equipoId,
+  return [...aniosPorEquipo.entries()]
+    .map(([equipoId, anios]) => ({
+      equipoId,
+      nombre: nombrePorId.get(equipoId) ?? '(equipo desconocido)',
+      titulos: anios.size,
     }))
     .sort((a: MaximoCampeon, b: MaximoCampeon) => b.titulos - a.titulos || a.nombre.localeCompare(b.nombre));
 }
@@ -72,7 +87,7 @@ export async function obtenerHistorialCampeones(categoriaId?: number) {
     prisma.campeon.findMany({
       where: categoriaId !== undefined ? { categoriaId } : undefined,
       include: { categoria: { include: { torneo: true } }, equipo: true },
-      orderBy: [{ anio: 'desc' }],
+      orderBy: [{ anio: 'desc' }, { categoriaId: 'asc' }, { instancia: 'asc' }],
     }),
     obtenerMaximosCampeones(categoriaId),
   ]);
