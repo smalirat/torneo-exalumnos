@@ -123,6 +123,9 @@ Secrets are read from the environment (never commit them):
 
 Tests run on an in-memory H2 database (profile `test`), no MySQL needed: `./mvnw test`.
 
+To run the app without MySQL use the `dev` profile (in-memory H2, admin `admin/admin123`):
+`./mvnw spring-boot:run -Dspring-boot.run.profiles=dev`. The Vue frontend lives in `frontend/` (see `frontend/README.md`).
+
 ### 3️⃣ Build & Run
 
 ```bash

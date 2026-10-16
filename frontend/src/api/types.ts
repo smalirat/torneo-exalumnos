@@ -1,0 +1,81 @@
+// Mirrors backend ResponseDtos / AuthDtos (dto/ResponseDtos.java)
+
+export type TournamentStatus = 'DRAFT' | 'OPEN' | 'CLOSED' | 'LIVE' | 'COMPLETE'
+
+export interface Tournament {
+  id: number
+  name: string
+  location: string | null
+  registrationStart: string | null
+  registrationEnd: string | null
+  matchStart: string | null
+  matchEnd: string | null
+  status: TournamentStatus
+}
+
+export interface Zone {
+  id: number
+  categoryId: number
+  name: string
+  displayOrder: number
+}
+
+export interface Category {
+  id: number
+  tournamentId: number
+  name: string
+  displayOrder: number
+  zoneCount: number
+  zones: Zone[]
+}
+
+export interface TeamRef {
+  id: number
+  name: string
+}
+
+export interface StandingRow {
+  position: number
+  team: TeamRef
+  points: number
+  played: number
+  won: number
+  drawn: number
+  lost: number
+  goalsFor: number
+  goalsAgainst: number
+  goalDiff: number
+  presencePoints: number
+  fairPlay: number
+}
+
+export interface Match {
+  id: number
+  tournamentId: number
+  zoneId: number | null
+  type: 'REGULAR' | 'PROMOTION' | 'FINAL'
+  homeTeam: TeamRef
+  awayTeam: TeamRef
+  scheduledAt: string | null
+  status: 'SCHEDULED' | 'FINISHED'
+  homeGoals: number
+  awayGoals: number
+  homePenalties: number | null
+  awayPenalties: number | null
+  winner: TeamRef | null
+  homePresent: boolean
+  awayPresent: boolean
+}
+
+export interface TokenRes {
+  token: string
+  tokenType: string
+  expiresInMinutes: number
+}
+
+export interface Me {
+  id: number
+  username: string
+  role: 'ADMIN' | 'CAPTAIN'
+  teamIds: number[]
+}

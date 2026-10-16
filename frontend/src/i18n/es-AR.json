@@ -1,0 +1,75 @@
+{
+  "app": { "name": "Torneos" },
+  "nav": {
+    "organize": "Organizar campeonatos",
+    "myTournaments": "Mis campeonatos",
+    "user": "Usuario",
+    "home": "Inicio",
+    "standings": "Clasificación",
+    "logout": "Cerrar sesión",
+    "login": "Iniciar sesión"
+  },
+  "auth": {
+    "loginTitle": "Iniciar sesión",
+    "registerTitle": "Crear cuenta de capitán",
+    "username": "Usuario",
+    "password": "Contraseña",
+    "submitLogin": "Ingresar",
+    "submitRegister": "Crear cuenta",
+    "noAccount": "¿No tenés cuenta? Registrate como capitán",
+    "haveAccount": "¿Ya tenés cuenta? Iniciá sesión",
+    "doLogin": "Hacer login"
+  },
+  "tournaments": {
+    "emptyTitle": "Aún no hay campeonatos",
+    "emptyText": "Los campeonatos que crees como organizador aparecerán aquí.",
+    "new": "Nuevo campeonato",
+    "name": "Nombre",
+    "location": "Sede",
+    "registrationStart": "Inicio de inscripción",
+    "registrationEnd": "Fin de inscripción",
+    "create": "Crear",
+    "cancel": "Cancelar",
+    "status": "Estado",
+    "registration": "Inscripción",
+    "statuses": {
+      "DRAFT": "En preparación",
+      "OPEN": "Inscripción abierta",
+      "CLOSED": "Inscripción cerrada",
+      "LIVE": "En juego",
+      "COMPLETE": "Finalizado"
+    }
+  },
+  "categories": {
+    "title": "Categorías",
+    "new": "Nueva categoría",
+    "namePlaceholder": "Nombre de la categoría (A, B, Libres…)",
+    "empty": "Todavía no hay categorías.",
+    "zones": "{n} zonas"
+  },
+  "standings": {
+    "category": "Categoría",
+    "zone": "Zona",
+    "noCategories": "Este campeonato todavía no tiene categorías.",
+    "noTeams": "Todavía no hay equipos en esta zona.",
+    "pos": "Pos",
+    "team": "Equipos",
+    "pts": "PTS",
+    "played": "J",
+    "won": "G",
+    "drawn": "E",
+    "lost": "P",
+    "gf": "GF",
+    "ga": "GC",
+    "diff": "DIF",
+    "presence": "PP",
+    "presenceHint": "Puntos de presencia",
+    "games": "Juegos",
+    "noGames": "Todavía no hay partidos.",
+    "walkover": "W.O."
+  },
+  "common": {
+    "loading": "Cargando…",
+    "genericError": "Algo salió mal. Probá de nuevo."
+  }
+}
