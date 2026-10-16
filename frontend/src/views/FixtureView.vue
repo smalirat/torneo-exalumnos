@@ -20,16 +20,25 @@ const matches = ref<Match[]>([])
 const index = ref(0)
 const editing = ref<Match | null>(null)
 
-interface Round { day: string | null; matches: Match[] }
+interface Round { key: string; number: number | null; label: string | null; day: string | null; matches: Match[] }
 
-/** Matches grouped by calendar day (already sorted by date, undated last). */
+/**
+ * Matches grouped by "Fecha N" when they are numbered (league data), otherwise by calendar day.
+ * Matches arrive sorted by date (undated last).
+ */
 const rounds = computed<Round[]>(() => {
   const out: Round[] = []
+  const byKey = new Map<string, Round>()
   for (const m of matches.value) {
     const day = m.scheduledAt?.slice(0, 10) ?? null
-    const last = out[out.length - 1]
-    if (last && last.day === day) last.matches.push(m)
-    else out.push({ day, matches: [m] })
+    const key = m.round != null ? `r${m.round}` : `d${day}`
+    let round = byKey.get(key)
+    if (!round) {
+      round = { key, number: m.round, label: m.roundLabel, day, matches: [] }
+      byKey.set(key, round)
+      out.push(round)
+    }
+    round.matches.push(m)
   }
   return out
 })
@@ -73,7 +82,7 @@ async function onSaved() {
             <AppIcon name="chevron" class="flip" />
           </button>
           <div class="round-title">
-            <strong>{{ t('fixture.round', { n: index + 1 }) }}</strong>
+            <strong>{{ t('fixture.round', { n: round?.number ?? index + 1 }) }}<template v-if="round?.label"> · {{ round.label }}</template></strong>
             <span class="muted">{{ dayLabel(round?.day ?? null) }}</span>
           </div>
           <button class="nav-btn" :disabled="index >= rounds.length - 1" :title="t('fixture.next')" @click="index++">

@@ -5,6 +5,9 @@ export const router = createRouter({
   routes: [
     { path: '/', component: () => import('./views/TournamentsView.vue') },
     { path: '/equipos', component: () => import('./views/TeamsView.vue') },
+    { path: '/planilla', component: () => import('./views/ExcelView.vue') },
+    { path: '/historia', component: () => import('./views/HistoryView.vue') },
+    { path: '/temporadas/:id', component: () => import('./views/SeasonView.vue') },
     { path: '/equipos/:teamId', component: () => import('./views/TeamView.vue') },
     { path: '/login', component: () => import('./views/LoginView.vue'), props: { mode: 'login' } },
     { path: '/registro', component: () => import('./views/LoginView.vue'), props: { mode: 'register' } },

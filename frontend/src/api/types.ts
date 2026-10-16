@@ -11,6 +11,15 @@ export interface Tournament {
   matchStart: string | null
   matchEnd: string | null
   status: TournamentStatus
+  seasonId: number | null
+  seasonYear: number | null
+  stage: 'APERTURA' | 'CLAUSURA' | null
+}
+
+export interface Season {
+  id: number
+  year: number
+  tournaments: Tournament[]
 }
 
 export interface Zone {
@@ -72,6 +81,11 @@ export interface Match {
   homeSource: SlotRes | null
   awaySource: SlotRes | null
   scheduledAt: string | null
+  round: number | null
+  roundLabel: string | null
+  venue: string | null
+  pitch: string | null
+  notes: string | null
   status: 'SCHEDULED' | 'FINISHED'
   homeGoals: number
   awayGoals: number
@@ -147,9 +161,95 @@ export interface CardRow {
 export interface ScoreReq {
   homePresent: boolean
   awayPresent: boolean
+  homeGoals?: number | null
+  awayGoals?: number | null
   events: { playerId: number; type: EventType }[]
   homePenalties: number | null
   awayPenalties: number | null
+}
+
+export interface MatchDetails {
+  scheduledAt: string | null
+  round: number | null
+  roundLabel: string | null
+  venue: string | null
+  pitch: string | null
+  notes: string | null
+}
+
+export interface SeasonStatRow {
+  position: number
+  player: PlayerRef
+  team: TeamRef
+  value: number
+}
+
+export interface Sanction {
+  id: number
+  seasonId: number
+  tournamentId: number | null
+  player: PlayerRef
+  team: TeamRef
+  type: 'DIRECT_RED' | 'DOUBLE_YELLOW' | 'YELLOW_ACCUMULATION' | 'OTHER'
+  matchesSuspended: number
+  matchesServed: number
+  pending: number
+  status: 'PENDING' | 'SERVED' | 'TRIBUNAL'
+  notes: string | null
+  source: 'EXCEL' | 'WEB' | null
+}
+
+export interface YellowTally {
+  player: PlayerRef
+  team: TeamRef
+  yellowCards: number
+  suspensions: number
+}
+
+export interface CategoryHistory {
+  categoryName: string
+  champions: { id: number; year: number; categoryName: string; team: TeamRef }[]
+  topChampions: { team: TeamRef; titles: number }[]
+}
+
+export interface ImportCounter {
+  entity: string
+  created: number
+  updated: number
+  unchanged: number
+  conflicts: number
+}
+
+export interface ImportConflict {
+  key: string
+  entity: string
+  description: string
+  excelValue: string
+  webValue: string
+  overwritten: boolean
+}
+
+export interface ImportPreview {
+  importId: number
+  fileName: string
+  status: 'PREVIEW' | 'APPLIED'
+  seasonYear: number | null
+  counters: ImportCounter[]
+  changes: { entity: string; action: 'CREATE' | 'UPDATE'; description: string }[]
+  conflicts: ImportConflict[]
+  warnings: string[]
+  notices: string[]
+}
+
+export interface ImportHistory {
+  id: number
+  fileName: string
+  uploadedBy: string | null
+  createdAt: string
+  appliedAt: string | null
+  status: 'PREVIEW' | 'APPLIED'
+  seasonYear: number | null
+  summary: string | null
 }
 
 export interface TokenRes {

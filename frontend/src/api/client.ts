@@ -45,6 +45,29 @@ export async function api<T>(method: string, path: string, body?: unknown): Prom
   return data as T
 }
 
+/** Multipart upload (FormData); same auth and error handling as `api`. */
+export async function upload<T>(path: string, form: FormData): Promise<T> {
+  const token = getToken()
+  const res = await fetch(path, { method: 'POST', headers: token ? { Authorization: `Bearer ${token}` } : {}, body: form })
+  const data = await res.json().catch(() => null)
+  if (!res.ok) throw new ApiError(res.status, data?.detail ?? t('common.genericError'), data?.errors ?? {})
+  return data as T
+}
+
+/** Downloads a file with the session token and saves it with the name the server suggests. */
+export async function download(path: string, fallbackName: string) {
+  const token = getToken()
+  const res = await fetch(path, { headers: token ? { Authorization: `Bearer ${token}` } : {} })
+  if (!res.ok) throw new ApiError(res.status, t('common.genericError'))
+  const name = /filename="([^"]+)"/.exec(res.headers.get('Content-Disposition') ?? '')?.[1] ?? fallbackName
+  const url = URL.createObjectURL(await res.blob())
+  const a = document.createElement('a')
+  a.href = url
+  a.download = name
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
 export const get = <T>(path: string) => api<T>('GET', path)
 export const post = <T>(path: string, body?: unknown) => api<T>('POST', path, body)
 export const put = <T>(path: string, body?: unknown) => api<T>('PUT', path, body)

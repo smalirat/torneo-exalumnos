@@ -21,11 +21,18 @@ const date = computed(() => {
 })
 const walkover = computed(() => !props.match.homePresent || !props.match.awayPresent)
 const isWinner = (teamId: number) => props.match.winner?.id === teamId
+
+/** "Siberia · Cancha 3 · Interzonal" */
+const place = computed(() => [
+  props.match.venue,
+  props.match.pitch ? `${t('results.pitch')} ${props.match.pitch}` : null,
+  props.match.roundLabel,
+].filter(Boolean).join(' · '))
 </script>
 
 <template>
   <div :class="['match', { clickable }]" :title="clickable ? t('results.load') : undefined">
-    <span v-if="date" class="date muted">{{ date }}</span>
+    <span v-if="date || place" class="date muted">{{ [date, place].filter(Boolean).join(' · ') }}</span>
     <div class="line">
       <span :class="['side', { win: isWinner(match.homeTeam.id) }]">
         <TeamBadge :name="match.homeTeam.name" :size="22" /> {{ match.homeTeam.name }}
@@ -40,6 +47,7 @@ const isWinner = (teamId: number) => props.match.winner?.id === teamId
       </span>
     </div>
     <span v-if="walkover && match.status === 'FINISHED'" class="wo">{{ t('standings.walkover') }}</span>
+    <p v-if="match.notes" class="note">{{ match.notes }}</p>
   </div>
 </template>
 
@@ -55,4 +63,5 @@ const isWinner = (teamId: number) => props.match.winner?.id === teamId
 .side.win { font-weight: 700; }
 .score { min-width: 54px; display: flex; flex-direction: column; align-items: center; }
 .wo { font-size: 11px; color: var(--danger); font-weight: 700; }
+.note { margin: 4px 0 0; font-size: 12px; color: var(--muted); font-style: italic; }
 </style>

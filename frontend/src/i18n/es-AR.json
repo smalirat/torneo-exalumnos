@@ -14,7 +14,10 @@
     "tournamentTeams": "Equipos",
     "rankings": "Rankings",
     "playoffs": "Definiciones",
-    "fixture": "Fixture"
+    "fixture": "Fixture",
+    "excel": "Planilla Excel",
+    "history": "Historia",
+    "season": "Temporada"
   },
   "auth": {
     "loginTitle": "Iniciar sesión",
@@ -51,7 +54,16 @@
     "edit": "Editar campeonato",
     "save": "Guardar cambios",
     "delete": "Eliminar campeonato",
-    "deleteConfirm": "Se eliminará el campeonato con sus categorías y zonas. Solo es posible si no tiene equipos ni partidos."
+    "deleteConfirm": "Se eliminará el campeonato con sus categorías y zonas. Solo es posible si no tiene equipos ni partidos.",
+    "seasonYear": "Temporada (año)",
+    "stage": "Etapa",
+    "stages": {
+      "APERTURA": "Apertura",
+      "CLAUSURA": "Clausura"
+    },
+    "noStage": "—",
+    "noSeason": "Sin temporada",
+    "seasonLink": "Rankings y sanciones del año"
   },
   "categories": {
     "title": "Categorías",
@@ -148,7 +160,17 @@
       "RED_CARD": "Roja"
     },
     "delete": "Eliminar partido",
-    "deleteConfirm": "Se eliminará el partido con sus goles y tarjetas. La tabla se recalcula."
+    "deleteConfirm": "Se eliminará el partido con sus goles y tarjetas. La tabla se recalcula.",
+    "score": "Resultado",
+    "scoreHelp": "Si dejás los goles en blanco se calculan de los goles cargados por jugador.",
+    "details": "Datos del partido",
+    "when": "Fecha y hora",
+    "round": "Fecha N°",
+    "roundLabel": "Etiqueta",
+    "venue": "Campo",
+    "pitch": "Cancha",
+    "notes": "Nota",
+    "saveDetails": "Guardar datos"
   },
   "rankings": {
     "scorers": "Goleadores",
@@ -157,7 +179,11 @@
     "team": "Equipo",
     "goals": "Goles",
     "noGoals": "Todavía no hay goles cargados.",
-    "noCards": "Todavía no hay tarjetas."
+    "noCards": "Todavía no hay tarjetas.",
+    "yellows": "Amarillas acumuladas",
+    "yellowCount": "Amarillas",
+    "suspensions": "Fechas de suspensión",
+    "noYellows": "Sin amarillas acumuladas."
   },
   "playoffs": {
     "title": "Promociones y finales",
@@ -183,7 +209,8 @@
     "previous": "Fecha anterior",
     "next": "Fecha siguiente",
     "noDate": "Sin fecha asignada",
-    "progress": "{played} de {total} partidos jugados"
+    "progress": "{played} de {total} partidos jugados",
+    "roundLabelOnly": "{label}"
   },
   "teamPage": {
     "noTournaments": "Este equipo todavía no está inscripto en ningún campeonato.",
@@ -193,5 +220,77 @@
     "noNext": "No hay partidos pendientes.",
     "results": "Resultados",
     "noResults": "Todavía no jugó partidos."
+  },
+  "excel": {
+    "title": "Planilla Excel",
+    "intro": "Subí la planilla de la liga para cargarla. Primero ves qué cambiaría; nada se guarda hasta que confirmás.",
+    "choose": "Elegir archivo .xlsx",
+    "uploading": "Leyendo la planilla…",
+    "preview": "Vista previa — {file}",
+    "applied": "Planilla aplicada — {file}",
+    "entity": "Qué",
+    "created": "Nuevos",
+    "updated": "Actualizados",
+    "unchanged": "Sin cambios",
+    "conflicts": "Conflictos",
+    "conflictsTitle": "Conflictos con lo editado en la web ({n})",
+    "conflictsHelp": "Estos datos se modificaron en la web y el Excel dice otra cosa. Por defecto se conserva lo de la web; marcá los que quieras reemplazar por el Excel.",
+    "excelValue": "Excel",
+    "webValue": "Web",
+    "overwrite": "Usar Excel",
+    "warningsTitle": "Advertencias ({n})",
+    "warningsHelp": "Inconsistencias de la planilla. Se cargó lo que se pudo decidir con seguridad.",
+    "changesTitle": "Cambios ({n})",
+    "noticesTitle": "Filas omitidas ({n})",
+    "apply": "Aplicar cambios",
+    "applying": "Aplicando…",
+    "discard": "Descartar",
+    "nothing": "La planilla no trae cambios respecto de lo cargado.",
+    "historyTitle": "Últimas importaciones",
+    "export": "Exportar Excel",
+    "exportHelp": "Descargá una temporada con el mismo formato de la planilla para seguir trabajando en Excel.",
+    "statuses": {
+      "PREVIEW": "Vista previa",
+      "APPLIED": "Aplicada"
+    },
+    "showAll": "Ver todos",
+    "showLess": "Ver menos"
+  },
+  "season": {
+    "title": "Temporada {year}",
+    "scorers": "Goleadores",
+    "figures": "Figuras",
+    "goalkeepers": "Imbatibles",
+    "sanctions": "Sanciones",
+    "goals": "Goles",
+    "times": "Veces figura",
+    "conceded": "Goles recibidos",
+    "empty": "Sin datos.",
+    "type": "Motivo",
+    "suspended": "Fechas",
+    "served": "Cumplidas",
+    "pending": "Pendientes",
+    "status": "Estado",
+    "notes": "Observaciones",
+    "types": {
+      "DIRECT_RED": "Roja directa",
+      "DOUBLE_YELLOW": "Doble amarilla",
+      "YELLOW_ACCUMULATION": "Acumulación de amarillas",
+      "OTHER": "Otra"
+    },
+    "statuses": {
+      "PENDING": "Pendiente",
+      "SERVED": "Cumplida",
+      "TRIBUNAL": "En tribunal"
+    }
+  },
+  "historyPage": {
+    "title": "Historia de campeones",
+    "category": "Categoría {name}",
+    "year": "Año",
+    "champion": "Campeón",
+    "top": "Máximos campeones",
+    "titles": "Títulos",
+    "empty": "Todavía no hay campeones cargados."
   }
 }

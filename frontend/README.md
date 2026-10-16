@@ -22,7 +22,7 @@ npm run build      # chequeo de tipos (vue-tsc) + build
 - `src/i18n/` textos y `t('clave', { params })`. No hardcodear strings en los componentes.
 - `src/layouts/` `GlobalLayout` (fuera de un campeonato) y `TournamentLayout` (sidebar del campeonato + breadcrumb).
 - `src/views/` una vista por ruta (ver `src/router.ts`).
-- `src/components/` reutilizables: `BaseModal` (modal con título/cerrar/footer), `ConfirmButton` (borrar con confirmación en un diálogo propio), `InlineEdit` (renombrar en el lugar), `TournamentForm` (alta/edición de campeonato), `MatchResultEditor` (resultado por eventos, walkover, penales, borrar partido), `SlotPicker` (lado de una promoción/final), `ZonePicker` (categoría/zona, recordada en la URL), `MatchCard` (línea de partido), `StandingsTable` (tabla con fila resaltable), `TeamBadge`, `AppIcon`.
+- `src/components/` reutilizables: `BaseModal` (modal con título/cerrar/footer), `ConfirmButton` (borrar con confirmación en un diálogo propio), `InlineEdit` (renombrar en el lugar), `TournamentForm` (alta/edición de campeonato), `MatchResultEditor` (resultado por eventos, walkover, penales, borrar partido), `SlotPicker` (lado de una promoción/final), `ZonePicker` (categoría/zona, recordada en la URL), `CollapsibleList`, `TabsNav`, `PlayerRankingTable`, `MatchCard` (línea de partido), `StandingsTable` (tabla con fila resaltable), `TeamBadge`, `AppIcon`.
 - Diseño: `design/NOTES.md` en la raíz del repo (local, no versionado).
 
 ## Pantallas
@@ -32,6 +32,9 @@ npm run build      # chequeo de tipos (vue-tsc) + build
 | `/` | todos | Mis campeonatos; el admin crea campeonatos (FAB +) |
 | `/login`, `/registro` | todos | Login y alta de capitán |
 | `/equipos` | logueado | Registro de equipos: plantel, inscripción, renombrar/eliminar |
+| `/planilla` | admin | Planilla Excel: importar con vista previa y conflictos, historial, exportar temporada |
+| `/temporadas/:id` | todos | Temporada: goleadores, figuras, imbatibles y sanciones del año |
+| `/historia` | todos | Historia de campeones por categoría y máximos campeones |
 | `/equipos/:teamId` | todos | Página del equipo: campeonatos, posición, próximo partido, resultados y tabla |
 | `/campeonatos/:id` | todos | Inicio: estado, inscripción, categorías; admin edita/elimina campeonato y categorías |
 | `/campeonatos/:id/clasificacion` | todos | Tabla por zona + Juegos; admin genera fixture, agrega partidos y carga resultados |

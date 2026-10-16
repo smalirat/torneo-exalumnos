@@ -1,7 +1,8 @@
-import { del, get, patch, post, put } from './client'
+import { del, download, get, patch, post, put, upload } from './client'
 import type {
-  CardRow, Category, Match, MatchEvent, Me, Player, Registration, ScoreReq, ScorerRow, SlotReq, StandingRow, TeamRef,
-  TeamRegistration, TeamSummary, TokenRes, Tournament, TournamentStatus, Zone,
+  CardRow, Category, CategoryHistory, ImportHistory, ImportPreview, Match, MatchDetails, MatchEvent, Me, Player,
+  Registration, Sanction, ScoreReq, ScorerRow, Season, SeasonStatRow, SlotReq, StandingRow, TeamRef, TeamRegistration,
+  TeamSummary, TokenRes, Tournament, TournamentStatus, YellowTally, Zone,
 } from './types'
 
 export const authApi = {
@@ -19,6 +20,8 @@ export interface TournamentInput {
   matchStart: string | null
   matchEnd: string | null
   status: TournamentStatus
+  seasonYear: number | null
+  stage: 'APERTURA' | 'CLAUSURA' | null
 }
 
 export const tournamentApi = {
@@ -34,6 +37,7 @@ export const tournamentApi = {
   createCategory: (id: number, name: string) => post<Category>(`/api/admin/tournaments/${id}/categories`, { name }),
   registrations: (id: number) => get<Registration[]>(`/api/public/tournaments/${id}/registrations`),
   scorers: (id: number) => get<ScorerRow[]>(`/api/public/tournaments/${id}/scorers`),
+  yellowCards: (id: number) => get<YellowTally[]>(`/api/public/tournaments/${id}/yellow-cards`),
   cards: (id: number) => get<CardRow[]>(`/api/public/tournaments/${id}/cards`),
   assignZone: (registrationId: number, zoneId: number) =>
     patch<Registration>(`/api/admin/registrations/${registrationId}/zone`, { zoneId }),
@@ -59,6 +63,7 @@ export const matchApi = {
   events: (matchId: number) => get<MatchEvent[]>(`/api/public/matches/${matchId}/events`),
   score: (matchId: number, body: ScoreReq) => patch<Match>(`/api/admin/matches/${matchId}/score`, body),
   remove: (matchId: number) => del(`/api/admin/matches/${matchId}`),
+  updateDetails: (matchId: number, body: MatchDetails) => patch<Match>(`/api/admin/matches/${matchId}`, body),
 }
 
 export interface NewSpecialMatch {
@@ -73,6 +78,29 @@ export const playoffApi = {
   create: (tournamentId: number, body: NewSpecialMatch) =>
     post<Match>(`/api/admin/tournaments/${tournamentId}/special-matches`, body),
   resolve: (matchId: number) => post<Match>(`/api/admin/matches/${matchId}/resolve`),
+}
+
+export const seasonApi = {
+  list: () => get<Season[]>('/api/public/seasons'),
+  scorers: (id: number) => get<SeasonStatRow[]>(`/api/public/seasons/${id}/scorers`),
+  figures: (id: number) => get<SeasonStatRow[]>(`/api/public/seasons/${id}/figures`),
+  goalkeepers: (id: number) => get<SeasonStatRow[]>(`/api/public/seasons/${id}/goalkeepers`),
+  sanctions: (id: number) => get<Sanction[]>(`/api/public/seasons/${id}/sanctions`),
+}
+
+export const championApi = {
+  history: () => get<CategoryHistory[]>('/api/public/champions'),
+}
+
+export const importApi = {
+  upload: (file: File) => {
+    const form = new FormData()
+    form.append('file', file)
+    return upload<ImportPreview>('/api/admin/imports', form)
+  },
+  apply: (id: number, overwrite: string[]) => post<ImportPreview>(`/api/admin/imports/${id}/apply`, { overwrite }),
+  history: () => get<ImportHistory[]>('/api/admin/imports'),
+  export: (seasonId: number, year: number) => download(`/api/admin/imports/export/${seasonId}`, `TORNEO ${year}.xlsx`),
 }
 
 export const zoneApi = {

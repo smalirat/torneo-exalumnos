@@ -17,11 +17,20 @@ const form = ref<TournamentInput>({
   matchStart: props.initial?.matchStart ?? '',
   matchEnd: props.initial?.matchEnd ?? '',
   status: props.initial?.status ?? 'OPEN',
+  seasonYear: props.initial?.seasonYear ?? null,
+  stage: props.initial?.stage ?? null,
 })
 
 function submit() {
   const v = form.value
-  emit('submit', { ...v, location: v.location || null, matchStart: v.matchStart || null, matchEnd: v.matchEnd || null })
+  emit('submit', {
+    ...v,
+    location: v.location || null,
+    matchStart: v.matchStart || null,
+    matchEnd: v.matchEnd || null,
+    seasonYear: v.seasonYear || null,
+    stage: v.seasonYear ? v.stage : null,
+  })
 }
 </script>
 
@@ -34,6 +43,20 @@ function submit() {
     <div class="field">
       <label for="t-location">{{ t('tournaments.location') }}</label>
       <input id="t-location" v-model="form.location" class="input" />
+    </div>
+    <div class="row">
+      <div class="field">
+        <label for="t-season">{{ t('tournaments.seasonYear') }}</label>
+        <input id="t-season" v-model.number="form.seasonYear" class="input" type="number" min="1900" max="2100" />
+      </div>
+      <div class="field">
+        <label for="t-stage">{{ t('tournaments.stage') }}</label>
+        <select id="t-stage" v-model="form.stage" class="select" :disabled="!form.seasonYear">
+          <option :value="null">{{ t('tournaments.noStage') }}</option>
+          <option value="APERTURA">{{ t('tournaments.stages.APERTURA') }}</option>
+          <option value="CLAUSURA">{{ t('tournaments.stages.CLAUSURA') }}</option>
+        </select>
+      </div>
     </div>
     <div class="row">
       <div class="field">

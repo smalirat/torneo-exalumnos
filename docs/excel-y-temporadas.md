@@ -43,4 +43,4 @@ Reglas:
 4. ✅ **Historia de campeones** — campeón por año y categoría + máximos campeones.
 5. ✅ **Importación** (Apache POI) con vista previa, conflictos y origen de cada dato (`EXCEL` / `WEB`).
 6. ✅ **Exportación** al mismo formato: `GET /api/admin/imports/export/{seasonId}` devuelve el `.xlsx` de la temporada (tablas, jugados, próximos, goleadores, figuras, imbatibles, sancionados, historia). **Ida y vuelta garantizada**: importar el archivo exportado no cambia nada (tests sobre datos sintéticos, datos cargados en la web y el Excel real). Los walkovers cargados en la web se exportan con la nota "el equipo X no se presento"; las sanciones sin observaciones, con el texto del tipo y el código TA/TC.
-7. **Pantallas** del frontend para todo lo anterior.
+7. ✅ **Pantallas**: Planilla Excel (subir → vista previa con conflictos a elegir → aplicar; historial; exportar por temporada), campeonatos agrupados por temporada, página de temporada (goleadores, figuras, imbatibles, sanciones), historia de campeones, amarillas acumuladas en Rankings, fixture por número de fecha, datos del partido (campo, cancha, nota) y resultado directo en el editor.

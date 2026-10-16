@@ -2,7 +2,7 @@
 import AppIcon from '../components/AppIcon.vue'
 import UserFooter from './UserFooter.vue'
 import { t } from '../i18n'
-import { isLoggedIn } from '../auth'
+import { isAdmin, isLoggedIn } from '../auth'
 </script>
 
 <template>
@@ -14,6 +14,12 @@ import { isLoggedIn } from '../auth'
       </RouterLink>
       <RouterLink v-if="isLoggedIn" to="/equipos" class="item" active-class="active">
         <AppIcon name="shield" /> {{ t('nav.teams') }}
+      </RouterLink>
+      <RouterLink v-if="isAdmin" to="/planilla" class="item" active-class="active">
+        <AppIcon name="table" /> {{ t('nav.excel') }}
+      </RouterLink>
+      <RouterLink to="/historia" class="item" active-class="active">
+        <AppIcon name="star" /> {{ t('nav.history') }}
       </RouterLink>
       <UserFooter />
     </aside>

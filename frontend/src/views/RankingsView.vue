@@ -4,16 +4,18 @@ import { useRoute } from 'vue-router'
 import TournamentLayout from '../layouts/TournamentLayout.vue'
 import TeamBadge from '../components/TeamBadge.vue'
 import { tournamentApi } from '../api/endpoints'
-import type { CardRow, ScorerRow } from '../api/types'
+import type { CardRow, ScorerRow, YellowTally } from '../api/types'
 import { t } from '../i18n'
 
 const route = useRoute()
 const tournamentId = computed(() => Number(route.params.id))
 const scorers = ref<ScorerRow[] | null>(null)
 const cards = ref<CardRow[] | null>(null)
+const yellows = ref<YellowTally[]>([])
 
 watch(tournamentId, async (id) => {
-  ;[scorers.value, cards.value] = await Promise.all([tournamentApi.scorers(id), tournamentApi.cards(id)])
+  ;[scorers.value, cards.value, yellows.value] = await Promise.all([
+    tournamentApi.scorers(id), tournamentApi.cards(id), tournamentApi.yellowCards(id)])
 }, { immediate: true })
 </script>
 
@@ -61,6 +63,28 @@ watch(tournamentId, async (id) => {
               <td class="left"><span class="team"><TeamBadge :name="r.team.name" :size="22" /> {{ r.team.name }}</span></td>
               <td>{{ r.yellowCards }}</td>
               <td>{{ r.redCards }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section v-if="yellows.length" class="card">
+        <h2>{{ t('rankings.yellows') }}</h2>
+        <table>
+          <thead>
+            <tr>
+              <th class="left">{{ t('rankings.player') }}</th>
+              <th class="left">{{ t('rankings.team') }}</th>
+              <th>{{ t('rankings.yellowCount') }}</th>
+              <th>{{ t('rankings.suspensions') }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="y in yellows" :key="y.player.id">
+              <td class="left">{{ y.player.fullName }}</td>
+              <td class="left"><span class="team"><TeamBadge :name="y.team.name" :size="22" /> {{ y.team.name }}</span></td>
+              <td>{{ y.yellowCards }}</td>
+              <td :class="{ strong: y.suspensions > 0 }">{{ y.suspensions }}</td>
             </tr>
           </tbody>
         </table>

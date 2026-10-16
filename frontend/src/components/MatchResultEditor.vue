@@ -8,8 +8,8 @@ import { matchApi, teamApi } from '../api/endpoints'
 import type { EventType, Match, Player } from '../api/types'
 import { t } from '../i18n'
 
-// Admin editor for a match result: presence + per-player events (+ penalties for drawn specials).
-// The score is derived from the events, like the backend does.
+// Admin editor for a match: presence, score (typed, or derived from per-player events), penalties for drawn
+// definitions, and the match data (date, round, field, pitch, note).
 const props = defineProps<{ match: Match }>()
 const emit = defineEmits<{ saved: []; close: [] }>()
 
@@ -23,6 +23,15 @@ const present = ref<Record<Side, boolean>>({ home: props.match.homePresent, away
 const events = ref<Draft[]>([])
 const picked = ref<Record<Side, number | null>>({ home: null, away: null })
 const penalties = ref<Record<Side, number | null>>({ home: props.match.homePenalties, away: props.match.awayPenalties })
+const goals = ref<Record<Side, number | null>>({ home: null, away: null })
+const details = ref({
+  when: props.match.scheduledAt?.slice(0, 16) ?? '',
+  round: props.match.round,
+  roundLabel: props.match.roundLabel ?? '',
+  venue: props.match.venue ?? '',
+  pitch: props.match.pitch ?? '',
+  notes: props.match.notes ?? '',
+})
 const error = ref('')
 const busy = ref(false)
 
@@ -31,12 +40,14 @@ const walkover = computed(() => !present.value.home || !present.value.away)
 
 const score = computed(() => {
   if (walkover.value) return { home: present.value.home ? 3 : 0, away: present.value.away ? 3 : 0 }
+  if (typedScore.value) return { home: goals.value.home!, away: goals.value.away! }
   const count = (side: Side, type: EventType) => events.value.filter((e) => e.side === side && e.type === type).length
   return {
     home: count('home', 'GOAL') + count('away', 'OWN_GOAL'),
     away: count('away', 'GOAL') + count('home', 'OWN_GOAL'),
   }
 })
+const typedScore = computed(() => goals.value.home != null && goals.value.away != null)
 const needsPenalties = computed(() =>
   props.match.type !== 'REGULAR' && !walkover.value && score.value.home === score.value.away)
 
@@ -51,6 +62,11 @@ onMounted(async () => {
   events.value = existing.map((e) => ({
     side: e.team.id === props.match.homeTeam.id ? 'home' : 'away', playerId: e.player.id, type: e.type,
   }))
+  // A played match without goal detail (e.g. from the Excel) keeps its typed score
+  const hasGoalEvents = existing.some((e) => e.type === 'GOAL' || e.type === 'OWN_GOAL')
+  if (props.match.status === 'FINISHED' && !hasGoalEvents && props.match.homePresent && props.match.awayPresent) {
+    goals.value = { home: props.match.homeGoals, away: props.match.awayGoals }
+  }
 })
 
 function addEvent(side: Side, type: EventType) {
@@ -71,6 +87,27 @@ async function remove() {
   }
 }
 
+async function saveDetails() {
+  busy.value = true
+  error.value = ''
+  try {
+    const d = details.value
+    await matchApi.updateDetails(props.match.id, {
+      scheduledAt: d.when ? `${d.when}:00` : null,
+      round: d.round || null,
+      roundLabel: d.roundLabel || null,
+      venue: d.venue || null,
+      pitch: d.pitch || null,
+      notes: d.notes || null,
+    })
+    emit('saved')
+  } catch (e) {
+    error.value = e instanceof Error ? e.message : t('common.genericError')
+  } finally {
+    busy.value = false
+  }
+}
+
 async function save() {
   busy.value = true
   error.value = ''
@@ -79,6 +116,8 @@ async function save() {
       homePresent: present.value.home,
       awayPresent: present.value.away,
       events: walkover.value ? [] : events.value.map(({ playerId, type }) => ({ playerId, type })),
+      homeGoals: !walkover.value && typedScore.value ? goals.value.home : null,
+      awayGoals: !walkover.value && typedScore.value ? goals.value.away : null,
       homePenalties: needsPenalties.value ? penalties.value.home : null,
       awayPenalties: needsPenalties.value ? penalties.value.away : null,
     })
@@ -101,6 +140,13 @@ async function save() {
         <span class="team right">{{ teams.away.name }} <TeamBadge :name="teams.away.name" :size="40" /></span>
       </div>
       <p v-if="walkover" class="hint">{{ t('results.walkoverHint') }}</p>
+      <div v-else class="typed">
+        <span>{{ t('results.score') }}</span>
+        <input v-model.number="goals.home" class="input" type="number" min="0" :aria-label="`${t('results.score')} ${teams.home.name}`" />
+        <span>-</span>
+        <input v-model.number="goals.away" class="input" type="number" min="0" :aria-label="`${t('results.score')} ${teams.away.name}`" />
+        <small class="muted">{{ t('results.scoreHelp') }}</small>
+      </div>
 
       <div class="sides">
         <section v-for="side in (['home', 'away'] as const)" :key="side" class="side">
@@ -141,6 +187,19 @@ async function save() {
         <input v-model.number="penalties.away" class="input" type="number" min="0" required :aria-label="teams.away.name" />
       </div>
 
+      <details class="details">
+        <summary>{{ t('results.details') }}</summary>
+        <div class="details-grid">
+          <label>{{ t('results.when') }}<input v-model="details.when" class="input" type="datetime-local" /></label>
+          <label>{{ t('results.round') }}<input v-model.number="details.round" class="input" type="number" min="1" /></label>
+          <label>{{ t('results.roundLabel') }}<input v-model="details.roundLabel" class="input" maxlength="80" /></label>
+          <label>{{ t('results.venue') }}<input v-model="details.venue" class="input" maxlength="60" /></label>
+          <label>{{ t('results.pitch') }}<input v-model="details.pitch" class="input" maxlength="20" /></label>
+          <label class="wide">{{ t('results.notes') }}<input v-model="details.notes" class="input" maxlength="500" /></label>
+        </div>
+        <button type="button" class="btn secondary" :disabled="busy" @click="saveDetails">{{ t('results.saveDetails') }}</button>
+      </details>
+
       <p v-if="error" class="error">{{ error }}</p>
       <footer class="actions">
         <ConfirmButton :label="t('results.delete')" :message="t('results.deleteConfirm')" @confirm="remove" />
@@ -158,6 +217,14 @@ async function save() {
 .team.right { justify-content: flex-end; }
 .score { font-size: 32px; color: var(--navy); min-width: 90px; text-align: center; }
 .hint { text-align: center; color: var(--danger); font-size: 14px; }
+.typed { display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap; font-weight: 500; }
+.typed .input { width: 64px; text-align: center; }
+.typed small { flex-basis: 100%; text-align: center; font-weight: 400; }
+.details { margin-top: 16px; border-top: 1px solid var(--border); padding-top: 10px; }
+.details summary { cursor: pointer; font-weight: 500; color: var(--navy); }
+.details-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; margin: 12px 0; }
+.details-grid label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--muted); }
+.details-grid .wide { grid-column: 1 / -1; }
 .sides { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 8px; }
 .side { background: var(--row-alt); border-radius: 10px; padding: 12px; }
 .check { display: flex; align-items: center; gap: 8px; font-weight: 500; margin-bottom: 8px; }
