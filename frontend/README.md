@@ -5,7 +5,7 @@ Vue 3 + Vite + TypeScript. UI en español (textos en `src/i18n/es-AR.json`).
 ## Desarrollo
 
 ```bash
-# 1) Backend sin MySQL (H2 en memoria, admin/admin123), desde la raíz del repo:
+# 1) Backend sin PostgreSQL (H2 en memoria, admin/admin123), desde la raíz del repo:
 ./mvnw spring-boot:run -Dspring-boot.run.profiles=dev     # requiere APP_JWT_SECRET
 
 # 2) Frontend:

@@ -1,6 +1,6 @@
-## ⚽ Football Tournament Management System (Spring Boot + JWT + MySQL)
+## ⚽ Football Tournament Management System (Spring Boot + JWT + PostgreSQL)
 
-A complete **backend REST API** for managing football tournaments, built using **Spring Boot 3**, **JPA/Hibernate**, **MySQL**, **JWT authentication**, and **Swagger API documentation**.
+A complete **backend REST API** for managing football tournaments, built using **Spring Boot 3**, **JPA/Hibernate**, **PostgreSQL** (Flyway migrations), **JWT authentication**, and **Swagger API documentation**.
 
 This system allows **administrators** to create tournaments and manage fixtures, while **teams** can register, add players, join tournaments, and view performance dashboards.
 
@@ -13,7 +13,7 @@ This system allows **administrators** to create tournaments and manage fixtures,
 | Spring Boot 3     | Backend application     |
 | Spring Security   | JWT Authentication      |
 | JPA + Hibernate   | ORM + Database Access   |
-| MySQL             | Relational Database     |
+| PostgreSQL + Flyway | Relational Database + schema migrations |
 | Swagger / OpenAPI | API Documentation       |
 | Lombok            | Reduce boilerplate code |
 
@@ -100,14 +100,16 @@ Once the application is running, open:
 
 ## 🛠 Installation & Setup
 
-### 1️⃣ Create MySQL Database
+### 1️⃣ Database (PostgreSQL)
 
-```sql
-CREATE DATABASE football_tournament;
-CREATE USER 'username'@'%' IDENTIFIED BY 'password';
-GRANT ALL PRIVILEGES ON football_tournament.* TO 'username'@'%';
-FLUSH PRIVILEGES;
+Any PostgreSQL works (production: Supabase). The schema is created by Flyway on startup from
+`src/main/resources/db/migration`. Local example with Docker:
+
+```bash
+docker run -d --name ftms-pg -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=football_tournament -p 55432:5432 postgres:16-alpine
 ```
+
+See `docs/base-de-datos.md` (Supabase connection, migration rules).
 
 ### 2️⃣ Configure environment variables
 
@@ -118,12 +120,13 @@ Secrets are read from the environment (never commit them):
 | `APP_JWT_SECRET` | yes (min. 32 chars) | - |
 | `APP_ADMIN_PASSWORD` | to create the first admin on startup | empty (no admin created) |
 | `APP_ADMIN_USERNAME` | no | `admin` |
-| `DB_URL` / `DB_USERNAME` / `DB_PASSWORD` | no | local MySQL, `root`/`root` |
+| `DB_URL` / `DB_USERNAME` / `DB_PASSWORD` | yes in production | `jdbc:postgresql://localhost:5432/football_tournament`, `postgres`/`postgres` |
+| `DB_POOL_SIZE` | no | `5` |
 | `APP_CORS_ALLOWED_ORIGINS` | no | `http://localhost:5173` |
 
-Tests run on an in-memory H2 database (profile `test`), no MySQL needed: `./mvnw test`.
+Tests run on an in-memory H2 database (profile `test`), in PostgreSQL mode with the same Flyway migrations, no database needed: `./mvnw test`.
 
-To run the app without MySQL use the `dev` profile (in-memory H2, admin `admin/admin123`):
+To run the app without PostgreSQL use the `dev` profile (in-memory H2, admin `admin/admin123`):
 `./mvnw spring-boot:run -Dspring-boot.run.profiles=dev`. The Vue frontend lives in `frontend/` (see `frontend/README.md`).
 
 ### 3️⃣ Build & Run
