@@ -32,8 +32,13 @@ public class StandingsService {
         var rows = new LinkedHashMap<Long, Row>();
         for (Registration r : regRepo.findByZone(zone)) rows.put(r.getTeam().getId(), new Row(r.getTeam()));
 
-        var finished = matchRepo.findByZoneOrderByScheduledAtAsc(zone).stream()
-                .filter(MatchGame::isFinished).toList();
+        // All regular matches of the tournament between teams of this zone and anyone: zone matches plus
+        // interzonal ones (no zone), which count in the table of each team's zone
+        var finished = matchRepo.findByTournament(zone.getCategory().getTournament()).stream()
+                .filter(m -> !m.isSpecial() && m.isFinished())
+                .filter(m -> m.getZone() == null || m.getZone().getId().equals(zoneId))
+                .filter(m -> rows.containsKey(m.getHomeTeam().getId()) || rows.containsKey(m.getAwayTeam().getId()))
+                .toList();
         for (var m : finished) {
             var home = rows.get(m.getHomeTeam().getId());
             var away = rows.get(m.getAwayTeam().getId());

@@ -51,13 +51,19 @@ public class ResponseDtos {
 
     public record TournamentRes(Long id, String name, String location,
                                 LocalDate registrationStart, LocalDate registrationEnd,
-                                LocalDate matchStart, LocalDate matchEnd, String status) {
+                                LocalDate matchStart, LocalDate matchEnd, String status,
+                                Long seasonId, Integer seasonYear, String stage) {
         public static TournamentRes from(Tournament t) {
+            var s = t.getSeason();
             return new TournamentRes(t.getId(), t.getName(), t.getLocation(),
                     t.getRegistrationStart(), t.getRegistrationEnd(),
-                    t.getMatchStart(), t.getMatchEnd(), t.getStatus().name());
+                    t.getMatchStart(), t.getMatchEnd(), t.getStatus().name(),
+                    s == null ? null : s.getId(), s == null ? null : s.getYear(),
+                    t.getStage() == null ? null : t.getStage().name());
         }
     }
+
+    public record SeasonRes(Long id, int year, List<TournamentRes> tournaments) {}
 
     public record RegistrationRes(Long id, Long tournamentId, Long categoryId, Long zoneId, TeamRef team,
                                   boolean approved) {
@@ -94,7 +100,8 @@ public class ResponseDtos {
     /** homeSource/awaySource: rule that picked the side of a promotion/final (null = fixed team). */
     public record MatchRes(Long id, Long tournamentId, Long zoneId, String type, TeamRef homeTeam, TeamRef awayTeam,
                            SlotRes homeSource, SlotRes awaySource,
-                           LocalDateTime scheduledAt, String status, Integer homeGoals, Integer awayGoals,
+                           LocalDateTime scheduledAt, Integer round, String roundLabel, String venue, String pitch,
+                           String notes, String status, Integer homeGoals, Integer awayGoals,
                            Integer homePenalties, Integer awayPenalties, TeamRef winner,
                            boolean homePresent, boolean awayPresent) {
         public static MatchRes from(MatchGame m) {
@@ -102,7 +109,8 @@ public class ResponseDtos {
                     m.typeOrRegular().name(), TeamRef.from(m.getHomeTeam()), TeamRef.from(m.getAwayTeam()),
                     SlotRes.of(m.getHomeSourceZone(), m.getHomeSourcePosition()),
                     SlotRes.of(m.getAwaySourceZone(), m.getAwaySourcePosition()),
-                    m.getScheduledAt(), m.getStatus().name(), m.getHomeGoals(), m.getAwayGoals(),
+                    m.getScheduledAt(), m.getRound(), m.getRoundLabel(), m.getVenue(), m.getPitch(), m.getNotes(),
+                    m.getStatus().name(), m.getHomeGoals(), m.getAwayGoals(),
                     m.getHomePenalties(), m.getAwayPenalties(),
                     m.winner() == null ? null : TeamRef.from(m.winner()),
                     m.present(true), m.present(false));

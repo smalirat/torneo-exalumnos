@@ -79,6 +79,18 @@ public class MatchService {
         m.setHomePenalties(req.getHomePenalties()); m.setAwayPenalties(req.getAwayPenalties());
     }
 
+    @Transactional
+    public ResponseDtos.MatchRes updateDetails(Long id, AdminDtos.MatchDetailsReq req) {
+        var m = matchRepo.findById(id).orElseThrow(() -> NotFoundException.of("Partido", id));
+        m.setScheduledAt(req.getScheduledAt());
+        m.setRound(req.getRound());
+        m.setRoundLabel(TournamentService.blankToNull(req.getRoundLabel()));
+        m.setVenue(TournamentService.blankToNull(req.getVenue()));
+        m.setPitch(TournamentService.blankToNull(req.getPitch()));
+        m.setNotes(TournamentService.blankToNull(req.getNotes()));
+        return ResponseDtos.MatchRes.from(m);
+    }
+
     /** Deletes a match together with its goals and cards. */
     @Transactional
     public void delete(Long matchId) {

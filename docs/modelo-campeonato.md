@@ -5,7 +5,8 @@ Decisiones acordadas (2026-10-16). Solo fútbol.
 ## Estructura
 
 ```
-Campeonato (Tournament)
+Temporada (Season)        2026  (opcional; agrupa Apertura y Clausura)
+Campeonato (Tournament)   etapa APERTURA / CLAUSURA
 └── Categoría (Category)   A, B, C…
     └── Zona (Zone)        Zona 1, Zona 2…
         ├── Inscripciones (Registration): equipo ↔ zona
@@ -17,7 +18,8 @@ Campeonato (Tournament)
 - El capitán inscribe su equipo en el **campeonato**; queda sin asignar (`zoneId = null`).
 - El admin le asigna categoría y zona (`PATCH /api/admin/registrations/{id}/zone`). Puede reasignarlo a cualquier zona del mismo campeonato mientras no tenga partidos.
 - Futuro: asignación automática para equipos que ya jugaron (p. ej. según categoría del torneo anterior).
-- La tabla de posiciones es por zona.
+- La tabla de posiciones es por zona. Incluye los **partidos interzonales**: partidos regulares sin zona entre equipos de distintas zonas del mismo campeonato (`POST /api/admin/fixtures/manual` con `tournamentId`), que suman en la tabla de la zona de cada equipo.
+- Cada partido puede tener número de fecha (`round`), etiqueta de fecha especial (`roundLabel`: "Interzonal", "Repetición en zonas"), campo (`venue`), cancha (`pitch`) y una nota libre (`notes`). Se editan con `PATCH /api/admin/matches/{id}`. El todos contra todos numera las fechas solo.
 - **Frontend:** si una categoría tiene una sola zona, no mostrar "Zona 1" (la API devuelve `zoneCount` en cada categoría).
 
 ## Tabla de posiciones (`GET /api/public/zones/{id}/standings`)

@@ -46,6 +46,16 @@ public class MatchGame {
 
     private LocalDateTime scheduledAt;
 
+    /** "Fecha N" of the tournament; null if not numbered. */
+    private Integer round;
+    /** Label of special rounds, e.g. "Interzonal", "Repetición en zonas". */
+    private String roundLabel;
+    /** Field ("Anexo", "Siberia") and pitch number. */
+    private String venue;
+    private String pitch;
+    /** Free note shown with the match ("no se presentó, no avisó con anticipación"). */
+    private String notes;
+
     @Enumerated(EnumType.STRING)
     private Status status = Status.SCHEDULED;
 

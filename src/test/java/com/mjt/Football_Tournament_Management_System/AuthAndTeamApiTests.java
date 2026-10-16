@@ -343,6 +343,82 @@ class AuthAndTeamApiTests {
                 .andExpect(jsonPath("$[1].zoneId").doesNotExist());
     }
 
+    // --- seasons & match details ---
+
+    @Test
+    void tournamentsBelongToASeasonWithOneAperturaAndOneClausura() throws Exception {
+        String admin = login("admin", "admin123");
+        int year = 2100 - (int) (Math.random() * 150); // unique enough across tests in the shared DB
+        String body = "{\"name\":\"T\",\"registrationStart\":\"2026-01-01\",\"registrationEnd\":\"2026-12-31\","
+                + "\"seasonYear\":" + year + ",\"stage\":\"%s\"}";
+        post("/api/admin/tournaments", body.formatted("APERTURA"), admin)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.seasonYear").value(year))
+                .andExpect(jsonPath("$.stage").value("APERTURA"));
+        post("/api/admin/tournaments", body.formatted("CLAUSURA"), admin).andExpect(status().isOk());
+        post("/api/admin/tournaments", body.formatted("APERTURA"), admin).andExpect(status().isConflict());
+        post("/api/admin/tournaments", "{\"name\":\"T\",\"registrationStart\":\"2026-01-01\","
+                + "\"registrationEnd\":\"2026-12-31\",\"stage\":\"APERTURA\"}", admin).andExpect(status().isBadRequest());
+
+        mvc.perform(get("/api/public/seasons"))
+                .andExpect(jsonPath("$[?(@.year == " + year + ")].tournaments.length()").value(2));
+    }
+
+    @Test
+    void interzonalMatchCountsInTheTableOfEachTeamsZone() throws Exception {
+        String admin = login("admin", "admin123");
+        long tournament = newTournament(admin);
+        JsonNode category = newCategory(admin, tournament, "A");
+        long zone1 = zoneOf(category, tournament);
+        long zone2 = read(post("/api/admin/categories/" + category.get("id").asLong() + "/zones",
+                "{\"name\":\"Zona 2\"}", admin)).get("id").asLong();
+        zoneTournaments.put(zone2, tournament);
+        long a = newTeam(admin), b = newTeam(admin), c = newTeam(admin);
+        long scorer = newPlayer(admin, a, "Goleador");
+        assignToZone(admin, zone1, a, b);
+        assignToZone(admin, zone2, c);
+
+        JsonNode match = read(post("/api/admin/fixtures/manual", "{\"tournamentId\":" + tournament
+                + ",\"fixtures\":[{\"homeTeamId\":" + a + ",\"awayTeamId\":" + c + ",\"round\":11,"
+                + "\"roundLabel\":\"Interzonal\",\"venue\":\"Siberia\",\"pitch\":\"3\"}]}", admin)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].zoneId").doesNotExist())
+                .andExpect(jsonPath("$[0].roundLabel").value("Interzonal"))).get(0);
+        score(admin, match.get("id").asLong(), "{\"events\":[" + event(scorer, "GOAL") + "]}");
+
+        mvc.perform(get("/api/public/zones/" + zone1 + "/standings"))
+                .andExpect(jsonPath("$[0].team.id").value(a))
+                .andExpect(jsonPath("$[0].played").value(1));
+        mvc.perform(get("/api/public/zones/" + zone2 + "/standings"))
+                .andExpect(jsonPath("$[0].team.id").value(c))
+                .andExpect(jsonPath("$[0].lost").value(1));
+        mvc.perform(get("/api/public/zones/" + zone2 + "/fixtures")).andExpect(jsonPath("$.length()").value(1));
+
+        // Interzonal teams must be placed in a zone of the tournament
+        post("/api/admin/fixtures/manual", "{\"tournamentId\":" + tournament + ",\"fixtures\":[{\"homeTeamId\":"
+                + a + ",\"awayTeamId\":" + newTeam(admin) + "}]}", admin).andExpect(status().isConflict());
+    }
+
+    @Test
+    void roundRobinNumbersRoundsAndMatchDetailsCanBeEdited() throws Exception {
+        String admin = login("admin", "admin123");
+        long zone = newZone(admin);
+        long a = newTeam(admin), b = newTeam(admin), c = newTeam(admin), d = newTeam(admin);
+        assignToZone(admin, zone, a, b, c, d);
+        JsonNode fixtures = read(post("/api/admin/zones/" + zone + "/fixtures/round-robin?start=2026-11-01T10:00:00", "", admin));
+        org.junit.jupiter.api.Assertions.assertEquals(6, fixtures.size());
+        org.junit.jupiter.api.Assertions.assertEquals(1, fixtures.get(0).get("round").asInt());
+        org.junit.jupiter.api.Assertions.assertEquals(3, fixtures.get(5).get("round").asInt());
+
+        long id = fixtures.get(0).get("id").asLong();
+        patch("/api/admin/matches/" + id, "{\"scheduledAt\":\"2026-11-02T09:00:00\",\"round\":1,\"venue\":\"Anexo\","
+                + "\"pitch\":\"2\",\"notes\":\"Se juega con pelota nueva\"}", admin)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.venue").value("Anexo"))
+                .andExpect(jsonPath("$.notes").value("Se juega con pelota nueva"))
+                .andExpect(jsonPath("$.status").value("SCHEDULED"));
+    }
+
     // --- standings ---
 
     @Test

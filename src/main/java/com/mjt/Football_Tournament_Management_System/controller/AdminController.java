@@ -45,6 +45,12 @@ public class AdminController {
         tService.delete(id);
     }
 
+    @PatchMapping("/matches/{id}")
+    @Operation(summary = "Edit match data: date, round, field, pitch, note (not the result)")
+    public ResponseDtos.MatchRes updateMatch(@PathVariable Long id, @Valid @RequestBody AdminDtos.MatchDetailsReq req) {
+        return mService.updateDetails(id, req);
+    }
+
     @DeleteMapping("/matches/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @Operation(summary = "Delete a match and its goals/cards")
@@ -102,6 +108,7 @@ public class AdminController {
     }
 
     @PostMapping("/fixtures/manual")
+    @Operation(summary = "Manual fixtures: in a zone (zoneId) or interzonal between zones (tournamentId)")
     public List<ResponseDtos.MatchRes> manual(@Valid @RequestBody AdminDtos.ManualFixtureReq req) {
         return tService.createManualFixtures(req);
     }

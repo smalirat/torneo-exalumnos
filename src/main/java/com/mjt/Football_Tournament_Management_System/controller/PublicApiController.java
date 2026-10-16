@@ -29,6 +29,12 @@ public class PublicApiController {
     private final TeamService teamService;
     private final PlayoffService pService;
 
+    @GetMapping("/seasons")
+    @Operation(summary = "Seasons (years), newest first, with their tournaments")
+    public List<ResponseDtos.SeasonRes> seasons() {
+        return tService.seasons();
+    }
+
     @GetMapping("/tournaments")
     public List<ResponseDtos.TournamentRes> tournaments() {
         return tService.findAll();

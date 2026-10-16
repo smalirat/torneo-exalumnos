@@ -22,5 +22,14 @@ public class Tournament {
     @Enumerated(EnumType.STRING)
     private Status status = Status.OPEN;
 
+    // Year it belongs to and whether it is the Apertura or the Clausura (both optional)
+    @ManyToOne
+    private Season season;
+
+    @Enumerated(EnumType.STRING)
+    private Stage stage;
+
     public enum Status { DRAFT, OPEN, CLOSED, LIVE, COMPLETE }
+
+    public enum Stage { APERTURA, CLAUSURA }
 }

@@ -19,6 +19,9 @@ public class AdminDtos {
         private String location;
         @NotNull private LocalDate registrationStart, registrationEnd;
         private LocalDate matchStart, matchEnd;
+        /** Season year (created if missing) and stage; both optional. */
+        @Min(1900) @Max(2100) private Integer seasonYear;
+        private Tournament.Stage stage;
     }
     @Data
     public static class UpdateTournamentReq {
@@ -27,17 +30,44 @@ public class AdminDtos {
         @NotNull private LocalDate registrationStart, registrationEnd;
         private LocalDate matchStart, matchEnd;
         @NotNull private Tournament.Status status;
+        @Min(1900) @Max(2100) private Integer seasonYear;
+        private Tournament.Stage stage;
     }
 
+    /**
+     * Regular matches. With zoneId both teams must be in that zone; without it (tournamentId instead) it is an
+     * interzonal match between teams of the tournament, which counts in each team's zone table.
+     */
     @Data
     public static class ManualFixtureReq {
-        @NotNull private Long zoneId;
+        private Long zoneId;
+        private Long tournamentId;
         @NotEmpty private List<@Valid FixtureItem> fixtures;
+
+        @AssertTrue(message = "indicar zoneId o tournamentId")
+        public boolean isTargetGiven() { return zoneId != null || tournamentId != null; }
     }
+
     @Data
     public static class FixtureItem {
         @NotNull private Long homeTeamId, awayTeamId;
         private LocalDateTime scheduledAt;
+        @Min(1) private Integer round;
+        @Size(max = 80) private String roundLabel;
+        @Size(max = 60) private String venue;
+        @Size(max = 20) private String pitch;
+        @Size(max = 500) private String notes;
+    }
+
+    /** Editable match data (not the result). */
+    @Data
+    public static class MatchDetailsReq {
+        private LocalDateTime scheduledAt;
+        @Min(1) private Integer round;
+        @Size(max = 80) private String roundLabel;
+        @Size(max = 60) private String venue;
+        @Size(max = 20) private String pitch;
+        @Size(max = 500) private String notes;
     }
     /** Name for a category or zone. */
     @Data

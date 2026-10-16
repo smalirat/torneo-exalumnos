@@ -5,6 +5,7 @@ import com.mjt.Football_Tournament_Management_System.dto.AdminDtos;
 import com.mjt.Football_Tournament_Management_System.dto.ResponseDtos;
 import com.mjt.Football_Tournament_Management_System.entire.*;
 import com.mjt.Football_Tournament_Management_System.repo.*;
+import com.mjt.Football_Tournament_Management_System.exception.BadRequestException;
 import com.mjt.Football_Tournament_Management_System.exception.ConflictException;
 import com.mjt.Football_Tournament_Management_System.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -23,12 +24,14 @@ public class TournamentService {
     private final NotificationRepository notificationRepo;
     private final ZoneRepository zoneRepo;
     private final CategoryRepository categoryRepo;
+    private final SeasonRepository seasonRepo;
 
     public ResponseDtos.TournamentRes create(AdminDtos.CreateTournamentReq req) {
         var t = new Tournament();
         t.setName(req.getName()); t.setLocation(req.getLocation());
         t.setRegistrationStart(req.getRegistrationStart()); t.setRegistrationEnd(req.getRegistrationEnd());
         t.setMatchStart(req.getMatchStart()); t.setMatchEnd(req.getMatchEnd());
+        setSeason(t, req.getSeasonYear(), req.getStage());
         return ResponseDtos.TournamentRes.from(tournamentRepo.save(t));
     }
 
@@ -39,6 +42,7 @@ public class TournamentService {
         t.setRegistrationStart(req.getRegistrationStart()); t.setRegistrationEnd(req.getRegistrationEnd());
         t.setMatchStart(req.getMatchStart()); t.setMatchEnd(req.getMatchEnd());
         t.setStatus(req.getStatus());
+        setSeason(t, req.getSeasonYear(), req.getStage());
         return ResponseDtos.TournamentRes.from(t);
     }
 
@@ -54,6 +58,30 @@ public class TournamentService {
             categoryRepo.delete(c);
         }
         tournamentRepo.delete(t);
+    }
+
+    /** Seasons, newest first, with their tournaments. */
+    public List<ResponseDtos.SeasonRes> seasons() {
+        return seasonRepo.findAllByOrderByYearDesc().stream()
+                .map(s -> new ResponseDtos.SeasonRes(s.getId(), s.getYear(),
+                        tournamentRepo.findBySeasonOrderByStageAscIdAsc(s).stream()
+                                .map(ResponseDtos.TournamentRes::from).toList()))
+                .toList();
+    }
+
+    /** Links the tournament to the season of that year (created on demand). One Apertura/Clausura per season. */
+    private void setSeason(Tournament t, Integer year, Tournament.Stage stage) {
+        if (year == null) {
+            if (stage != null) throw new BadRequestException("Para indicar Apertura/Clausura hay que indicar el año");
+            t.setSeason(null); t.setStage(null);
+            return;
+        }
+        var season = seasonRepo.findByYear(year).orElseGet(() -> seasonRepo.save(new Season(null, year)));
+        boolean changed = t.getSeason() == null || !t.getSeason().getId().equals(season.getId()) || t.getStage() != stage;
+        if (stage != null && changed && tournamentRepo.existsBySeasonAndStage(season, stage)) {
+            throw new ConflictException("La temporada " + year + " ya tiene " + (stage == Tournament.Stage.APERTURA ? "Apertura" : "Clausura"));
+        }
+        t.setSeason(season); t.setStage(stage);
     }
 
     public List<ResponseDtos.TournamentRes> findAll() {
@@ -89,7 +117,7 @@ public class TournamentService {
                 var home = list.get(i); var away = list.get(n-1-i);
                 if (home == null || away == null) continue;
                 var m = new MatchGame();
-                m.setTournament(t); m.setZone(zone); m.setHomeTeam(home); m.setAwayTeam(away); m.setScheduledAt(cursor);
+                m.setTournament(t); m.setZone(zone); m.setRound(r + 1); m.setHomeTeam(home); m.setAwayTeam(away); m.setScheduledAt(cursor);
                 out.add(m); cursor = cursor.plusMinutes(minutesBetween);
             }
             var fixed = list.get(0);
@@ -105,8 +133,8 @@ public class TournamentService {
 
     @Transactional
     public List<ResponseDtos.MatchRes> createManualFixtures(AdminDtos.ManualFixtureReq req) {
-        var zone = findZone(req.getZoneId());
-        var t = zone.getCategory().getTournament();
+        var zone = req.getZoneId() == null ? null : findZone(req.getZoneId());
+        var t = zone != null ? zone.getCategory().getTournament() : findTournament(req.getTournamentId());
         List<MatchGame> ms = new ArrayList<>();
         for (var f : req.getFixtures()) {
             if (f.getHomeTeamId().equals(f.getAwayTeamId())) {
@@ -115,9 +143,12 @@ public class TournamentService {
             var m = new MatchGame();
             m.setTournament(t);
             m.setZone(zone);
-            m.setHomeTeam(teamInZone(zone, f.getHomeTeamId()));
-            m.setAwayTeam(teamInZone(zone, f.getAwayTeamId()));
+            m.setHomeTeam(zone != null ? teamInZone(zone, f.getHomeTeamId()) : teamInTournament(t, f.getHomeTeamId()));
+            m.setAwayTeam(zone != null ? teamInZone(zone, f.getAwayTeamId()) : teamInTournament(t, f.getAwayTeamId()));
             m.setScheduledAt(f.getScheduledAt());
+            m.setRound(f.getRound()); m.setRoundLabel(blankToNull(f.getRoundLabel()));
+            m.setVenue(blankToNull(f.getVenue())); m.setPitch(blankToNull(f.getPitch()));
+            m.setNotes(blankToNull(f.getNotes()));
             ms.add(m);
         }
         var saved = matchRepo.saveAll(ms);
@@ -136,6 +167,19 @@ public class TournamentService {
             throw new ConflictException("El equipo " + team.getName() + " no está inscripto en la zona");
         }
         return team;
+    }
+
+    /** Interzonal matches: the team must be registered (and placed in a zone) in the tournament. */
+    private Team teamInTournament(Tournament t, Long teamId) {
+        var team = teamRepo.findById(teamId).orElseThrow(() -> NotFoundException.of("Equipo", teamId));
+        var placed = regRepo.findByTournament(t).stream()
+                .anyMatch(r -> r.getTeam().getId().equals(teamId) && r.getZone() != null);
+        if (!placed) throw new ConflictException("El equipo " + team.getName() + " no tiene zona en este campeonato");
+        return team;
+    }
+
+    static String blankToNull(String s) {
+        return s == null || s.isBlank() ? null : s.trim();
     }
 
     private Tournament findTournament(Long id) {

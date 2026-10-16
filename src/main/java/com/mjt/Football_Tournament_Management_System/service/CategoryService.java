@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 /** Categories and zones of a tournament. */
 @Service
@@ -103,7 +104,13 @@ public class CategoryService {
     }
 
     public List<ResponseDtos.MatchRes> zoneFixtures(Long zoneId) {
-        return matchRepo.findByZoneOrderByScheduledAtAsc(findZone(zoneId)).stream()
+        var zone = findZone(zoneId);
+        var teamIds = regRepo.findByZone(zone).stream().map(r -> r.getTeam().getId()).collect(Collectors.toSet());
+        // Zone matches plus interzonal regular matches (no zone) involving one of its teams
+        return matchRepo.findByTournament(zone.getCategory().getTournament()).stream()
+                .filter(m -> !m.isSpecial())
+                .filter(m -> m.getZone() != null ? m.getZone().getId().equals(zoneId)
+                        : teamIds.contains(m.getHomeTeam().getId()) || teamIds.contains(m.getAwayTeam().getId()))
                 .sorted(MatchGame.BY_DATE).map(ResponseDtos.MatchRes::from).toList();
     }
 

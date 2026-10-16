@@ -147,6 +147,7 @@ mvn spring-boot:run
 | GET    | `/api/public/tournaments`                    | List all tournaments          |
 | GET    | `/api/public/tournaments/{id}/fixtures`      | List fixtures of a tournament |
 | GET    | `/api/public/tournaments/{id}/registrations` | List registered teams         |
+| GET    | `/api/public/seasons`                        | Seasons with their tournaments |
 | GET    | `/api/public/tournaments/{id}/categories`    | Categories with their zones   |
 | GET    | `/api/public/zones/{id}/registrations`       | Teams of a zone               |
 | GET    | `/api/public/zones/{id}/fixtures`            | Fixtures of a zone            |
@@ -181,6 +182,7 @@ mvn spring-boot:run
 | POST   | `/api/admin/categories/{id}/zones`                 | Add zone            |
 | PUT/DELETE | `/api/admin/zones/{id}`                        | Rename / delete zone |
 | PUT/DELETE | `/api/admin/tournaments/{id}`                  | Edit / delete tournament (409 if it has teams or matches) |
+| PATCH  | `/api/admin/matches/{id}`                          | Edit date, round, field, pitch, note |
 | DELETE | `/api/admin/matches/{id}`                          | Delete match and its events |
 | PATCH  | `/api/admin/registrations/{id}/zone`               | Assign/move team to a zone |
 | POST   | `/api/admin/zones/{id}/fixtures/round-robin`       | Generate zone fixtures |
