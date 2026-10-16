@@ -76,14 +76,25 @@ public class ResponseDtos {
     public record CategoryRes(Long id, Long tournamentId, String name, int displayOrder,
                               int zoneCount, List<ZoneRes> zones) {}
 
-    public record MatchRes(Long id, Long tournamentId, Long zoneId, TeamRef homeTeam, TeamRef awayTeam,
+    /** homeSource/awaySource: rule that picked the side of a promotion/final (null = fixed team). */
+    public record MatchRes(Long id, Long tournamentId, Long zoneId, String type, TeamRef homeTeam, TeamRef awayTeam,
+                           SlotRes homeSource, SlotRes awaySource,
                            LocalDateTime scheduledAt, String status, Integer homeGoals, Integer awayGoals,
                            boolean homePresent, boolean awayPresent) {
         public static MatchRes from(MatchGame m) {
             return new MatchRes(m.getId(), m.getTournament().getId(), m.getZone() == null ? null : m.getZone().getId(),
-                    TeamRef.from(m.getHomeTeam()), TeamRef.from(m.getAwayTeam()),
+                    m.typeOrRegular().name(), TeamRef.from(m.getHomeTeam()), TeamRef.from(m.getAwayTeam()),
+                    SlotRes.of(m.getHomeSourceZone(), m.getHomeSourcePosition()),
+                    SlotRes.of(m.getAwaySourceZone(), m.getAwaySourcePosition()),
                     m.getScheduledAt(), m.getStatus().name(), m.getHomeGoals(), m.getAwayGoals(),
                     m.present(true), m.present(false));
+        }
+    }
+
+    public record SlotRes(Long zoneId, String zoneName, Long tournamentId, int position) {
+        static SlotRes of(Zone zone, Integer position) {
+            if (zone == null || position == null) return null;
+            return new SlotRes(zone.getId(), zone.getName(), zone.getCategory().getTournament().getId(), position);
         }
     }
 

@@ -149,6 +149,7 @@ mvn spring-boot:run
 | GET    | `/api/public/tournaments/{id}/scorers`       | Top scorers                   |
 | GET    | `/api/public/tournaments/{id}/cards`         | Booked players                |
 | GET    | `/api/public/teams/{id}/players`             | Team roster                   |
+| GET    | `/api/public/tournaments/{id}/special-matches` | Promotions and finals       |
 
 ### 🧑‍🤝‍🧑 Team APIs
 
@@ -171,6 +172,8 @@ mvn spring-boot:run
 | PATCH  | `/api/admin/registrations/{id}/zone`               | Assign/move team to a zone |
 | POST   | `/api/admin/zones/{id}/fixtures/round-robin`       | Generate zone fixtures |
 | POST   | `/api/admin/fixtures/manual`                       | Manual fixtures (by zone) |
+| POST   | `/api/admin/tournaments/{id}/special-matches`      | Promotion/final by team or zone position |
+| POST   | `/api/admin/matches/{id}/resolve`                  | Re-resolve position rules (not played yet) |
 | PATCH  | `/api/admin/matches/{id}/score`                    | Result as per-player events; presence (walkover 3-0) |
 
 ---

@@ -393,7 +393,121 @@ class AuthAndTeamApiTests {
                 .andExpect(jsonPath("$[0].points").value(2)); // draw + presence
     }
 
+    // --- promotions & finals ---
+
+    @Test
+    void promotionPicksTeamsByPositionAcrossCategoriesAndStaysOutOfTables() throws Exception {
+        String admin = login("admin", "admin123");
+        long tournament = newTournament(admin);
+        long zoneA = zoneOf(newCategory(admin, tournament, "A"), tournament);
+        long zoneB = zoneOf(newCategory(admin, tournament, "B"), tournament);
+        String s = UUID.randomUUID().toString();
+        long a1 = newTeamNamed(admin, "A1 " + s), a2 = newTeamNamed(admin, "A2 " + s), a3 = newTeamNamed(admin, "A3 " + s);
+        long b1 = newTeamNamed(admin, "B1 " + s), b2 = newTeamNamed(admin, "B2 " + s);
+        assignToZone(admin, zoneA, a1, a2, a3);
+        assignToZone(admin, zoneB, b1, b2);
+        // A: a1 > a2 > a3 ; B: b1 > b2
+        winOneNil(admin, scheduleMatch(admin, zoneA, a1, a2), a1);
+        winOneNil(admin, scheduleMatch(admin, zoneA, a2, a3), a2);
+        winOneNil(admin, scheduleMatch(admin, zoneB, b1, b2), b1);
+
+        long promo = read(post("/api/admin/tournaments/" + tournament + "/special-matches",
+                specialMatch("PROMOTION", slot(zoneA, 3), slot(zoneB, 1)), admin)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.type").value("PROMOTION"))
+                .andExpect(jsonPath("$.zoneId").doesNotExist())
+                .andExpect(jsonPath("$.homeTeam.id").value(a3))
+                .andExpect(jsonPath("$.awayTeam.id").value(b1))
+                .andExpect(jsonPath("$.homeSource.position").value(3))).get("id").asLong();
+
+        winOneNil(admin, promo, a3);
+        mvc.perform(get("/api/public/zones/" + zoneA + "/standings"))
+                .andExpect(jsonPath("$[2].team.id").value(a3))
+                .andExpect(jsonPath("$[2].played").value(1)); // promotion not counted
+        mvc.perform(get("/api/public/tournaments/" + tournament + "/special-matches"))
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].status").value("FINISHED"));
+    }
+
+    @Test
+    void finalBetweenWinnersOfTwoTournaments() throws Exception {
+        String admin = login("admin", "admin123");
+        long apertura = newZone(admin), clausura = newZone(admin);
+        long ap1 = newTeam(admin), ap2 = newTeam(admin), cl1 = newTeam(admin), cl2 = newTeam(admin);
+        assignToZone(admin, apertura, ap1, ap2);
+        assignToZone(admin, clausura, cl1, cl2);
+        winOneNil(admin, scheduleMatch(admin, apertura, ap2, ap1), ap2);
+        winOneNil(admin, scheduleMatch(admin, clausura, cl1, cl2), cl1);
+
+        post("/api/admin/tournaments/" + zoneTournaments.get(clausura) + "/special-matches",
+                specialMatch("FINAL", slot(apertura, 1), slot(clausura, 1)), admin)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.homeTeam.id").value(ap2))
+                .andExpect(jsonPath("$.awayTeam.id").value(cl1))
+                .andExpect(jsonPath("$.homeSource.tournamentId").value(zoneTournaments.get(apertura)));
+    }
+
+    @Test
+    void resolveRecomputesUntilTheMatchIsPlayed() throws Exception {
+        String admin = login("admin", "admin123");
+        long zone = newZone(admin);
+        String s = UUID.randomUUID().toString();
+        long first = newTeamNamed(admin, "AAA " + s), second = newTeamNamed(admin, "BBB " + s);
+        long fixed = newTeam(admin);
+        assignToZone(admin, zone, first, second);
+
+        // No results yet: 1st place is AAA (alphabetical); the other side is a fixed team
+        long match = read(post("/api/admin/tournaments/" + zoneTournaments.get(zone) + "/special-matches",
+                specialMatch("FINAL", slot(zone, 1), "{\"teamId\":" + fixed + "}"), admin)
+                .andExpect(jsonPath("$.homeTeam.id").value(first))
+                .andExpect(jsonPath("$.awaySource").doesNotExist())).get("id").asLong();
+
+        winOneNil(admin, scheduleMatch(admin, zone, first, second), second);
+        post("/api/admin/matches/" + match + "/resolve", "", admin)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.homeTeam.id").value(second))
+                .andExpect(jsonPath("$.awayTeam.id").value(fixed));
+
+        winOneNil(admin, match, second);
+        post("/api/admin/matches/" + match + "/resolve", "", admin).andExpect(status().isConflict());
+    }
+
+    @Test
+    void specialMatchValidation() throws Exception {
+        String admin = login("admin", "admin123");
+        long zone = newZone(admin);
+        long a = newTeam(admin), b = newTeam(admin);
+        assignToZone(admin, zone, a, b);
+        String url = "/api/admin/tournaments/" + zoneTournaments.get(zone) + "/special-matches";
+
+        post(url, specialMatch("FINAL", "{\"teamId\":" + a + ",\"zoneId\":" + zone + ",\"position\":1}", slot(zone, 2)), admin)
+                .andExpect(status().isBadRequest()); // both a team and a rule
+        post(url, specialMatch("FINAL", "{\"zoneId\":" + zone + "}", slot(zone, 2)), admin)
+                .andExpect(status().isBadRequest()); // rule without position
+        post(url, specialMatch("FINAL", slot(zone, 1), slot(zone, 3)), admin)
+                .andExpect(status().isConflict()); // only 2 teams
+        post(url, specialMatch("REGULAR", slot(zone, 1), slot(zone, 2)), admin)
+                .andExpect(status().isBadRequest());
+        post(url, specialMatch("FINAL", slot(zone, 1), slot(zone, 1)), admin)
+                .andExpect(status().isConflict()); // same team on both sides
+    }
+
     // --- helpers ---
+
+    private long zoneOf(JsonNode category, long tournamentId) {
+        long zoneId = category.get("zones").get(0).get("id").asLong();
+        zoneTournaments.put(zoneId, tournamentId);
+        return zoneId;
+    }
+
+    private String slot(long zoneId, int position) {
+        return "{\"zoneId\":" + zoneId + ",\"position\":" + position + "}";
+    }
+
+    private String specialMatch(String type, String home, String away) {
+        return "{\"type\":\"" + type + "\",\"scheduledAt\":\"2026-12-01T10:00:00\",\"home\":" + home
+                + ",\"away\":" + away + "}";
+    }
 
     /** New tournament with one category; returns the id of its single zone. */
     private long newZone(String admin) throws Exception {

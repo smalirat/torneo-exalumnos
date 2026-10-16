@@ -4,6 +4,7 @@ package com.mjt.Football_Tournament_Management_System.controller;
 import com.mjt.Football_Tournament_Management_System.dto.ResponseDtos;
 import com.mjt.Football_Tournament_Management_System.service.CategoryService;
 import com.mjt.Football_Tournament_Management_System.service.MatchService;
+import com.mjt.Football_Tournament_Management_System.service.PlayoffService;
 import com.mjt.Football_Tournament_Management_System.service.RankingService;
 import com.mjt.Football_Tournament_Management_System.service.StandingsService;
 import com.mjt.Football_Tournament_Management_System.service.TeamService;
@@ -26,6 +27,7 @@ public class PublicApiController {
     private final MatchService mService;
     private final RankingService rService;
     private final TeamService teamService;
+    private final PlayoffService pService;
 
     @GetMapping("/tournaments")
     public List<ResponseDtos.TournamentRes> tournaments() {
@@ -48,6 +50,12 @@ public class PublicApiController {
     @Operation(summary = "Goals, own goals and cards of a match")
     public List<ResponseDtos.MatchEventRes> matchEvents(@PathVariable Long id) {
         return mService.events(id);
+    }
+
+    @GetMapping("/tournaments/{id}/special-matches")
+    @Operation(summary = "Promotions and finals of a tournament")
+    public List<ResponseDtos.MatchRes> specialMatches(@PathVariable Long id) {
+        return pService.list(id);
     }
 
     @GetMapping("/tournaments/{id}/scorers")

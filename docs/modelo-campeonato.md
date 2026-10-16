@@ -38,9 +38,11 @@ Campeonato (Tournament)
 - Volver a cargar un resultado reemplaza los eventos anteriores.
 - Rankings por campeonato: `GET /api/public/tournaments/{id}/scorers` y `/cards` (rojas primero, después amarillas).
 
-## Promociones y finales (pendiente: `feat/playoffs`)
+## Promociones y finales
 
-- Partidos especiales `type = PROMOTION | FINAL`, fuera de la tabla.
-- Cada lado del partido se define por una **regla** configurable: "posición N de la zona X" (zona de este campeonato o de uno anterior), o un equipo elegido a mano.
-- La regla se resuelve contra la tabla del momento; mientras el partido no se jugó, se puede recalcular.
+- Partidos especiales `type = PROMOTION | FINAL`, sin zona: no suman a ninguna tabla (sí a goleadores/amonestados del campeonato donde se crean).
+- Crear: `POST /api/admin/tournaments/{id}/special-matches` con `type`, `scheduledAt`, `home` y `away`. Cada lado es `{teamId}` o `{zoneId, position}` (zona de cualquier campeonato).
+- La regla se resuelve contra la tabla al crear. `POST /api/admin/matches/{id}/resolve` la recalcula mientras el partido no se jugó (409 si ya se jugó).
+- Se listan en `GET /api/public/tournaments/{id}/special-matches`; cada partido trae `homeSource`/`awaySource` con la regla.
+- Pendiente: definición por penales si una final termina empatada.
 - Ejemplos: 7º de la A vs 3º de la B (promoción); 1º del Apertura vs 1º del Clausura (final).

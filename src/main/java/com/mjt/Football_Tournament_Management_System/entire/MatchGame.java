@@ -22,9 +22,20 @@ public class MatchGame {
     @ManyToOne(optional=false)
     private Tournament tournament;
 
-    // Zone of a regular match; null for special matches (promotion/final, coming later)
+    // Zone of a regular match; null for special matches (promotion/final)
     @ManyToOne
     private Zone zone;
+
+    @Enumerated(EnumType.STRING)
+    private Type type = Type.REGULAR;
+
+    // Rule that picks each side of a special match: position N of a zone (any tournament). Null = fixed team.
+    @ManyToOne @JoinColumn(name="home_source_zone_id")
+    private Zone homeSourceZone;
+    private Integer homeSourcePosition;
+    @ManyToOne @JoinColumn(name="away_source_zone_id")
+    private Zone awaySourceZone;
+    private Integer awaySourcePosition;
 
     @ManyToOne(optional=false) @JoinColumn(name="home_team_id")
     private Team homeTeam;
@@ -49,6 +60,13 @@ public class MatchGame {
     private Integer awayRedCards = 0;
 
     public enum Status { SCHEDULED, FINISHED }
+
+    /** REGULAR counts for its zone table; PROMOTION and FINAL are played apart. */
+    public enum Type { REGULAR, PROMOTION, FINAL }
+
+    public Type typeOrRegular() { return type == null ? Type.REGULAR : type; }
+
+    public boolean isSpecial() { return typeOrRegular() != Type.REGULAR; }
 
     // --- scoring rules (football), shared by standings and team dashboard ---
 

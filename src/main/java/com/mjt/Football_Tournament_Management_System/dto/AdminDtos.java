@@ -4,6 +4,7 @@ package com.mjt.Football_Tournament_Management_System.dto;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
 import com.mjt.Football_Tournament_Management_System.entire.MatchEvent;
+import com.mjt.Football_Tournament_Management_System.entire.MatchGame;
 import lombok.Data;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -47,6 +48,25 @@ public class AdminDtos {
     public static class ScoreUpdateReq {
         private boolean homePresent = true, awayPresent = true;
         @NotNull private List<@Valid EventItem> events = new ArrayList<>();
+    }
+
+    /** Promotion or final; each side is a fixed team or "position N of zone X". */
+    @Data
+    public static class SpecialMatchReq {
+        @NotNull private MatchGame.Type type;
+        private LocalDateTime scheduledAt;
+        @NotNull @Valid private SlotReq home;
+        @NotNull @Valid private SlotReq away;
+
+        @AssertTrue(message = "debe ser PROMOTION o FINAL")
+        public boolean isSpecialType() { return type == null || type != MatchGame.Type.REGULAR; }
+    }
+
+    @Data
+    public static class SlotReq {
+        private Long teamId;
+        private Long zoneId;
+        @Min(1) private Integer position;
     }
 
     @Data

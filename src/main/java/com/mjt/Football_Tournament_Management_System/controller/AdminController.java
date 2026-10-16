@@ -5,6 +5,7 @@ import com.mjt.Football_Tournament_Management_System.dto.AdminDtos;
 import com.mjt.Football_Tournament_Management_System.dto.ResponseDtos;
 import com.mjt.Football_Tournament_Management_System.service.CategoryService;
 import com.mjt.Football_Tournament_Management_System.service.MatchService;
+import com.mjt.Football_Tournament_Management_System.service.PlayoffService;
 import com.mjt.Football_Tournament_Management_System.service.TournamentService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -25,6 +26,7 @@ public class AdminController {
     private final TournamentService tService;
     private final MatchService mService;
     private final CategoryService cService;
+    private final PlayoffService pService;
 
     @PostMapping("/tournaments")
     public ResponseDtos.TournamentRes create(@Valid @RequestBody AdminDtos.CreateTournamentReq req) {
@@ -83,6 +85,19 @@ public class AdminController {
     @PostMapping("/fixtures/manual")
     public List<ResponseDtos.MatchRes> manual(@Valid @RequestBody AdminDtos.ManualFixtureReq req) {
         return tService.createManualFixtures(req);
+    }
+
+    @PostMapping("/tournaments/{id}/special-matches")
+    @Operation(summary = "Create a promotion/final; each side is a teamId or zoneId+position (any tournament)")
+    public ResponseDtos.MatchRes createSpecialMatch(@PathVariable Long id,
+                                                    @Valid @RequestBody AdminDtos.SpecialMatchReq req) {
+        return pService.create(id, req);
+    }
+
+    @PostMapping("/matches/{id}/resolve")
+    @Operation(summary = "Re-resolve the position rules of a promotion/final from current standings (if not played)")
+    public ResponseDtos.MatchRes resolveSpecialMatch(@PathVariable Long id) {
+        return pService.resolve(id);
     }
 
     @PatchMapping("/matches/{id}/score")
