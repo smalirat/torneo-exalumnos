@@ -144,7 +144,7 @@ public class TeamService {
         int played=0,w=0,d=0,l=0,gf=0,ga=0,pts=0;
         List<ViewDtos.Fixture> fixtures = new ArrayList<>();
         for (var m : matches) {
-            if (m.isFinished()) {
+            if (m.counts()) {
                 played++;
                 boolean home = m.isHome(team);
                 gf += m.goalsFor(home); ga += m.goalsAgainst(home);

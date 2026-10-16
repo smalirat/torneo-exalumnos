@@ -544,6 +544,17 @@ class AuthAndTeamApiTests {
                 .andExpect(jsonPath("$.awayGoals").value(0))
                 .andExpect(jsonPath("$.awayPresent").value(false));
 
+        // A walkover decided ahead of its date (e.g. a team withdrew) counts only once that date arrives
+        patch("/api/admin/matches/" + match, "{\"scheduledAt\":\"2099-01-01T10:00:00\"}", admin)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.advanceWalkover").value(true));
+        mvc.perform(get("/api/public/zones/" + zone + "/standings"))
+                .andExpect(jsonPath("$[0].points").value(0))
+                .andExpect(jsonPath("$[0].played").value(0));
+        patch("/api/admin/matches/" + match, "{\"scheduledAt\":\"2025-11-01T10:00:00\"}", admin)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.advanceWalkover").value(false));
+
         mvc.perform(get("/api/public/zones/" + zone + "/standings"))
                 .andExpect(jsonPath("$[0].team.id").value(shows))
                 .andExpect(jsonPath("$[0].points").value(4)) // 3 win + 1 presence
@@ -919,7 +930,7 @@ class AuthAndTeamApiTests {
 
     private String manualFixture(long zoneId, long home, long away) {
         return "{\"zoneId\":" + zoneId + ",\"fixtures\":[{\"homeTeamId\":" + home
-                + ",\"awayTeamId\":" + away + ",\"scheduledAt\":\"2026-11-01T10:00:00\"}]}";
+                + ",\"awayTeamId\":" + away + ",\"scheduledAt\":\"2025-11-01T10:00:00\"}]}";
     }
 
     private ResultActions patch(String url, String body, String token) throws Exception {

@@ -156,7 +156,7 @@ public class ResponseDtos {
                            LocalDateTime scheduledAt, Integer round, String roundLabel, String venue, String pitch,
                            String notes, String status, Integer homeGoals, Integer awayGoals,
                            Integer homePenalties, Integer awayPenalties, TeamRef winner,
-                           boolean homePresent, boolean awayPresent) {
+                           boolean homePresent, boolean awayPresent, boolean advanceWalkover) {
         public static MatchRes from(MatchGame m) {
             return new MatchRes(m.getId(), m.getTournament().getId(), m.getZone() == null ? null : m.getZone().getId(),
                     m.typeOrRegular().name(), TeamRef.from(m.getHomeTeam()), TeamRef.from(m.getAwayTeam()),
@@ -166,7 +166,7 @@ public class ResponseDtos {
                     m.getStatus().name(), m.getHomeGoals(), m.getAwayGoals(),
                     m.getHomePenalties(), m.getAwayPenalties(),
                     m.winner() == null ? null : TeamRef.from(m.winner()),
-                    m.present(true), m.present(false));
+                    m.present(true), m.present(false), m.isAdvanceWalkover());
         }
     }
 

@@ -7,6 +7,7 @@ import com.mjt.Football_Tournament_Management_System.service.StandingsService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDate;
 import java.util.*;
 
 /**
@@ -347,6 +348,11 @@ public class ExcelImporter {
             return t.getName() + " · " + round + " · " + m.getHomeTeam().getName() + " vs " + m.getAwayTeam().getName();
         }
 
+        boolean isAdvanceWalkover(ParsedMatch m) {
+            return (!m.homePresent() || !m.awayPresent()) && m.date() != null
+                    && m.date().isAfter(LocalDate.now(MatchGame.LEAGUE_ZONE));
+        }
+
         /** The Excel's PR should be one point per match the team showed up to (our rule). */
         void checkPresencePoints() {
             for (var row : wb.tableTeams) {
@@ -355,6 +361,7 @@ public class ExcelImporter {
                 int present = 0, absent = 0;
                 for (var m : wb.matches) {
                     if (m.stage() != row.stage() || m.type() != MatchGame.Type.REGULAR || !m.played()) continue;
+                    if (isAdvanceWalkover(m)) continue; // not in the table until its date, same as StandingsService
                     if (!m.home().isPlaceholder() && Sheet.norm(m.home().team()).equals(key)) {
                         if (m.homePresent()) present++; else absent++;
                     } else if (!m.away().isPlaceholder() && Sheet.norm(m.away().team()).equals(key)) {

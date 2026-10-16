@@ -46,7 +46,9 @@ const place = computed(() => [
         {{ match.awayTeam.name }} <TeamBadge :name="match.awayTeam.name" :size="22" />
       </span>
     </div>
-    <span v-if="walkover && match.status === 'FINISHED'" class="wo">{{ t('standings.walkover') }}</span>
+    <span v-if="walkover && match.status === 'FINISHED'" class="wo">
+      {{ t('standings.walkover') }}<span v-if="match.advanceWalkover" class="muted pending"> · {{ t('standings.advanceWalkover') }}</span>
+    </span>
     <p v-if="match.notes" class="note">{{ match.notes }}</p>
   </div>
 </template>
@@ -63,5 +65,6 @@ const place = computed(() => [
 .side.win { font-weight: 700; }
 .score { min-width: 54px; display: flex; flex-direction: column; align-items: center; }
 .wo { font-size: 11px; color: var(--danger); font-weight: 700; }
+.pending { font-weight: 500; }
 .note { margin: 4px 0 0; font-size: 12px; color: var(--muted); font-style: italic; }
 </style>

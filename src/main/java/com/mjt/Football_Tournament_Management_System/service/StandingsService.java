@@ -35,7 +35,7 @@ public class StandingsService {
         // All regular matches of the tournament between teams of this zone and anyone: zone matches plus
         // interzonal ones (no zone), which count in the table of each team's zone
         var finished = matchRepo.findByTournament(zone.getCategory().getTournament()).stream()
-                .filter(m -> !m.isSpecial() && m.isFinished())
+                .filter(m -> !m.isSpecial() && m.counts())
                 .filter(m -> m.getZone() == null || m.getZone().getId().equals(zoneId))
                 .filter(m -> rows.containsKey(m.getHomeTeam().getId()) || rows.containsKey(m.getAwayTeam().getId()))
                 .toList();

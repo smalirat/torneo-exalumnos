@@ -94,6 +94,8 @@ export interface Match {
   winner: TeamRef | null
   homePresent: boolean
   awayPresent: boolean
+  /** Walkover already decided whose date has not arrived: not counted in the table yet */
+  advanceWalkover: boolean
 }
 
 export interface TeamSummary {

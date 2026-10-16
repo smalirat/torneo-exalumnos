@@ -94,6 +94,7 @@
     "games": "Juegos",
     "noGames": "Todavía no hay partidos.",
     "walkover": "W.O.",
+    "advanceWalkover": "Cuenta en la tabla desde su fecha",
     "generate": "Generar fixture",
     "addMatch": "Agregar partido",
     "start": "Primer partido",

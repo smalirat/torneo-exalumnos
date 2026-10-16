@@ -7,7 +7,9 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Comparator;
 
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor
@@ -105,6 +107,18 @@ public class MatchGame {
     // --- scoring rules (football), shared by standings and team dashboard ---
 
     public boolean isFinished() { return status == Status.FINISHED; }
+
+    /** League time zone: "today" for walkovers loaded ahead of their date. */
+    public static final ZoneId LEAGUE_ZONE = ZoneId.of("America/Argentina/Buenos_Aires");
+
+    /** A walkover already decided (e.g. a team withdrew) whose date has not arrived yet: it does not count until then. */
+    public boolean isAdvanceWalkover() {
+        return isFinished() && (!present(true) || !present(false)) && scheduledAt != null
+                && scheduledAt.toLocalDate().isAfter(LocalDate.now(LEAGUE_ZONE));
+    }
+
+    /** Finished and already in effect: what standings and dashboards count. */
+    public boolean counts() { return isFinished() && !isAdvanceWalkover(); }
 
     public boolean isHome(Team team) { return homeTeam.getId().equals(team.getId()); }
 
