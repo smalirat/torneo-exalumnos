@@ -322,6 +322,8 @@
     "scorers": "Goleadores",
     "figures": "Figuras",
     "annualHelp": "Rankings acumulados de la temporada {year} (Apertura y Clausura).",
+    "sanctions": "Sancionados",
+    "sanctionsHelp": "Sanciones de toda la temporada {year} (Apertura y Clausura); primero las que tienen fechas pendientes.",
     "tabs": {
       "resultados": "Resultados",
       "posiciones": "Posiciones",
@@ -340,6 +342,7 @@
       "inicio": "Inicio",
       "fixture": "Fixture",
       "goleadores": "Goleadores",
+      "sancionados": "Sancionados",
       "definiciones": "Definiciones"
     },
     "lastRound": "Última fecha",

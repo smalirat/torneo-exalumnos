@@ -8,11 +8,12 @@ import MatchCard from '../components/MatchCard.vue'
 import MatchCarousel from '../components/MatchCarousel.vue'
 import PlayerRankingTable from '../components/PlayerRankingTable.vue'
 import RoundNav from '../components/RoundNav.vue'
+import SanctionsTable from '../components/SanctionsTable.vue'
 import ScoreCard from '../components/ScoreCard.vue'
 import ShareButton from '../components/ShareButton.vue'
 import ZonePicker from '../components/ZonePicker.vue'
 import { playoffApi, seasonApi, tournamentApi, zoneApi } from '../api/endpoints'
-import type { Category, Match, ScorerRow, SeasonStatRow, StandingRow, Tournament } from '../api/types'
+import type { Category, Match, Sanction, ScorerRow, SeasonStatRow, StandingRow, Tournament } from '../api/types'
 import { isAdmin, isLoggedIn } from '../auth'
 import { currentEdition, sortEditions } from '../editions'
 import { dayLabel, groupRounds, isDone } from '../rounds'
@@ -32,12 +33,15 @@ const standings = ref<StandingRow[]>([])
 const specials = ref<Match[]>([])
 const scorers = ref<SeasonStatRow[]>([])
 const figures = ref<SeasonStatRow[]>([])
+const sanctions = ref<Sanction[]>([])
 const notFound = ref(false)
 const fixtureIndex = ref(0)
 
-const TABS = ['inicio', 'fixture', 'goleadores', 'definiciones'] as const
+const TABS = ['inicio', 'fixture', 'goleadores', 'sancionados', 'definiciones'] as const
 type Tab = (typeof TABS)[number]
-const tabs = computed(() => TABS.filter((k) => k !== 'definiciones' || specials.value.length > 0))
+// Sanctions are kept per season (Excel), so the tab only exists for editions of a season
+const tabs = computed(() => TABS.filter((k) =>
+  (k !== 'definiciones' || specials.value.length > 0) && (k !== 'sancionados' || tournament.value?.seasonId != null)))
 const tab = computed<Tab>({
   get: () => (TABS as readonly string[]).includes(route.query.tab as string) ? route.query.tab as Tab : 'inicio',
   set: (value) => router.replace({ query: { ...route.query, tab: value === 'inicio' ? undefined : value } }),
@@ -55,16 +59,18 @@ watch(requestedId, async (id) => {
   if (!tournament.value) return
   const tid = tournament.value.id
   const seasonId = tournament.value.seasonId
-  const [cats, special, goals, figs] = await Promise.all([
+  const [cats, special, goals, figs, sanc] = await Promise.all([
     tournamentApi.categories(tid),
     playoffApi.list(tid),
     seasonId ? seasonApi.scorers(seasonId) : tournamentApi.scorers(tid).then(rankScorers),
     seasonId ? seasonApi.figures(seasonId) : Promise.resolve([]),
+    seasonId ? seasonApi.sanctions(seasonId) : Promise.resolve([]),
   ])
   categories.value = cats
   specials.value = special
   scorers.value = goals
   figures.value = figs
+  sanctions.value = sanc
 }, { immediate: true })
 
 watch(zoneId, async (z) => {
@@ -168,7 +174,7 @@ function changeEdition(event: Event) {
     <template v-else-if="tournament">
       <p v-if="categories && categories.length === 0" class="card muted">{{ t('publicSite.noCategories') }}</p>
 
-      <div v-if="categories?.length && tab !== 'goleadores' && tab !== 'definiciones'" class="filters">
+      <div v-if="categories?.length && ['inicio', 'fixture'].includes(tab)" class="filters">
         <span class="filter-label">{{ t('standings.category') }}</span>
         <ZonePicker v-model="zoneId" :categories="categories" />
       </div>
@@ -228,6 +234,15 @@ function changeEdition(event: Event) {
           <PlayerRankingTable :rows="figures.slice(0, 20)" :value-label="t('season.times')" />
         </div>
         <p v-if="tournament.seasonYear" class="muted note">{{ t('publicSite.annualHelp', { year: tournament.seasonYear }) }}</p>
+      </section>
+
+      <!-- SANCIONADOS -->
+      <section v-else-if="tab === 'sancionados'" class="rankings">
+        <div class="card">
+          <h2 class="card-title">{{ t('publicSite.sanctions') }}</h2>
+          <SanctionsTable :sanctions="sanctions" />
+        </div>
+        <p class="muted note">{{ t('publicSite.sanctionsHelp', { year: tournament.seasonYear ?? '' }) }}</p>
       </section>
 
       <!-- DEFINICIONES -->
