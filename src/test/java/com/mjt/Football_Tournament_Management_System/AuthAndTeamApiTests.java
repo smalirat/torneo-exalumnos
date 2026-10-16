@@ -242,7 +242,124 @@ class AuthAndTeamApiTests {
                 .andExpect(status().isConflict());
     }
 
+    // --- standings ---
+
+    @Test
+    void walkoverGivesThreeGoalsAndPresenceOnlyToTheTeamThatShowedUp() throws Exception {
+        String admin = login("admin", "admin123");
+        long zone = newZone(admin);
+        long shows = newTeamNamed(admin, "Show " + UUID.randomUUID());
+        long absent = newTeamNamed(admin, "Absent " + UUID.randomUUID());
+        assignToZone(admin, zone, shows, absent);
+
+        long match = scheduleMatch(admin, zone, shows, absent);
+        score(admin, match, "{\"homeGoals\":0,\"awayGoals\":5,\"awayPresent\":false}")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.homeGoals").value(3))
+                .andExpect(jsonPath("$.awayGoals").value(0))
+                .andExpect(jsonPath("$.awayPresent").value(false));
+
+        mvc.perform(get("/api/public/zones/" + zone + "/standings"))
+                .andExpect(jsonPath("$[0].team.id").value(shows))
+                .andExpect(jsonPath("$[0].points").value(4)) // 3 win + 1 presence
+                .andExpect(jsonPath("$[0].presencePoints").value(1))
+                .andExpect(jsonPath("$[1].points").value(0))
+                .andExpect(jsonPath("$[1].presencePoints").value(0))
+                .andExpect(jsonPath("$[1].lost").value(1));
+    }
+
+    @Test
+    void scoreWithoutGoalsWhenBothTeamsShowedUpIs400() throws Exception {
+        String admin = login("admin", "admin123");
+        long zone = newZone(admin);
+        long a = newTeam(admin), b = newTeam(admin);
+        assignToZone(admin, zone, a, b);
+        score(admin, scheduleMatch(admin, zone, a, b), "{}").andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void headToHeadBreaksTieBeforeAlphabeticalOrder() throws Exception {
+        String admin = login("admin", "admin123");
+        long zone = newZone(admin);
+        String suffix = UUID.randomUUID().toString();
+        long z = newTeamNamed(admin, "ZZZ " + suffix);
+        long a = newTeamNamed(admin, "AAA " + suffix);
+        long c = newTeamNamed(admin, "CCC " + suffix);
+        long d = newTeamNamed(admin, "DDD " + suffix);
+        assignToZone(admin, zone, z, a, c, d);
+
+        // Z and A both end with 5 pts, DIF 0, GF 1; Z won the match between them
+        score(admin, scheduleMatch(admin, zone, z, a), "{\"homeGoals\":1,\"awayGoals\":0}");
+        score(admin, scheduleMatch(admin, zone, c, z), "{\"homeGoals\":1,\"awayGoals\":0}");
+        score(admin, scheduleMatch(admin, zone, a, d), "{\"homeGoals\":1,\"awayGoals\":0}");
+
+        mvc.perform(get("/api/public/zones/" + zone + "/standings"))
+                .andExpect(jsonPath("$[0].team.id").value(z))
+                .andExpect(jsonPath("$[0].points").value(5))
+                .andExpect(jsonPath("$[1].team.id").value(a))
+                .andExpect(jsonPath("$[1].points").value(5))
+                .andExpect(jsonPath("$[2].team.id").value(c))
+                .andExpect(jsonPath("$[3].team.id").value(d));
+    }
+
+    @Test
+    void fairPlayThenAlphabeticalBreakFullTies() throws Exception {
+        String admin = login("admin", "admin123");
+        String suffix = UUID.randomUUID().toString();
+
+        // Draw with a yellow card for AAA: ZZZ goes first on fair play
+        long zone1 = newZone(admin);
+        long a1 = newTeamNamed(admin, "AAA1 " + suffix), z1 = newTeamNamed(admin, "ZZZ1 " + suffix);
+        assignToZone(admin, zone1, a1, z1);
+        score(admin, scheduleMatch(admin, zone1, a1, z1), "{\"homeGoals\":1,\"awayGoals\":1,\"homeYellowCards\":1}");
+        mvc.perform(get("/api/public/zones/" + zone1 + "/standings"))
+                .andExpect(jsonPath("$[0].team.id").value(z1))
+                .andExpect(jsonPath("$[1].fairPlay").value(1));
+
+        // Same draw without cards: alphabetical
+        long zone2 = newZone(admin);
+        long a2 = newTeamNamed(admin, "AAA2 " + suffix), z2 = newTeamNamed(admin, "ZZZ2 " + suffix);
+        assignToZone(admin, zone2, z2, a2);
+        score(admin, scheduleMatch(admin, zone2, z2, a2), "{\"homeGoals\":1,\"awayGoals\":1}");
+        mvc.perform(get("/api/public/zones/" + zone2 + "/standings"))
+                .andExpect(jsonPath("$[0].team.id").value(a2))
+                .andExpect(jsonPath("$[0].points").value(2)); // draw + presence
+    }
+
     // --- helpers ---
+
+    /** New tournament with one category; returns the id of its single zone. */
+    private long newZone(String admin) throws Exception {
+        long tournamentId = newTournament(admin);
+        long zoneId = newCategory(admin, tournamentId, "A").get("zones").get(0).get("id").asLong();
+        zoneTournaments.put(zoneId, tournamentId);
+        return zoneId;
+    }
+
+    private long newTeamNamed(String token, String name) throws Exception {
+        return read(post("/api/teams/register", "{\"name\":\"" + name + "\"}", token)
+                .andExpect(status().isOk())).get("id").asLong();
+    }
+
+    private void assignToZone(String admin, long zoneId, long... teamIds) throws Exception {
+        long tournamentId = zoneTournaments.get(zoneId);
+        for (long teamId : teamIds) {
+            long regId = read(enroll(teamId, tournamentId, admin).andExpect(status().isOk())).get("id").asLong();
+            patch("/api/admin/registrations/" + regId + "/zone", "{\"zoneId\":" + zoneId + "}", admin)
+                    .andExpect(status().isOk());
+        }
+    }
+
+    private final java.util.Map<Long, Long> zoneTournaments = new java.util.HashMap<>();
+
+    private long scheduleMatch(String admin, long zoneId, long home, long away) throws Exception {
+        return read(post("/api/admin/fixtures/manual", manualFixture(zoneId, home, away), admin)
+                .andExpect(status().isOk())).get(0).get("id").asLong();
+    }
+
+    private ResultActions score(String admin, long matchId, String body) throws Exception {
+        return patch("/api/admin/matches/" + matchId + "/score", body, admin);
+    }
 
     private String tournamentJson() {
         var today = LocalDate.now();

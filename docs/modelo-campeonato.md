@@ -20,12 +20,15 @@ Campeonato (Tournament)
 - La tabla de posiciones es por zona.
 - **Frontend:** si una categoría tiene una sola zona, no mostrar "Zona 1" (la API devuelve `zoneCount` en cada categoría).
 
-## Tabla de posiciones (pendiente: `feat/standings`)
+## Tabla de posiciones (`GET /api/public/zones/{id}/standings`)
 
 - Victoria 3, empate 1, derrota 0.
 - **Punto de presencia:** +1 al equipo que se presenta a un partido (el admin lo marca al cargar el resultado).
 - **Walkover:** si un equipo no se presenta, el que se presentó gana 3-0 y suma presencia; el ausente no suma nada.
 - **Desempate:** PTS → diferencia de gol → goles a favor → resultado entre ellos → fair play → puntos de presencia → orden alfabético.
+- **Fair play:** penalización de 1 por amarilla y 3 por roja (menos es mejor). Las tarjetas se cargan por equipo junto con el resultado.
+- "Resultado entre ellos" = puntos (3/1/0, sin presencia) de los partidos entre los equipos empatados.
+- Las reglas de puntaje viven en `MatchGame` (las usan la tabla y el dashboard del equipo).
 
 ## Promociones y finales (pendiente: `feat/playoffs`)
 

@@ -78,14 +78,13 @@ public class TeamService {
         int played=0,w=0,d=0,l=0,gf=0,ga=0,pts=0;
         List<ViewDtos.Fixture> fixtures = new ArrayList<>();
         for (var m : matches) {
-            boolean finished = m.getStatus() == MatchGame.Status.FINISHED;
-            if (finished) {
+            if (m.isFinished()) {
                 played++;
-                boolean home = m.getHomeTeam().getId().equals(teamId);
-                int f = home? m.getHomeGoals(): m.getAwayGoals();
-                int a = home? m.getAwayGoals(): m.getHomeGoals();
-                gf += f; ga += a;
-                if (f>a) { w++; pts+=3; } else if (f==a) { d++; pts+=1; } else { l++; }
+                boolean home = m.isHome(team);
+                gf += m.goalsFor(home); ga += m.goalsAgainst(home);
+                int result = m.resultPoints(home);
+                if (result == 3) w++; else if (result == 1) d++; else l++;
+                pts += result + m.presencePoints(home);
             }
             fixtures.add(ViewDtos.Fixture.builder()
                     .matchId(m.getId()).vs(m.getHomeTeam().getName()+" vs "+m.getAwayTeam().getName())

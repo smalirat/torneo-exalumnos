@@ -37,8 +37,14 @@ public class AdminDtos {
         @NotNull private Long zoneId;
     }
 
+    /**
+     * Match result. If a team did not show up (present=false) the goals are ignored and the
+     * other team wins by walkover 3-0.
+     */
     @Data
     public static class ScoreUpdateReq {
-        @NotNull @Min(0) private Integer homeGoals, awayGoals;
+        @Min(0) private Integer homeGoals, awayGoals;
+        private boolean homePresent = true, awayPresent = true;
+        @Min(0) private int homeYellowCards, homeRedCards, awayYellowCards, awayRedCards;
     }
 }

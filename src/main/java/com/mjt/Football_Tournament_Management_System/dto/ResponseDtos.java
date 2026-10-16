@@ -60,11 +60,17 @@ public class ResponseDtos {
                               int zoneCount, List<ZoneRes> zones) {}
 
     public record MatchRes(Long id, Long tournamentId, Long zoneId, TeamRef homeTeam, TeamRef awayTeam,
-                           LocalDateTime scheduledAt, String status, Integer homeGoals, Integer awayGoals) {
+                           LocalDateTime scheduledAt, String status, Integer homeGoals, Integer awayGoals,
+                           boolean homePresent, boolean awayPresent) {
         public static MatchRes from(MatchGame m) {
             return new MatchRes(m.getId(), m.getTournament().getId(), m.getZone() == null ? null : m.getZone().getId(),
                     TeamRef.from(m.getHomeTeam()), TeamRef.from(m.getAwayTeam()),
-                    m.getScheduledAt(), m.getStatus().name(), m.getHomeGoals(), m.getAwayGoals());
+                    m.getScheduledAt(), m.getStatus().name(), m.getHomeGoals(), m.getAwayGoals(),
+                    m.present(true), m.present(false));
         }
     }
+
+    /** One line of a zone table. fairPlay is a penalty (1 per yellow, 3 per red): lower is better. */
+    public record StandingRow(int position, TeamRef team, int points, int played, int won, int drawn, int lost,
+                              int goalsFor, int goalsAgainst, int goalDiff, int presencePoints, int fairPlay) {}
 }

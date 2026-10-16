@@ -3,6 +3,7 @@ package com.mjt.Football_Tournament_Management_System.controller;
 
 import com.mjt.Football_Tournament_Management_System.dto.ResponseDtos;
 import com.mjt.Football_Tournament_Management_System.service.CategoryService;
+import com.mjt.Football_Tournament_Management_System.service.StandingsService;
 import com.mjt.Football_Tournament_Management_System.service.TournamentService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -18,6 +19,7 @@ import java.util.List;
 public class PublicApiController {
     private final TournamentService tService;
     private final CategoryService cService;
+    private final StandingsService sService;
 
     @GetMapping("/tournaments")
     public List<ResponseDtos.TournamentRes> tournaments() {
@@ -28,6 +30,12 @@ public class PublicApiController {
     @Operation(summary = "Categories of a tournament with their zones (zoneCount = 1 -> hide the zone level in the UI)")
     public List<ResponseDtos.CategoryRes> categories(@PathVariable Long id) {
         return cService.listByTournament(id);
+    }
+
+    @GetMapping("/zones/{id}/standings")
+    @Operation(summary = "Zone table: 3/1/0 + presence point; tie-break DIF, GF, head-to-head, fair play, presence, name")
+    public List<ResponseDtos.StandingRow> standings(@PathVariable Long id) {
+        return sService.zoneStandings(id);
     }
 
     @GetMapping("/zones/{id}/registrations")

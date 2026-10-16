@@ -23,6 +23,11 @@ public class GlobalExceptionHandler {
         return problem(HttpStatus.NOT_FOUND, e.getMessage());
     }
 
+    @ExceptionHandler(BadRequestException.class)
+    public ProblemDetail businessBadRequest(BadRequestException e) {
+        return problem(HttpStatus.BAD_REQUEST, e.getMessage());
+    }
+
     @ExceptionHandler(ConflictException.class)
     public ProblemDetail conflict(ConflictException e) {
         return problem(HttpStatus.CONFLICT, e.getMessage());
