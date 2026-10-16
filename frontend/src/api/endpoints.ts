@@ -1,5 +1,5 @@
-import { del, get, post } from './client'
-import type { Category, Match, Me, Player, Registration, StandingRow, TeamSummary, TokenRes, Tournament } from './types'
+import { del, get, patch, post } from './client'
+import type { Category, Match, Me, Player, Registration, StandingRow, TeamSummary, TokenRes, Tournament, Zone } from './types'
 
 export const authApi = {
   login: (username: string, password: string) => post<TokenRes>('/api/auth/login', { username, password }),
@@ -19,6 +19,10 @@ export const tournamentApi = {
   create: (body: NewTournament) => post<Tournament>('/api/admin/tournaments', body),
   categories: (id: number) => get<Category[]>(`/api/public/tournaments/${id}/categories`),
   createCategory: (id: number, name: string) => post<Category>(`/api/admin/tournaments/${id}/categories`, { name }),
+  registrations: (id: number) => get<Registration[]>(`/api/public/tournaments/${id}/registrations`),
+  assignZone: (registrationId: number, zoneId: number) =>
+    patch<Registration>(`/api/admin/registrations/${registrationId}/zone`, { zoneId }),
+  createZone: (categoryId: number, name: string) => post<Zone>(`/api/admin/categories/${categoryId}/zones`, { name }),
 }
 
 export const teamApi = {
@@ -35,4 +39,8 @@ export const teamApi = {
 export const zoneApi = {
   standings: (zoneId: number) => get<StandingRow[]>(`/api/public/zones/${zoneId}/standings`),
   fixtures: (zoneId: number) => get<Match[]>(`/api/public/zones/${zoneId}/fixtures`),
+  roundRobin: (zoneId: number, start: string, minutesBetween: number) =>
+    post<Match[]>(`/api/admin/zones/${zoneId}/fixtures/round-robin?start=${encodeURIComponent(start)}&minutesBetween=${minutesBetween}`),
+  addMatch: (zoneId: number, homeTeamId: number, awayTeamId: number, scheduledAt: string | null) =>
+    post<Match[]>('/api/admin/fixtures/manual', { zoneId, fixtures: [{ homeTeamId, awayTeamId, scheduledAt }] }),
 }

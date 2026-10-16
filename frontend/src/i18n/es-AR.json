@@ -10,7 +10,8 @@
     "standings": "Clasificación",
     "logout": "Cerrar sesión",
     "login": "Iniciar sesión",
-    "teams": "Registro de equipos"
+    "teams": "Registro de equipos",
+    "tournamentTeams": "Equipos"
   },
   "auth": {
     "loginTitle": "Iniciar sesión",
@@ -69,7 +70,17 @@
     "presenceHint": "Puntos de presencia",
     "games": "Juegos",
     "noGames": "Todavía no hay partidos.",
-    "walkover": "W.O."
+    "walkover": "W.O.",
+    "generate": "Generar fixture",
+    "addMatch": "Agregar partido",
+    "start": "Primer partido",
+    "minutesBetween": "Minutos entre partidos",
+    "home": "Local",
+    "away": "Visitante",
+    "when": "Fecha y hora",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "needTwoTeams": "Hacen falta al menos dos equipos en la zona."
   },
   "common": {
     "loading": "Cargando…",
@@ -92,5 +103,15 @@
     "register": "Inscribir",
     "registered": "Equipo inscripto. El organizador le asignará categoría y zona.",
     "empty": "Todavía no registraste equipos."
+  },
+  "tournamentTeams": {
+    "unassigned": "Sin asignar ({n})",
+    "noneUnassigned": "Todos los equipos inscriptos tienen zona.",
+    "noRegistrations": "Todavía no hay equipos inscriptos en este campeonato.",
+    "assignTo": "Asignar a…",
+    "addZone": "Zona",
+    "zoneName": "Nombre de la zona",
+    "noTeamsInZone": "Sin equipos.",
+    "needCategory": "Creá al menos una categoría en Inicio para poder asignar equipos."
   }
 }

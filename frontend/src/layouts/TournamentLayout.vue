@@ -6,6 +6,7 @@ import UserFooter from './UserFooter.vue'
 import { tournamentApi } from '../api/endpoints'
 import type { Tournament } from '../api/types'
 import { t } from '../i18n'
+import { isAdmin } from '../auth'
 
 // Sidebar + breadcrumb shared by every page inside a tournament
 const route = useRoute()
@@ -32,6 +33,9 @@ const pageTitle = computed(() => (route.meta.title as string | undefined) ?? '')
       </RouterLink>
       <RouterLink :to="`/campeonatos/${tournamentId}/clasificacion`" class="item" active-class="active">
         <AppIcon name="chart" /> {{ t('nav.standings') }}
+      </RouterLink>
+      <RouterLink v-if="isAdmin" :to="`/campeonatos/${tournamentId}/equipos`" class="item" active-class="active">
+        <AppIcon name="shield" /> {{ t('nav.tournamentTeams') }}
       </RouterLink>
       <UserFooter />
     </aside>
