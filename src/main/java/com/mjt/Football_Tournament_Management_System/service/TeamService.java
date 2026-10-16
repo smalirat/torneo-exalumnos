@@ -30,6 +30,10 @@ public class TeamService {
     private final MatchRepository matchRepo;
     private final AppUserRepository userRepo;
     private final MatchEventRepository eventRepo;
+    private final PlayerSeasonStatRepository statRepo;
+    private final SanctionRepository sanctionRepo;
+    private final YellowCardTallyRepository yellowRepo;
+    private final ChampionRepository championRepo;
 
     /** A captain creating a team becomes its owner; teams created by an admin have no captain. */
     @Transactional
@@ -64,6 +68,9 @@ public class TeamService {
     @Transactional
     public void deleteTeam(Long teamId, Authentication auth) {
         var t = ownedTeam(teamId, auth);
+        if (championRepo.existsByTeam(t)) {
+            throw new ConflictException("El equipo figura en la historia de campeones; no se puede eliminar");
+        }
         if (regRepo.existsByTeam(t)) {
             throw new ConflictException("El equipo está inscripto en un campeonato; no se puede eliminar");
         }
@@ -79,8 +86,9 @@ public class TeamService {
         if (player.getTeam() == null || !player.getTeam().getId().equals(team.getId())) {
             throw NotFoundException.of("Jugador", playerId);
         }
-        if (eventRepo.existsByPlayer(player)) {
-            throw new ConflictException("El jugador tiene goles o tarjetas cargados; no se puede eliminar");
+        if (eventRepo.existsByPlayer(player) || statRepo.existsByPlayer(player)
+                || sanctionRepo.existsByPlayer(player) || yellowRepo.existsByPlayer(player)) {
+            throw new ConflictException("El jugador tiene goles, tarjetas, estadísticas o sanciones cargadas; no se puede eliminar");
         }
         playerRepo.delete(player);
     }

@@ -3,6 +3,7 @@ package com.mjt.Football_Tournament_Management_System.service;
 
 import com.mjt.Football_Tournament_Management_System.dto.AdminDtos;
 import com.mjt.Football_Tournament_Management_System.dto.ResponseDtos;
+import com.mjt.Football_Tournament_Management_System.entire.DataSource;
 import com.mjt.Football_Tournament_Management_System.entire.MatchEvent;
 import com.mjt.Football_Tournament_Management_System.entire.MatchGame;
 import com.mjt.Football_Tournament_Management_System.entire.Player;
@@ -58,6 +59,7 @@ public class MatchService {
         m.setAwayRedCards(count(events, m, false, MatchEvent.Type.RED_CARD));
         applyPenalties(m, req, home && away);
         m.setStatus(MatchGame.Status.FINISHED);
+        m.setSource(DataSource.WEB);
         return ResponseDtos.MatchRes.from(matchRepo.save(m));
     }
 
@@ -88,6 +90,7 @@ public class MatchService {
         m.setVenue(TournamentService.blankToNull(req.getVenue()));
         m.setPitch(TournamentService.blankToNull(req.getPitch()));
         m.setNotes(TournamentService.blankToNull(req.getNotes()));
+        m.setSource(DataSource.WEB);
         return ResponseDtos.MatchRes.from(m);
     }
 

@@ -348,7 +348,7 @@ class AuthAndTeamApiTests {
     @Test
     void tournamentsBelongToASeasonWithOneAperturaAndOneClausura() throws Exception {
         String admin = login("admin", "admin123");
-        int year = 2100 - (int) (Math.random() * 150); // unique enough across tests in the shared DB
+        int year = SEASON_YEARS.getAndIncrement(); // unique per test in the shared DB
         String body = "{\"name\":\"T\",\"registrationStart\":\"2026-01-01\",\"registrationEnd\":\"2026-12-31\","
                 + "\"seasonYear\":" + year + ",\"stage\":\"%s\"}";
         post("/api/admin/tournaments", body.formatted("APERTURA"), admin)
@@ -417,6 +417,111 @@ class AuthAndTeamApiTests {
                 .andExpect(jsonPath("$.venue").value("Anexo"))
                 .andExpect(jsonPath("$.notes").value("Se juega con pelota nueva"))
                 .andExpect(jsonPath("$.status").value("SCHEDULED"));
+    }
+
+    // --- annual stats, sanctions, yellow cards, champions ---
+
+    private static final java.util.concurrent.atomic.AtomicInteger SEASON_YEARS = new java.util.concurrent.atomic.AtomicInteger(1900);
+
+    private JsonNode seasonTournament(String admin, String stage) throws Exception {
+        int year = SEASON_YEARS.getAndIncrement();
+        return read(post("/api/admin/tournaments", "{\"name\":\"Anual\",\"registrationStart\":\"2026-01-01\","
+                + "\"registrationEnd\":\"2026-12-31\",\"seasonYear\":" + year + ",\"stage\":\"" + stage + "\"}", admin)
+                .andExpect(status().isOk()));
+    }
+
+    @Test
+    void annualRankingsComeFromPlayerTotals() throws Exception {
+        String admin = login("admin", "admin123");
+        long season = seasonTournament(admin, "APERTURA").get("seasonId").asLong();
+        long team = newTeam(admin);
+        long cubela = newPlayer(admin, team, "Cubela, Agustin");
+        long abbeduto = newPlayer(admin, team, "Abbeduto, Mateo");
+        long arquero = newPlayer(admin, team, "Breitembruch, Sebastian");
+        String url = "/api/admin/seasons/" + season + "/player-stats";
+        put(url, "{\"playerId\":" + cubela + ",\"goals\":16,\"figureCount\":5}", admin).andExpect(status().isNoContent());
+        put(url, "{\"playerId\":" + abbeduto + ",\"goals\":15,\"figureCount\":8}", admin).andExpect(status().isNoContent());
+        put(url, "{\"playerId\":" + arquero + ",\"goalsConceded\":10}", admin).andExpect(status().isNoContent());
+
+        mvc.perform(get("/api/public/seasons/" + season + "/scorers"))
+                .andExpect(jsonPath("$.length()").value(2))
+                .andExpect(jsonPath("$[0].player.id").value(cubela))
+                .andExpect(jsonPath("$[0].value").value(16));
+        mvc.perform(get("/api/public/seasons/" + season + "/figures"))
+                .andExpect(jsonPath("$[0].player.id").value(abbeduto));
+        mvc.perform(get("/api/public/seasons/" + season + "/goalkeepers"))
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].value").value(10));
+
+        // A player with stats cannot be removed from the roster
+        delete("/api/teams/" + team + "/players/" + cubela, admin).andExpect(status().isConflict());
+    }
+
+    @Test
+    void sanctionsTrackPendingMatchesAndBelongToTheSeason() throws Exception {
+        String admin = login("admin", "admin123");
+        JsonNode tournament = seasonTournament(admin, "CLAUSURA");
+        long season = tournament.get("seasonId").asLong();
+        long otherSeasonTournament = seasonTournament(admin, "CLAUSURA").get("id").asLong();
+        long team = newTeam(admin);
+        long galli = newPlayer(admin, team, "Galli, Agustin");
+
+        JsonNode s = read(post("/api/admin/seasons/" + season + "/sanctions", "{\"playerId\":" + galli
+                + ",\"tournamentId\":" + tournament.get("id").asLong() + ",\"type\":\"DIRECT_RED\","
+                + "\"matchesSuspended\":5,\"matchesServed\":1,\"notes\":\"Roja directa Fecha 4\"}", admin)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("PENDING"))
+                .andExpect(jsonPath("$.pending").value(4)));
+        put("/api/admin/sanctions/" + s.get("id").asLong(), "{\"playerId\":" + galli + ",\"type\":\"DIRECT_RED\","
+                + "\"matchesSuspended\":5,\"matchesServed\":5}", admin)
+                .andExpect(jsonPath("$.status").value("SERVED"));
+        post("/api/admin/seasons/" + season + "/sanctions", "{\"playerId\":" + galli + ",\"tournamentId\":"
+                + otherSeasonTournament + ",\"type\":\"OTHER\",\"matchesSuspended\":1}", admin)
+                .andExpect(status().isConflict());
+        post("/api/admin/seasons/" + season + "/sanctions", "{\"playerId\":" + galli + ",\"type\":\"DOUBLE_YELLOW\","
+                + "\"matchesSuspended\":1,\"status\":\"TRIBUNAL\"}", admin)
+                .andExpect(jsonPath("$.status").value("TRIBUNAL"));
+
+        mvc.perform(get("/api/public/seasons/" + season + "/sanctions"))
+                .andExpect(jsonPath("$.length()").value(2))
+                .andExpect(jsonPath("$[0].status").value("TRIBUNAL")); // not served first
+    }
+
+    @Test
+    void accumulatedYellowCardsGiveOneSuspensionEveryFour() throws Exception {
+        String admin = login("admin", "admin123");
+        long tournament = newTournament(admin);
+        long team = newTeam(admin);
+        long player = newPlayer(admin, team, "Caputo, Pedro");
+        put("/api/admin/tournaments/" + tournament + "/yellow-cards", "{\"playerId\":" + player + ",\"yellowCards\":5}", admin)
+                .andExpect(status().isNoContent());
+        mvc.perform(get("/api/public/tournaments/" + tournament + "/yellow-cards"))
+                .andExpect(jsonPath("$[0].yellowCards").value(5))
+                .andExpect(jsonPath("$[0].suspensions").value(1));
+        put("/api/admin/tournaments/" + tournament + "/yellow-cards", "{\"playerId\":" + player + ",\"yellowCards\":8}", admin);
+        mvc.perform(get("/api/public/tournaments/" + tournament + "/yellow-cards"))
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].suspensions").value(2));
+    }
+
+    @Test
+    void championsHistoryRanksTitlesPerCategory() throws Exception {
+        String admin = login("admin", "admin123");
+        String cat = "Z" + UUID.randomUUID().toString().substring(0, 6); // isolated category name
+        long fiestardi = newTeamNamed(admin, "La Gran Fiestardi " + UUID.randomUUID());
+        long merengue = newTeamNamed(admin, "Merenguetengue " + UUID.randomUUID());
+        String body = "{\"year\":%d,\"categoryName\":\"" + cat + "\",\"teamId\":%d}";
+        put("/api/admin/champions", body.formatted(2019, fiestardi), admin).andExpect(status().isOk());
+        put("/api/admin/champions", body.formatted(2018, fiestardi), admin).andExpect(status().isOk());
+        put("/api/admin/champions", body.formatted(2011, merengue), admin).andExpect(status().isOk());
+        put("/api/admin/champions", body.formatted(2011, fiestardi), admin) // replaces 2011
+                .andExpect(jsonPath("$.team.id").value(fiestardi));
+
+        String upper = cat.toUpperCase();
+        mvc.perform(get("/api/public/champions"))
+                .andExpect(jsonPath("$[?(@.categoryName == '" + upper + "')].champions.length()").value(3))
+                .andExpect(jsonPath("$[?(@.categoryName == '" + upper + "')].topChampions[0].titles").value(3));
+        delete("/api/teams/" + fiestardi, admin).andExpect(status().isConflict());
     }
 
     // --- standings ---

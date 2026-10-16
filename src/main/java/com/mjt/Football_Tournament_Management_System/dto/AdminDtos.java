@@ -4,6 +4,7 @@ package com.mjt.Football_Tournament_Management_System.dto;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
 import com.mjt.Football_Tournament_Management_System.entire.MatchEvent;
+import com.mjt.Football_Tournament_Management_System.entire.Sanction;
 import com.mjt.Football_Tournament_Management_System.entire.Tournament;
 import com.mjt.Football_Tournament_Management_System.entire.MatchGame;
 import lombok.Data;
@@ -69,6 +70,37 @@ public class AdminDtos {
         @Size(max = 20) private String pitch;
         @Size(max = 500) private String notes;
     }
+    /** Annual totals of a player; null leaves that value unset. */
+    @Data
+    public static class PlayerStatReq {
+        @NotNull private Long playerId;
+        @Min(0) private Integer goals, figureCount, goalsConceded;
+    }
+
+    @Data
+    public static class SanctionReq {
+        @NotNull private Long playerId;
+        private Long tournamentId;
+        @NotNull private Sanction.Type type;
+        @Min(0) private int matchesSuspended, matchesServed;
+        /** Null: derived (SERVED when all matches are served, else PENDING). */
+        private Sanction.Status status;
+        @Size(max = 500) private String notes;
+    }
+
+    @Data
+    public static class YellowTallyReq {
+        @NotNull private Long playerId;
+        @Min(0) private int yellowCards;
+    }
+
+    @Data
+    public static class ChampionReq {
+        @NotNull @Min(1900) @Max(2100) private Integer year;
+        @NotBlank @Size(max = 20) private String categoryName;
+        @NotNull private Long teamId;
+    }
+
     /** Name for a category or zone. */
     @Data
     public static class NameReq {

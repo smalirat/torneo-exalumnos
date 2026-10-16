@@ -56,6 +56,10 @@ public class MatchGame {
     /** Free note shown with the match ("no se presentó, no avisó con anticipación"). */
     private String notes;
 
+    /** Origin of the current data: imported from the Excel or edited on the web. */
+    @Enumerated(EnumType.STRING)
+    private DataSource source = DataSource.WEB;
+
     @Enumerated(EnumType.STRING)
     private Status status = Status.SCHEDULED;
 

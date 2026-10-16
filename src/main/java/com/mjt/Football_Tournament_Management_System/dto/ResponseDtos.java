@@ -41,6 +41,40 @@ public class ResponseDtos {
 
     public record ScorerRow(PlayerRef player, TeamRef team, int goals) {}
 
+    /** Annual ranking line: `value` is goals, times chosen figure or goals conceded depending on the ranking. */
+    public record SeasonStatRow(int position, PlayerRef player, TeamRef team, int value) {}
+
+    public record SanctionRes(Long id, Long seasonId, Long tournamentId, PlayerRef player, TeamRef team, String type,
+                              int matchesSuspended, int matchesServed, int pending, String status, String notes,
+                              String source) {
+        public static SanctionRes from(Sanction s) {
+            return new SanctionRes(s.getId(), s.getSeason().getId(),
+                    s.getTournament() == null ? null : s.getTournament().getId(),
+                    PlayerRef.from(s.getPlayer()), TeamRef.from(s.getTeam()), s.getType().name(),
+                    s.getMatchesSuspended(), s.getMatchesServed(), s.pending(), s.getStatus().name(), s.getNotes(),
+                    s.getSource() == null ? null : s.getSource().name());
+        }
+    }
+
+    /** Accumulated yellows in a tournament; suspensions = yellows / 4. */
+    public record YellowTallyRes(PlayerRef player, TeamRef team, int yellowCards, int suspensions) {
+        public static YellowTallyRes from(YellowCardTally y) {
+            return new YellowTallyRes(PlayerRef.from(y.getPlayer()), TeamRef.from(y.getTeam()),
+                    y.getYellowCards(), y.suspensions());
+        }
+    }
+
+    public record ChampionRes(Long id, int year, String categoryName, TeamRef team) {
+        public static ChampionRes from(Champion c) {
+            return new ChampionRes(c.getId(), c.getYear(), c.getCategoryName(), TeamRef.from(c.getTeam()));
+        }
+    }
+
+    public record TitleCount(TeamRef team, int titles) {}
+
+    /** History of one category: champions by year (newest first) and teams ranked by titles. */
+    public record CategoryHistory(String categoryName, List<ChampionRes> champions, List<TitleCount> topChampions) {}
+
     public record CardRow(PlayerRef player, TeamRef team, int yellowCards, int redCards) {}
 
     public record PlayerRes(Long id, String fullName, int jerseyNo, Long teamId) {
