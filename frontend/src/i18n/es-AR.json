@@ -280,6 +280,8 @@
     "suspended": "Fechas",
     "served": "Cumplidas",
     "pending": "Pendientes",
+    "openSanctions": "Con fechas pendientes",
+    "servedSanctions": "Cumplidas",
     "status": "Estado",
     "notes": "Observaciones",
     "types": {
@@ -323,7 +325,9 @@
     "figures": "Figuras",
     "annualHelp": "Rankings acumulados de la temporada {year} (Apertura y Clausura).",
     "sanctions": "Sancionados",
-    "sanctionsHelp": "Sanciones de toda la temporada {year} (Apertura y Clausura); primero las que tienen fechas pendientes.",
+    "sanctionsHelp": "Sanciones de toda la temporada {year} (Apertura y Clausura).",
+    "yellows": "Amonestados · {name}",
+    "yellowsHelp": "Amarillas acumuladas en esta edición: 4 amarillas = 1 fecha de suspensión, 8 = 2 fechas.",
     "tabs": {
       "resultados": "Resultados",
       "posiciones": "Posiciones",

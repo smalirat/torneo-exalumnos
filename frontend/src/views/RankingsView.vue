@@ -3,6 +3,7 @@ import { computed, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import TournamentLayout from '../layouts/TournamentLayout.vue'
 import TeamBadge from '../components/TeamBadge.vue'
+import YellowCardsTable from '../components/YellowCardsTable.vue'
 import { tournamentApi } from '../api/endpoints'
 import type { CardRow, ScorerRow, YellowTally } from '../api/types'
 import { t } from '../i18n'
@@ -70,24 +71,7 @@ watch(tournamentId, async (id) => {
 
       <section v-if="yellows.length" class="card">
         <h2>{{ t('rankings.yellows') }}</h2>
-        <table>
-          <thead>
-            <tr>
-              <th class="left">{{ t('rankings.player') }}</th>
-              <th class="left">{{ t('rankings.team') }}</th>
-              <th>{{ t('rankings.yellowCount') }}</th>
-              <th>{{ t('rankings.suspensions') }}</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="y in yellows" :key="y.player.id">
-              <td class="left">{{ y.player.fullName }}</td>
-              <td class="left"><span class="team"><TeamBadge :name="y.team.name" :size="22" /> {{ y.team.name }}</span></td>
-              <td>{{ y.yellowCards }}</td>
-              <td :class="{ strong: y.suspensions > 0 }">{{ y.suspensions }}</td>
-            </tr>
-          </tbody>
-        </table>
+        <YellowCardsTable :rows="yellows" />
       </section>
     </div>
   </TournamentLayout>
