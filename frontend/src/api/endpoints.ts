@@ -1,7 +1,7 @@
-import { del, get, patch, post } from './client'
+import { del, get, patch, post, put } from './client'
 import type {
   CardRow, Category, Match, MatchEvent, Me, Player, Registration, ScoreReq, ScorerRow, SlotReq, StandingRow, TeamSummary,
-  TokenRes, Tournament, Zone,
+  TokenRes, Tournament, TournamentStatus, Zone,
 } from './types'
 
 export const authApi = {
@@ -10,16 +10,26 @@ export const authApi = {
   me: () => get<Me>('/api/auth/me'),
 }
 
-export interface NewTournament {
+/** Body for creating/updating a tournament (status is ignored on create). */
+export interface TournamentInput {
   name: string
-  location?: string
+  location: string | null
   registrationStart: string
   registrationEnd: string
+  matchStart: string | null
+  matchEnd: string | null
+  status: TournamentStatus
 }
 
 export const tournamentApi = {
   list: () => get<Tournament[]>('/api/public/tournaments'),
-  create: (body: NewTournament) => post<Tournament>('/api/admin/tournaments', body),
+  create: (body: TournamentInput) => post<Tournament>('/api/admin/tournaments', body),
+  update: (id: number, body: TournamentInput) => put<Tournament>(`/api/admin/tournaments/${id}`, body),
+  remove: (id: number) => del(`/api/admin/tournaments/${id}`),
+  renameCategory: (categoryId: number, name: string) => put<Category>(`/api/admin/categories/${categoryId}`, { name }),
+  removeCategory: (categoryId: number) => del(`/api/admin/categories/${categoryId}`),
+  renameZone: (zoneId: number, name: string) => put<Zone>(`/api/admin/zones/${zoneId}`, { name }),
+  removeZone: (zoneId: number) => del(`/api/admin/zones/${zoneId}`),
   categories: (id: number) => get<Category[]>(`/api/public/tournaments/${id}/categories`),
   createCategory: (id: number, name: string) => post<Category>(`/api/admin/tournaments/${id}/categories`, { name }),
   registrations: (id: number) => get<Registration[]>(`/api/public/tournaments/${id}/registrations`),
@@ -33,6 +43,8 @@ export const tournamentApi = {
 export const teamApi = {
   list: () => get<TeamSummary[]>('/api/teams'),
   create: (name: string) => post<{ id: number; name: string }>('/api/teams/register', { name }),
+  rename: (teamId: number, name: string) => put<{ id: number; name: string }>(`/api/teams/${teamId}`, { name }),
+  remove: (teamId: number) => del(`/api/teams/${teamId}`),
   players: (teamId: number) => get<Player[]>(`/api/public/teams/${teamId}/players`),
   addPlayer: (teamId: number, fullName: string, jerseyNo: number) =>
     post<Player[]>(`/api/teams/${teamId}/players`, { players: [{ fullName, jerseyNo }] }),
@@ -44,6 +56,7 @@ export const teamApi = {
 export const matchApi = {
   events: (matchId: number) => get<MatchEvent[]>(`/api/public/matches/${matchId}/events`),
   score: (matchId: number, body: ScoreReq) => patch<Match>(`/api/admin/matches/${matchId}/score`, body),
+  remove: (matchId: number) => del(`/api/admin/matches/${matchId}`),
 }
 
 export interface NewSpecialMatch {

@@ -14,6 +14,7 @@ import java.util.List;
 
 public interface MatchRepository extends JpaRepository<MatchGame, Long> {
     List<MatchGame> findByTournament(Tournament t);
+    boolean existsByTournament(Tournament t);
     List<MatchGame> findByTournamentAndTypeInOrderByScheduledAtAsc(Tournament t, Collection<MatchGame.Type> types);
     List<MatchGame> findByZoneOrderByScheduledAtAsc(Zone zone);
     boolean existsByZone(Zone zone);

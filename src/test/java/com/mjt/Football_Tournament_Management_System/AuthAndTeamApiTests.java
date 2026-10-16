@@ -268,6 +268,62 @@ class AuthAndTeamApiTests {
                 .andExpect(jsonPath("$[0].playerCount").value(1));
     }
 
+    @Test
+    void tournamentCanBeEditedAndDeletedOnlyWhileEmpty() throws Exception {
+        String admin = login("admin", "admin123");
+        long empty = newTournament(admin);
+        newCategory(admin, empty, "A");
+        String body = "{\"name\":\"Renombrado\",\"registrationStart\":\"2026-01-01\","
+                + "\"registrationEnd\":\"2026-12-31\",\"status\":\"LIVE\"}";
+        put("/api/admin/tournaments/" + empty, body, admin)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.name").value("Renombrado"))
+                .andExpect(jsonPath("$.status").value("LIVE"));
+        delete("/api/admin/tournaments/" + empty, admin).andExpect(status().isNoContent());
+
+        long used = newTournament(admin);
+        enroll(newTeam(admin), used, admin).andExpect(status().isOk());
+        delete("/api/admin/tournaments/" + used, admin).andExpect(status().isConflict());
+    }
+
+    @Test
+    void teamCanBeRenamedByOwnerAndDeletedWhileNotRegistered() throws Exception {
+        String captain = register(uniqueUser());
+        long team = newTeam(captain);
+        String newName = "Nuevo " + UUID.randomUUID();
+        put("/api/teams/" + team, "{\"name\":\"" + newName + "\"}", register(uniqueUser()))
+                .andExpect(status().isForbidden());
+        put("/api/teams/" + team, "{\"name\":\"" + newName + "\"}", captain)
+                .andExpect(jsonPath("$.name").value(newName));
+
+        long registered = newTeam(captain);
+        enroll(registered, newTournament(login("admin", "admin123")), captain).andExpect(status().isOk());
+        delete("/api/teams/" + registered, captain).andExpect(status().isConflict());
+        newPlayer(captain, team, "Suplente");
+        delete("/api/teams/" + team, captain).andExpect(status().isNoContent());
+    }
+
+    @Test
+    void deletingAMatchRemovesItsEventsAndUndatedMatchesComeLast() throws Exception {
+        String admin = login("admin", "admin123");
+        long zone = newZone(admin);
+        long a = newTeam(admin), b = newTeam(admin);
+        long scorer = newPlayer(admin, a, "Goleador");
+        assignToZone(admin, zone, a, b);
+        long undated = read(post("/api/admin/fixtures/manual", "{\"zoneId\":" + zone
+                + ",\"fixtures\":[{\"homeTeamId\":" + a + ",\"awayTeamId\":" + b + "}]}", admin)).get(0).get("id").asLong();
+        long dated = scheduleMatch(admin, zone, b, a);
+        mvc.perform(get("/api/public/zones/" + zone + "/fixtures"))
+                .andExpect(jsonPath("$[0].id").value(dated))
+                .andExpect(jsonPath("$[1].id").value(undated));
+
+        score(admin, dated, "{\"events\":[" + event(scorer, "GOAL") + "]}");
+        delete("/api/admin/matches/" + dated, admin).andExpect(status().isNoContent());
+        mvc.perform(get("/api/public/zones/" + zone + "/fixtures")).andExpect(jsonPath("$.length()").value(1));
+        mvc.perform(get("/api/public/tournaments/" + zoneTournaments.get(zone) + "/scorers"))
+                .andExpect(jsonPath("$.length()").value(0));
+    }
+
     // --- standings ---
 
     @Test
@@ -668,6 +724,11 @@ class AuthAndTeamApiTests {
 
     private ResultActions patch(String url, String body, String token) throws Exception {
         return mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch(url)
+                .contentType(MediaType.APPLICATION_JSON).content(body).header("Authorization", "Bearer " + token));
+    }
+
+    private ResultActions put(String url, String body, String token) throws Exception {
+        return mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put(url)
                 .contentType(MediaType.APPLICATION_JSON).content(body).header("Authorization", "Bearer " + token));
     }
 

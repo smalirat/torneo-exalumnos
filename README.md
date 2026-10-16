@@ -160,6 +160,7 @@ mvn spring-boot:run
 | ------ | ---------------------------------------------------------- | ---------------- |
 | GET    | `/api/teams`                                               | My teams (all for admin) |
 | POST   | `/api/teams/register`                                      | Register a team  |
+| PUT/DELETE | `/api/teams/{teamId}`                                  | Edit / delete team (409 if registered) |
 | DELETE | `/api/teams/{teamId}/players/{playerId}`                   | Remove player (409 if it has events) |
 | POST   | `/api/teams/{teamId}/players`                              | Add players      |
 | POST   | `/api/teams/{teamId}/tournaments/{tournamentId}/register`  | Join tournament (admin assigns zone) |
@@ -174,6 +175,8 @@ mvn spring-boot:run
 | PUT/DELETE | `/api/admin/categories/{id}`                   | Rename / delete category |
 | POST   | `/api/admin/categories/{id}/zones`                 | Add zone            |
 | PUT/DELETE | `/api/admin/zones/{id}`                        | Rename / delete zone |
+| PUT/DELETE | `/api/admin/tournaments/{id}`                  | Edit / delete tournament (409 if it has teams or matches) |
+| DELETE | `/api/admin/matches/{id}`                          | Delete match and its events |
 | PATCH  | `/api/admin/registrations/{id}/zone`               | Assign/move team to a zone |
 | POST   | `/api/admin/zones/{id}/fixtures/round-robin`       | Generate zone fixtures |
 | POST   | `/api/admin/fixtures/manual`                       | Manual fixtures (by zone) |

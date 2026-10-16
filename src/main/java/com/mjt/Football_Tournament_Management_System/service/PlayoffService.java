@@ -60,7 +60,7 @@ public class PlayoffService {
         var t = tournamentRepo.findById(tournamentId).orElseThrow(() -> NotFoundException.of("Campeonato", tournamentId));
         return matchRepo.findByTournamentAndTypeInOrderByScheduledAtAsc(t,
                         List.of(MatchGame.Type.PROMOTION, MatchGame.Type.FINAL)).stream()
-                .map(ResponseDtos.MatchRes::from).toList();
+                .sorted(MatchGame.BY_DATE).map(ResponseDtos.MatchRes::from).toList();
     }
 
     private void applySlot(MatchGame m, boolean home, AdminDtos.SlotReq slot) {

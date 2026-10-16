@@ -4,6 +4,7 @@ package com.mjt.Football_Tournament_Management_System.dto;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
 import com.mjt.Football_Tournament_Management_System.entire.MatchEvent;
+import com.mjt.Football_Tournament_Management_System.entire.Tournament;
 import com.mjt.Football_Tournament_Management_System.entire.MatchGame;
 import lombok.Data;
 import java.time.LocalDate;
@@ -19,6 +20,15 @@ public class AdminDtos {
         @NotNull private LocalDate registrationStart, registrationEnd;
         private LocalDate matchStart, matchEnd;
     }
+    @Data
+    public static class UpdateTournamentReq {
+        @NotBlank private String name;
+        private String location;
+        @NotNull private LocalDate registrationStart, registrationEnd;
+        private LocalDate matchStart, matchEnd;
+        @NotNull private Tournament.Status status;
+    }
+
     @Data
     public static class ManualFixtureReq {
         @NotNull private Long zoneId;

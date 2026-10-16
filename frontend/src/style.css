@@ -62,5 +62,15 @@ h1, h2, h3 { margin: 0; }
 .field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
 .field label { font-size: 13px; color: var(--muted); font-weight: 500; }
 
+.btn.danger-outline { background: #fff; color: var(--danger); border-color: var(--danger); }
+.btn.danger-fill { background: var(--danger); border-color: var(--danger); }
+
+.icon-btn {
+  background: none; border: 0; padding: 4px; border-radius: 6px; color: var(--muted);
+  cursor: pointer; display: inline-flex; align-items: center;
+}
+.icon-btn:hover { background: var(--row-alt); color: var(--navy); }
+.icon-btn.danger:hover { color: var(--danger); }
+
 .error { color: var(--danger); font-size: 14px; margin: 8px 0; }
 .muted { color: var(--muted); }

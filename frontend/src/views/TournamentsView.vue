@@ -2,27 +2,26 @@
 import { onMounted, ref } from 'vue'
 import GlobalLayout from '../layouts/GlobalLayout.vue'
 import AppIcon from '../components/AppIcon.vue'
-import { tournamentApi } from '../api/endpoints'
+import TournamentForm from '../components/TournamentForm.vue'
+import { tournamentApi, type TournamentInput } from '../api/endpoints'
 import type { Tournament } from '../api/types'
 import { isAdmin, isLoggedIn } from '../auth'
 import { t } from '../i18n'
 
 const tournaments = ref<Tournament[] | null>(null)
 const showForm = ref(false)
-const form = ref({ name: '', location: '', registrationStart: '', registrationEnd: '' })
 const error = ref('')
 
 onMounted(async () => {
   tournaments.value = await tournamentApi.list()
 })
 
-async function create() {
+async function create(input: TournamentInput) {
   error.value = ''
   try {
-    const created = await tournamentApi.create({ ...form.value, location: form.value.location || undefined })
+    const created = await tournamentApi.create(input)
     tournaments.value = [...(tournaments.value ?? []), created]
     showForm.value = false
-    form.value = { name: '', location: '', registrationStart: '', registrationEnd: '' }
   } catch (e) {
     error.value = e instanceof Error ? e.message : t('common.genericError')
   }
@@ -59,32 +58,12 @@ const formatDate = (d: string | null) => (d ? new Date(`${d}T00:00`).toLocaleDat
       </RouterLink>
     </div>
 
-    <form v-if="showForm" class="card new" @submit.prevent="create">
+    <div v-if="showForm" class="card new">
       <h2>{{ t('tournaments.new') }}</h2>
-      <div class="field">
-        <label for="t-name">{{ t('tournaments.name') }}</label>
-        <input id="t-name" v-model="form.name" class="input" required />
-      </div>
-      <div class="field">
-        <label for="t-location">{{ t('tournaments.location') }}</label>
-        <input id="t-location" v-model="form.location" class="input" />
-      </div>
-      <div class="row">
-        <div class="field">
-          <label for="t-start">{{ t('tournaments.registrationStart') }}</label>
-          <input id="t-start" v-model="form.registrationStart" class="input" type="date" required />
-        </div>
-        <div class="field">
-          <label for="t-end">{{ t('tournaments.registrationEnd') }}</label>
-          <input id="t-end" v-model="form.registrationEnd" class="input" type="date" required />
-        </div>
-      </div>
-      <p v-if="error" class="error">{{ error }}</p>
-      <div class="actions">
-        <button type="button" class="btn secondary" @click="showForm = false">{{ t('tournaments.cancel') }}</button>
-        <button class="btn">{{ t('tournaments.create') }}</button>
-      </div>
-    </form>
+      <TournamentForm :submit-label="t('tournaments.create')" @submit="create" @cancel="showForm = false">
+        <template #error><p v-if="error" class="error">{{ error }}</p></template>
+      </TournamentForm>
+    </div>
 
     <button v-if="isAdmin && !showForm" class="fab" :title="t('tournaments.new')" @click="showForm = true">
       <AppIcon name="plus" :size="26" />
@@ -112,9 +91,6 @@ const formatDate = (d: string | null) => (d ? new Date(`${d}T00:00`).toLocaleDat
 }
 .new { max-width: 520px; margin-top: 24px; }
 .new h2 { font-size: 18px; margin-bottom: 16px; }
-.row { display: flex; gap: 12px; }
-.row .field { flex: 1; }
-.actions { display: flex; gap: 10px; justify-content: flex-end; }
 .fab {
   position: fixed; right: 32px; bottom: 32px; width: 56px; height: 56px; border-radius: 14px;
   background: var(--navy); color: #fff; border: 0; cursor: pointer; box-shadow: 0 4px 12px rgba(20, 39, 90, 0.35);

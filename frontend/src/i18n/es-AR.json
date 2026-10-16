@@ -44,14 +44,22 @@
       "CLOSED": "Inscripción cerrada",
       "LIVE": "En juego",
       "COMPLETE": "Finalizado"
-    }
+    },
+    "matchStart": "Inicio de partidos",
+    "matchEnd": "Fin de partidos",
+    "edit": "Editar campeonato",
+    "save": "Guardar cambios",
+    "delete": "Eliminar campeonato",
+    "deleteConfirm": "Se eliminará el campeonato con sus categorías y zonas. Solo es posible si no tiene equipos ni partidos."
   },
   "categories": {
     "title": "Categorías",
     "new": "Nueva categoría",
     "namePlaceholder": "Nombre de la categoría (A, B, Libres…)",
     "empty": "Todavía no hay categorías.",
-    "zones": "{n} zonas"
+    "zones": "{n} zonas",
+    "delete": "Eliminar categoría",
+    "deleteConfirm": "Se eliminará la categoría \"{name}\" y sus zonas. Solo es posible si no tiene equipos ni partidos."
   },
   "standings": {
     "category": "Categoría",
@@ -87,7 +95,10 @@
   "common": {
     "loading": "Cargando…",
     "genericError": "Algo salió mal. Probá de nuevo.",
-    "close": "Cerrar"
+    "close": "Cerrar",
+    "delete": "Eliminar",
+    "rename": "Renombrar",
+    "edit": "Editar"
   },
   "teams": {
     "title": "Registro de equipos",
@@ -105,7 +116,9 @@
     "registerIn": "Inscribir en",
     "register": "Inscribir",
     "registered": "Equipo inscripto. El organizador le asignará categoría y zona.",
-    "empty": "Todavía no registraste equipos."
+    "empty": "Todavía no registraste equipos.",
+    "delete": "Eliminar equipo",
+    "deleteConfirm": "Se eliminará \"{name}\" con su plantel. Solo es posible si no está inscripto en ningún campeonato."
   },
   "tournamentTeams": {
     "unassigned": "Sin asignar ({n})",
@@ -115,7 +128,9 @@
     "addZone": "Zona",
     "zoneName": "Nombre de la zona",
     "noTeamsInZone": "Sin equipos.",
-    "needCategory": "Creá al menos una categoría en Inicio para poder asignar equipos."
+    "needCategory": "Creá al menos una categoría en Inicio para poder asignar equipos.",
+    "deleteZone": "Eliminar zona",
+    "deleteZoneConfirm": "Se eliminará \"{name}\". Solo es posible si no tiene equipos ni partidos."
   },
   "results": {
     "title": "Resultado del partido",
@@ -130,7 +145,9 @@
       "OWN_GOAL": "En contra",
       "YELLOW_CARD": "Amarilla",
       "RED_CARD": "Roja"
-    }
+    },
+    "delete": "Eliminar partido",
+    "deleteConfirm": "Se eliminará el partido con sus goles y tarjetas. La tabla se recalcula."
   },
   "rankings": {
     "scorers": "Goleadores",

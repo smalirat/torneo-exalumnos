@@ -2,6 +2,8 @@
 import { computed, onMounted, ref } from 'vue'
 import TeamBadge from './TeamBadge.vue'
 import AppIcon from './AppIcon.vue'
+import BaseModal from './BaseModal.vue'
+import ConfirmButton from './ConfirmButton.vue'
 import { matchApi, teamApi } from '../api/endpoints'
 import type { EventType, Match, Player } from '../api/types'
 import { t } from '../i18n'
@@ -59,6 +61,16 @@ function addEvent(side: Side, type: EventType) {
 const playerName = (side: Side, id: number) => rosters.value[side].find((p) => p.id === id)?.fullName ?? '?'
 const sideEvents = (side: Side) => events.value.map((e, i) => ({ ...e, i })).filter((e) => e.side === side)
 
+async function remove() {
+  error.value = ''
+  try {
+    await matchApi.remove(props.match.id)
+    emit('saved')
+  } catch (e) {
+    error.value = e instanceof Error ? e.message : t('common.genericError')
+  }
+}
+
 async function save() {
   busy.value = true
   error.value = ''
@@ -80,14 +92,8 @@ async function save() {
 </script>
 
 <template>
-  <div class="backdrop" @click.self="emit('close')">
-    <form class="modal card" @submit.prevent="save">
-      <header class="head">
-        <h2>{{ t('results.title') }}</h2>
-        <button type="button" class="icon-btn" :title="t('common.close')" @click="emit('close')">
-          <AppIcon name="close" />
-        </button>
-      </header>
+  <BaseModal :title="t('results.title')" width="820px" @close="emit('close')">
+    <form @submit.prevent="save">
 
       <div class="scoreboard">
         <span class="team"><TeamBadge :name="teams.home.name" :size="40" /> {{ teams.home.name }}</span>
@@ -137,22 +143,16 @@ async function save() {
 
       <p v-if="error" class="error">{{ error }}</p>
       <footer class="actions">
+        <ConfirmButton :label="t('results.delete')" :message="t('results.deleteConfirm')" @confirm="remove" />
+        <span class="spacer" />
         <button type="button" class="btn secondary" @click="emit('close')">{{ t('standings.cancel') }}</button>
         <button class="btn" :disabled="busy">{{ t('standings.save') }}</button>
       </footer>
     </form>
-  </div>
+  </BaseModal>
 </template>
 
 <style scoped>
-.backdrop {
-  position: fixed; inset: 0; background: rgba(20, 39, 90, 0.45);
-  display: flex; align-items: flex-start; justify-content: center; padding: 6vh 16px; z-index: 10; overflow-y: auto;
-}
-.modal { width: min(820px, 100%); }
-.head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-.head h2 { font-size: 20px; color: var(--navy); }
-.icon-btn { background: none; border: 0; color: var(--muted); cursor: pointer; display: inline-flex; }
 .scoreboard { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 12px; padding: 10px 0; }
 .team { display: inline-flex; align-items: center; gap: 10px; font-size: 17px; font-weight: 500; }
 .team.right { justify-content: flex-end; }
@@ -173,5 +173,6 @@ async function save() {
 .small { font-size: 13px; }
 .penalties { display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 16px; font-weight: 500; }
 .penalties .input { width: 70px; text-align: center; }
-.actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px; }
+.actions { display: flex; align-items: center; gap: 10px; margin-top: 18px; }
+.spacer { flex: 1; }
 </style>

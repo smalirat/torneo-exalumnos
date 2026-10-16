@@ -28,6 +28,19 @@ public class TeamController {
         return teamService.listFor(auth);
     }
 
+    @PutMapping("/{teamId}")
+    public ResponseDtos.TeamRes update(@PathVariable Long teamId, @Valid @RequestBody TeamDtos.RegisterTeamReq req,
+                                       Authentication auth) {
+        return teamService.updateTeam(teamId, req, auth);
+    }
+
+    @DeleteMapping("/{teamId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Operation(summary = "Delete a team and its roster (409 if registered in a tournament)")
+    public void delete(@PathVariable Long teamId, Authentication auth) {
+        teamService.deleteTeam(teamId, auth);
+    }
+
     @DeleteMapping("/{teamId}/players/{playerId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @Operation(summary = "Remove a player from the roster (409 if they have goals or cards)")

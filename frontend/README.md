@@ -22,7 +22,7 @@ npm run build      # chequeo de tipos (vue-tsc) + build
 - `src/i18n/` textos y `t('clave', { params })`. No hardcodear strings en los componentes.
 - `src/layouts/` `GlobalLayout` (fuera de un campeonato) y `TournamentLayout` (sidebar del campeonato + breadcrumb).
 - `src/views/` una vista por ruta (ver `src/router.ts`).
-- `src/components/` `MatchResultEditor` (carga de resultado por eventos, walkover y penales), `SlotPicker` (lado de una promoción/final), `TeamBadge`, `AppIcon`.
+- `src/components/` reutilizables: `BaseModal` (modal con título/cerrar/footer), `ConfirmButton` (borrar con confirmación en un diálogo propio), `InlineEdit` (renombrar en el lugar), `TournamentForm` (alta/edición de campeonato), `MatchResultEditor` (resultado por eventos, walkover, penales, borrar partido), `SlotPicker` (lado de una promoción/final), `TeamBadge`, `AppIcon`.
 - Diseño: `design/NOTES.md` en la raíz del repo (local, no versionado).
 
 ## Pantallas

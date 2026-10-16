@@ -52,6 +52,25 @@ public class TeamService {
                 t.getCaptain() == null ? null : t.getCaptain().getId(), playerRepo.countByTeam(t))).toList();
     }
 
+    @Transactional
+    public ResponseDtos.TeamRes updateTeam(Long teamId, TeamDtos.RegisterTeamReq req, Authentication auth) {
+        var t = ownedTeam(teamId, auth);
+        t.setName(req.getName()); t.setManagerName(req.getManagerName());
+        t.setPhone(req.getPhone()); t.setEmail(req.getEmail());
+        return ResponseDtos.TeamRes.from(t);
+    }
+
+    /** A team can be deleted (with its roster) only while it is not registered in any tournament. */
+    @Transactional
+    public void deleteTeam(Long teamId, Authentication auth) {
+        var t = ownedTeam(teamId, auth);
+        if (regRepo.existsByTeam(t)) {
+            throw new ConflictException("El equipo está inscripto en un campeonato; no se puede eliminar");
+        }
+        playerRepo.deleteAll(playerRepo.findByTeamOrderByJerseyNoAscFullNameAsc(t));
+        teamRepo.delete(t);
+    }
+
     /** Removes a player from the roster; not allowed once they have goals or cards. */
     @Transactional
     public void deletePlayer(Long teamId, Long playerId, Authentication auth) {

@@ -79,6 +79,14 @@ public class MatchService {
         m.setHomePenalties(req.getHomePenalties()); m.setAwayPenalties(req.getAwayPenalties());
     }
 
+    /** Deletes a match together with its goals and cards. */
+    @Transactional
+    public void delete(Long matchId) {
+        var m = matchRepo.findById(matchId).orElseThrow(() -> NotFoundException.of("Partido", matchId));
+        eventRepo.deleteByMatch(m);
+        matchRepo.delete(m);
+    }
+
     public List<ResponseDtos.MatchEventRes> events(Long matchId) {
         var m = matchRepo.findById(matchId).orElseThrow(() -> NotFoundException.of("Partido", matchId));
         return eventRepo.findByMatchOrderByIdAsc(m).stream().map(ResponseDtos.MatchEventRes::from).toList();

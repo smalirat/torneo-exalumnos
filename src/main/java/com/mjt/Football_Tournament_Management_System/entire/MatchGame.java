@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
+import java.util.Comparator;
 
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor
 @Entity @Table(name="matches")
@@ -62,6 +63,11 @@ public class MatchGame {
     // Penalty shoot-out of a drawn promotion/final; null when there was none
     private Integer homePenalties;
     private Integer awayPenalties;
+
+    /** Chronological order with undated matches last (databases put NULL first). */
+    public static final Comparator<MatchGame> BY_DATE = Comparator
+            .comparing(MatchGame::getScheduledAt, Comparator.nullsLast(Comparator.naturalOrder()))
+            .thenComparing(MatchGame::getId);
 
     public enum Status { SCHEDULED, FINISHED }
 

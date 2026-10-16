@@ -2,6 +2,7 @@ package com.mjt.Football_Tournament_Management_System.service;
 
 import com.mjt.Football_Tournament_Management_System.dto.ResponseDtos;
 import com.mjt.Football_Tournament_Management_System.entire.Category;
+import com.mjt.Football_Tournament_Management_System.entire.MatchGame;
 import com.mjt.Football_Tournament_Management_System.entire.Tournament;
 import com.mjt.Football_Tournament_Management_System.entire.Zone;
 import com.mjt.Football_Tournament_Management_System.exception.ConflictException;
@@ -103,7 +104,7 @@ public class CategoryService {
 
     public List<ResponseDtos.MatchRes> zoneFixtures(Long zoneId) {
         return matchRepo.findByZoneOrderByScheduledAtAsc(findZone(zoneId)).stream()
-                .map(ResponseDtos.MatchRes::from).toList();
+                .sorted(MatchGame.BY_DATE).map(ResponseDtos.MatchRes::from).toList();
     }
 
     private Zone findZone(Long id) {

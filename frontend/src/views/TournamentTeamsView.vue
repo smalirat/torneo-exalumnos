@@ -4,8 +4,10 @@ import { useRoute } from 'vue-router'
 import TournamentLayout from '../layouts/TournamentLayout.vue'
 import AppIcon from '../components/AppIcon.vue'
 import TeamBadge from '../components/TeamBadge.vue'
+import ConfirmButton from '../components/ConfirmButton.vue'
+import InlineEdit from '../components/InlineEdit.vue'
 import { tournamentApi } from '../api/endpoints'
-import type { Category, Registration } from '../api/types'
+import type { Category, Registration, Zone } from '../api/types'
 import { t } from '../i18n'
 
 // Admin: place registered teams into category zones and manage zones
@@ -46,6 +48,23 @@ const assign = (reg: Registration, event: Event) => run(async () => {
   Object.assign(reg, updated)
 })
 
+const reloadCategories = async () => { categories.value = await tournamentApi.categories(tournamentId.value) }
+
+const renameCategory = async (c: Category, name: string) => {
+  await tournamentApi.renameCategory(c.id, name)
+  await reloadCategories()
+}
+
+const renameZone = async (z: Zone, name: string) => {
+  await tournamentApi.renameZone(z.id, name)
+  await reloadCategories()
+}
+
+const deleteZone = (z: Zone) => run(async () => {
+  await tournamentApi.removeZone(z.id)
+  await reloadCategories()
+})
+
 const addZone = (categoryId: number) => run(async () => {
   await tournamentApi.createZone(categoryId, zoneName.value)
   zoneName.value = ''
@@ -75,7 +94,7 @@ const addZone = (categoryId: number) => run(async () => {
 
     <section v-for="c in categories" :key="c.id" class="card">
       <header class="cat-header">
-        <h2>{{ c.name }}</h2>
+        <h2><InlineEdit :value="c.name" :save="(name) => renameCategory(c, name)" /></h2>
         <form v-if="zoneFormFor === c.id" class="zone-form" @submit.prevent="addZone(c.id)">
           <input v-model="zoneName" class="input" :placeholder="t('tournamentTeams.zoneName')" required autofocus />
           <button class="btn">{{ t('tournaments.create') }}</button>
@@ -86,7 +105,13 @@ const addZone = (categoryId: number) => run(async () => {
         </button>
       </header>
       <div v-for="z in c.zones" :key="z.id" class="zone">
-        <h3 v-if="c.zoneCount > 1">{{ z.name }}</h3>
+        <h3 v-if="c.zoneCount > 1" class="zone-title">
+          <InlineEdit :value="z.name" :save="(name) => renameZone(z, name)" />
+          <ConfirmButton
+            icon :label="t('tournamentTeams.deleteZone')"
+            :message="t('tournamentTeams.deleteZoneConfirm', { name: z.name })" @confirm="deleteZone(z)"
+          />
+        </h3>
         <p v-if="inZone(z.id).length === 0" class="muted">{{ t('tournamentTeams.noTeamsInZone') }}</p>
         <div v-for="r in inZone(z.id)" :key="r.id" class="team">
           <TeamBadge :name="r.team.name" :size="34" />
@@ -104,6 +129,7 @@ const addZone = (categoryId: number) => run(async () => {
 .card { margin-bottom: 18px; }
 h2 { font-size: 18px; margin-bottom: 10px; }
 h3 { font-size: 14px; color: var(--muted); margin: 12px 0 4px; text-transform: uppercase; }
+.zone-title { display: flex; align-items: center; gap: 6px; }
 .cat-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 4px; }
 .cat-header h2 { margin: 0; }
 .zone-form { display: flex; gap: 8px; }

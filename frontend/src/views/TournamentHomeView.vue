@@ -1,14 +1,19 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import TournamentLayout from '../layouts/TournamentLayout.vue'
 import AppIcon from '../components/AppIcon.vue'
-import { tournamentApi } from '../api/endpoints'
-import type { Category } from '../api/types'
+import BaseModal from '../components/BaseModal.vue'
+import ConfirmButton from '../components/ConfirmButton.vue'
+import InlineEdit from '../components/InlineEdit.vue'
+import TournamentForm from '../components/TournamentForm.vue'
+import { tournamentApi, type TournamentInput } from '../api/endpoints'
+import type { Category, Tournament } from '../api/types'
 import { isAdmin } from '../auth'
 import { t } from '../i18n'
 
 const route = useRoute()
+const router = useRouter()
 const tournamentId = computed(() => Number(route.params.id))
 const categories = ref<Category[]>([])
 const newName = ref('')
@@ -31,14 +36,62 @@ async function addCategory() {
 }
 
 const formatDate = (d: string | null) => (d ? new Date(`${d}T00:00`).toLocaleDateString('es-AR') : '—')
+
+// --- admin: edit / delete ---
+const editing = ref(false)
+const layoutKey = ref(0) // remounts the layout so sidebar/breadcrumb pick up a new name
+
+async function run(action: () => Promise<unknown>) {
+  error.value = ''
+  try {
+    await action()
+  } catch (e) {
+    error.value = e instanceof Error ? e.message : t('common.genericError')
+  }
+}
+
+const saveTournament = (input: TournamentInput) => run(async () => {
+  await tournamentApi.update(tournamentId.value, input)
+  editing.value = false
+  layoutKey.value++
+})
+
+const deleteTournament = () => run(async () => {
+  await tournamentApi.remove(tournamentId.value)
+  router.push('/')
+})
+
+const renameCategory = async (c: Category, name: string) => {
+  Object.assign(c, await tournamentApi.renameCategory(c.id, name))
+}
+
+const deleteCategory = (c: Category) => run(async () => {
+  await tournamentApi.removeCategory(c.id)
+  categories.value = categories.value.filter((x) => x.id !== c.id)
+})
+
+const asTournament = (x: unknown) => x as Tournament
 </script>
 
 <template>
-  <TournamentLayout v-slot="{ tournament }">
+  <TournamentLayout :key="layoutKey" v-slot="{ tournament }">
     <section class="banner">
       <span class="avatar"><AppIcon name="trophy" :size="30" /></span>
+      <div v-if="isAdmin && tournament" class="admin-actions">
+        <button class="btn secondary" @click="editing = true"><AppIcon name="edit" :size="18" /> {{ t('common.edit') }}</button>
+        <ConfirmButton :label="t('tournaments.delete')" :message="t('tournaments.deleteConfirm')" @confirm="deleteTournament" />
+      </div>
     </section>
     <h1 class="name">{{ tournament?.name }}</h1>
+
+    <BaseModal v-if="editing && tournament" :title="t('tournaments.edit')" @close="editing = false">
+      <TournamentForm
+        :initial="asTournament(tournament)" :submit-label="t('tournaments.save')"
+        @submit="saveTournament" @cancel="editing = false"
+      >
+        <template #error><p v-if="error" class="error">{{ error }}</p></template>
+      </TournamentForm>
+    </BaseModal>
 
     <div v-if="tournament" class="facts">
       <div class="card fact">
@@ -68,16 +121,23 @@ const formatDate = (d: string | null) => (d ? new Date(`${d}T00:00`).toLocaleDat
       </div>
       <p v-if="error" class="error">{{ error }}</p>
       <p v-if="categories.length === 0" class="muted">{{ t('categories.empty') }}</p>
-      <RouterLink
-        v-for="c in categories" :key="c.id" class="cat"
-        :to="{ path: `/campeonatos/${tournamentId}/clasificacion`, query: { categoria: c.id } }"
-      >
+      <div v-for="c in categories" :key="c.id" class="cat">
         <span class="cat-icon"><AppIcon name="trophy" /></span>
-        <span class="cat-name">{{ c.name }}</span>
+        <span class="cat-name">
+          <InlineEdit :value="c.name" :editable="isAdmin" :save="(name) => renameCategory(c, name)">
+            <RouterLink :to="{ path: `/campeonatos/${tournamentId}/clasificacion`, query: { categoria: c.id } }">{{ c.name }}</RouterLink>
+          </InlineEdit>
+        </span>
         <!-- Zones only shown when there is more than one -->
         <span v-if="c.zoneCount > 1" class="muted">{{ t('categories.zones', { n: c.zoneCount }) }}</span>
-        <AppIcon name="chevron" />
-      </RouterLink>
+        <ConfirmButton
+          v-if="isAdmin" icon :label="t('categories.delete')"
+          :message="t('categories.deleteConfirm', { name: c.name })" @confirm="deleteCategory(c)"
+        />
+        <RouterLink :to="{ path: `/campeonatos/${tournamentId}/clasificacion`, query: { categoria: c.id } }" class="icon-btn">
+          <AppIcon name="chevron" />
+        </RouterLink>
+      </div>
     </div>
   </TournamentLayout>
 </template>
@@ -87,6 +147,7 @@ const formatDate = (d: string | null) => (d ? new Date(`${d}T00:00`).toLocaleDat
   position: relative; height: 220px; border-radius: var(--radius);
   background: linear-gradient(135deg, var(--navy) 0%, #3b5a9e 60%, #7e93c4 100%);
 }
+.admin-actions { position: absolute; right: 16px; bottom: 16px; display: flex; gap: 8px; }
 .avatar {
   position: absolute; left: 30px; bottom: -50px; width: 110px; height: 110px; border-radius: 50%;
   background: var(--bg); color: var(--navy); border: 4px solid #fff;

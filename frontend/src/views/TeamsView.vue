@@ -3,6 +3,8 @@ import { computed, onMounted, ref } from 'vue'
 import GlobalLayout from '../layouts/GlobalLayout.vue'
 import AppIcon from '../components/AppIcon.vue'
 import TeamBadge from '../components/TeamBadge.vue'
+import ConfirmButton from '../components/ConfirmButton.vue'
+import InlineEdit from '../components/InlineEdit.vue'
 import { teamApi, tournamentApi } from '../api/endpoints'
 import type { Player, TeamSummary, Tournament } from '../api/types'
 import { t } from '../i18n'
@@ -73,6 +75,16 @@ const registerTeam = (teamId: number) => run(async () => {
   notice.value = t('teams.registered')
 })
 
+const renameTeam = async (team: TeamSummary, name: string) => {
+  await teamApi.rename(team.id, name)
+  team.name = name
+}
+
+const deleteTeam = (team: TeamSummary) => run(async () => {
+  await teamApi.remove(team.id)
+  teams.value = (teams.value ?? []).filter((x) => x.id !== team.id)
+})
+
 const countLabel = (n: number) => (n === 1 ? t('teams.onePlayer') : t('teams.players', { n }))
 </script>
 
@@ -95,9 +107,13 @@ const countLabel = (n: number) => (n === 1 ? t('teams.onePlayer') : t('teams.pla
           <div class="row">
             <TeamBadge :name="team.name" :size="54" />
             <div class="info">
-              <span class="name">{{ team.name }}</span>
+              <span class="name"><InlineEdit :value="team.name" :save="(name) => renameTeam(team, name)" /></span>
               <span class="muted small">{{ countLabel(team.playerCount) }}</span>
             </div>
+            <ConfirmButton
+              icon :label="t('teams.delete')" :message="t('teams.deleteConfirm', { name: team.name })"
+              @confirm="deleteTeam(team)"
+            />
             <button class="round" :title="t('teams.roster')" :aria-expanded="openTeamId === team.id" @click="toggle(team.id)">
               <AppIcon name="group" />
             </button>
@@ -154,7 +170,6 @@ const countLabel = (n: number) => (n === 1 ? t('teams.onePlayer') : t('teams.pla
 .roster li { display: flex; align-items: center; gap: 10px; padding: 6px 0; border-bottom: 1px dashed var(--border); }
 .jersey { width: 30px; text-align: center; font-weight: 700; color: var(--navy); }
 .pname { flex: 1; }
-.icon-btn { background: none; border: 0; color: var(--muted); cursor: pointer; display: inline-flex; }
 .add-player, .register { display: flex; gap: 8px; align-items: center; margin-top: 8px; }
 .num { width: 80px; flex-shrink: 0; }
 .register .select { width: auto; min-width: 200px; }

@@ -22,6 +22,7 @@ public class TournamentService {
     private final MatchRepository matchRepo;
     private final NotificationRepository notificationRepo;
     private final ZoneRepository zoneRepo;
+    private final CategoryRepository categoryRepo;
 
     public ResponseDtos.TournamentRes create(AdminDtos.CreateTournamentReq req) {
         var t = new Tournament();
@@ -29,6 +30,30 @@ public class TournamentService {
         t.setRegistrationStart(req.getRegistrationStart()); t.setRegistrationEnd(req.getRegistrationEnd());
         t.setMatchStart(req.getMatchStart()); t.setMatchEnd(req.getMatchEnd());
         return ResponseDtos.TournamentRes.from(tournamentRepo.save(t));
+    }
+
+    @Transactional
+    public ResponseDtos.TournamentRes update(Long id, AdminDtos.UpdateTournamentReq req) {
+        var t = findTournament(id);
+        t.setName(req.getName()); t.setLocation(req.getLocation());
+        t.setRegistrationStart(req.getRegistrationStart()); t.setRegistrationEnd(req.getRegistrationEnd());
+        t.setMatchStart(req.getMatchStart()); t.setMatchEnd(req.getMatchEnd());
+        t.setStatus(req.getStatus());
+        return ResponseDtos.TournamentRes.from(t);
+    }
+
+    /** Only empty tournaments (no registrations, no matches) can be deleted; categories and zones go with it. */
+    @Transactional
+    public void delete(Long id) {
+        var t = findTournament(id);
+        if (regRepo.existsByTournament(t) || matchRepo.existsByTournament(t)) {
+            throw new ConflictException("El campeonato tiene equipos o partidos; no se puede eliminar");
+        }
+        for (var c : categoryRepo.findByTournamentOrderByDisplayOrderAscIdAsc(t)) {
+            zoneRepo.deleteAll(zoneRepo.findByCategoryOrderByDisplayOrderAscIdAsc(c));
+            categoryRepo.delete(c);
+        }
+        tournamentRepo.delete(t);
     }
 
     public List<ResponseDtos.TournamentRes> findAll() {
@@ -42,7 +67,7 @@ public class TournamentService {
 
     public List<ResponseDtos.MatchRes> fixtures(Long tournamentId) {
         return matchRepo.findByTournament(findTournament(tournamentId)).stream()
-                .map(ResponseDtos.MatchRes::from).toList();
+                .sorted(MatchGame.BY_DATE).map(ResponseDtos.MatchRes::from).toList();
     }
 
     @Transactional

@@ -33,6 +33,25 @@ public class AdminController {
         return tService.create(req);
     }
 
+    @PutMapping("/tournaments/{id}")
+    public ResponseDtos.TournamentRes update(@PathVariable Long id, @Valid @RequestBody AdminDtos.UpdateTournamentReq req) {
+        return tService.update(id, req);
+    }
+
+    @DeleteMapping("/tournaments/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Operation(summary = "Delete an empty tournament (409 if it has registrations or matches)")
+    public void delete(@PathVariable Long id) {
+        tService.delete(id);
+    }
+
+    @DeleteMapping("/matches/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Operation(summary = "Delete a match and its goals/cards")
+    public void deleteMatch(@PathVariable Long id) {
+        mService.delete(id);
+    }
+
     @PostMapping("/tournaments/{id}/categories")
     @Operation(summary = "Create a category (with a default zone)")
     public ResponseDtos.CategoryRes createCategory(@PathVariable Long id, @Valid @RequestBody AdminDtos.NameReq req) {
