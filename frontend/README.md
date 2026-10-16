@@ -22,4 +22,18 @@ npm run build      # chequeo de tipos (vue-tsc) + build
 - `src/i18n/` textos y `t('clave', { params })`. No hardcodear strings en los componentes.
 - `src/layouts/` `GlobalLayout` (fuera de un campeonato) y `TournamentLayout` (sidebar del campeonato + breadcrumb).
 - `src/views/` una vista por ruta (ver `src/router.ts`).
+- `src/components/` `MatchResultEditor` (carga de resultado por eventos, walkover y penales), `SlotPicker` (lado de una promoción/final), `TeamBadge`, `AppIcon`.
 - Diseño: `design/NOTES.md` en la raíz del repo (local, no versionado).
+
+## Pantallas
+
+| Ruta | Quién | Qué |
+| ---- | ----- | --- |
+| `/` | todos | Mis campeonatos; el admin crea campeonatos (FAB +) |
+| `/login`, `/registro` | todos | Login y alta de capitán |
+| `/equipos` | logueado | Registro de equipos: plantel e inscripción a campeonatos |
+| `/campeonatos/:id` | todos | Inicio: estado, inscripción, categorías (admin agrega) |
+| `/campeonatos/:id/clasificacion` | todos | Tabla por zona + Juegos; admin genera fixture, agrega partidos y carga resultados |
+| `/campeonatos/:id/rankings` | todos | Goleadores y amonestados |
+| `/campeonatos/:id/definiciones` | todos | Promociones y finales; admin las crea, recalcula y carga resultados |
+| `/campeonatos/:id/equipos` | admin | Asignar equipos a zonas, crear zonas |
