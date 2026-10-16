@@ -188,6 +188,7 @@ mvn spring-boot:run
 | POST   | `/api/admin/imports`                               | Upload league .xlsx → preview |
 | POST   | `/api/admin/imports/{id}/apply`                    | Apply preview (`overwrite` conflict keys) |
 | GET    | `/api/admin/imports`                               | Import history |
+| GET    | `/api/admin/imports/export/{seasonId}`             | Download the season as .xlsx (re-importable) |
 | POST   | `/api/admin/zones/{id}/fixtures/round-robin`       | Generate zone fixtures |
 | POST   | `/api/admin/fixtures/manual`                       | Manual fixtures (by zone) |
 | POST   | `/api/admin/tournaments/{id}/special-matches`      | Promotion/final by team or zone position |

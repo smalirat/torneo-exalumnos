@@ -5,11 +5,13 @@ import com.mjt.Football_Tournament_Management_System.entire.ExcelImport;
 import com.mjt.Football_Tournament_Management_System.excel.ExcelImporter;
 import com.mjt.Football_Tournament_Management_System.excel.ImportReport;
 import com.mjt.Football_Tournament_Management_System.excel.ParsedWorkbook;
+import com.mjt.Football_Tournament_Management_System.excel.WorkbookExporter;
 import com.mjt.Football_Tournament_Management_System.excel.WorkbookParser;
 import com.mjt.Football_Tournament_Management_System.exception.BadRequestException;
 import com.mjt.Football_Tournament_Management_System.exception.ConflictException;
 import com.mjt.Football_Tournament_Management_System.exception.NotFoundException;
 import com.mjt.Football_Tournament_Management_System.repo.ExcelImportRepository;
+import com.mjt.Football_Tournament_Management_System.repo.SeasonRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -31,6 +33,8 @@ public class ExcelImportService {
     private final ExcelImportRepository importRepo;
     private final ExcelImporter importer;
     private final TransactionTemplate tx;
+    private final WorkbookExporter exporter;
+    private final SeasonRepository seasonRepo;
 
     public ResponseDtos.ImportPreviewRes preview(MultipartFile file, String username) {
         if (file == null || file.isEmpty()) throw new BadRequestException("Falta el archivo");
@@ -58,6 +62,13 @@ public class ExcelImportService {
         imp.setAppliedAt(LocalDateTime.now());
         imp.setSummary(report.summary());
         return ResponseDtos.ImportPreviewRes.of(importRepo.save(imp), report);
+    }
+
+    public record ExportFile(String name, byte[] data) {}
+
+    public ExportFile export(Long seasonId) {
+        var season = seasonRepo.findById(seasonId).orElseThrow(() -> NotFoundException.of("Temporada", seasonId));
+        return new ExportFile("TORNEO " + season.getYear() + ".xlsx", exporter.export(season));
     }
 
     public List<ResponseDtos.ImportHistoryRes> history() {

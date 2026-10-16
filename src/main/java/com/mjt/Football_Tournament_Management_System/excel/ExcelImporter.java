@@ -306,9 +306,15 @@ public class ExcelImporter {
             if (!Objects.equals(cur.getScheduledAt(), xl.getScheduledAt())) diff.add("fecha/horario");
             if (!Objects.equals(cur.getRoundLabel(), xl.getRoundLabel())) diff.add("etiqueta de fecha");
             if (!Objects.equals(cur.getVenue(), xl.getVenue()) || !Objects.equals(cur.getPitch(), xl.getPitch())) diff.add("campo/cancha");
-            if (!Objects.equals(cur.getNotes(), xl.getNotes())) diff.add("nota");
+            if (!comparableNote(cur.getNotes()).equals(comparableNote(xl.getNotes()))) diff.add("nota");
             if (cur.getStatus() != xl.getStatus() || (xl.isFinished() && !resultText(cur).equals(resultText(xl)))) diff.add("resultado");
             return diff;
+        }
+
+        /** Ignores the walkover sentence the exporter adds for absences recorded on the web (WorkbookExporter#note). */
+        String comparableNote(String note) {
+            if (note == null) return "";
+            return note.replaceAll("(?i)\\s*(-\\s*)?el equipo .+ no se presento\\s*$", "").trim();
         }
 
         void copyMatch(MatchGame from, MatchGame to) {
@@ -452,8 +458,11 @@ public class ExcelImporter {
                 var player = player(team, s.player());
                 var tournament = s.stage() == null ? null : tournament(s.stage());
                 var label = player.getFullName() + " (" + team.getName() + ") — " + (s.notes() == null ? s.type() : s.notes());
-                var match = existing.stream().filter(e -> e.getPlayer().getId().equals(player.getId())
-                        && e.getType() == s.type() && Sheet.norm(e.getNotes()).equals(Sheet.norm(s.notes()))).findFirst().orElse(null);
+                var match = existing.stream().filter(e -> e.getPlayer().getId().equals(player.getId()) && e.getType() == s.type()
+                        && (Sheet.norm(e.getNotes()).equals(Sheet.norm(s.notes()))
+                            // created on the web without notes; the export wrote generated ones
+                            || (e.getNotes() == null && e.getMatchesSuspended() == s.matchesSuspended())))
+                        .findFirst().orElse(null);
                 if (match == null) {
                     var n = new Sanction(null, season, tournament, player, team, s.type(), s.matchesSuspended(),
                             s.matchesServed(), s.status(), s.notes(), DataSource.EXCEL);

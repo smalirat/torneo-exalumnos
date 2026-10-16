@@ -125,8 +125,9 @@ public class TeamService {
         var team = ownedTeam(teamId, auth);
         var t = findTournament(tournamentId);
         var today = java.time.LocalDate.now();
-        if (t.getRegistrationStart() == null || t.getRegistrationEnd() == null
-                || today.isBefore(t.getRegistrationStart()) || today.isAfter(t.getRegistrationEnd())) {
+        // The registration window applies to captains; the organizer can register teams at any time
+        if (!isAdmin(auth) && (t.getRegistrationStart() == null || t.getRegistrationEnd() == null
+                || today.isBefore(t.getRegistrationStart()) || today.isAfter(t.getRegistrationEnd()))) {
             throw new ConflictException("La inscripción al campeonato no está abierta");
         }
         if (regRepo.existsByTournamentAndTeam(t, team)) {

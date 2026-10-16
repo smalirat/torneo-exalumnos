@@ -7,6 +7,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -31,6 +32,15 @@ public class ExcelImportController {
     @Operation(summary = "Apply a previewed upload; `overwrite` lists the conflict keys to replace with the Excel value")
     public ResponseDtos.ImportPreviewRes apply(@PathVariable Long id, @RequestBody(required = false) AdminDtos.ApplyImportReq req) {
         return service.apply(id, req == null || req.getOverwrite() == null ? new HashSet<>() : new HashSet<>(req.getOverwrite()));
+    }
+
+    @GetMapping(value = "/export/{seasonId}", produces = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    @Operation(summary = "Download the season as an .xlsx with the league's layout (re-importable)")
+    public ResponseEntity<byte[]> export(@PathVariable Long seasonId) {
+        var file = service.export(seasonId);
+        return ResponseEntity.ok()
+                .header("Content-Disposition", "attachment; filename=\"" + file.name() + "\"")
+                .body(file.data());
     }
 
     @GetMapping

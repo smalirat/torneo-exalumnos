@@ -172,6 +172,7 @@ public class WorkbookParser {
                 if (WEEKDAYS.contains(first) || n.startsWith(dm.group())) continue;
             }
             if (label == null && round == null) {
+                if (n.equals("FECHA")) continue; // block of matches without a round number
                 var m = ROUND.matcher(n);
                 if (m.matches()) {
                     round = Integer.parseInt(m.group(1));

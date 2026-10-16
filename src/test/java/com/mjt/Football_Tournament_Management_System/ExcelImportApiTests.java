@@ -112,6 +112,45 @@ class ExcelImportApiTests {
     }
 
     @Test
+    void exportedWorkbookReimportsWithoutChangesIncludingWebData() throws Exception {
+        String admin = login();
+        String s = UUID.randomUUID().toString().substring(0, 5).toUpperCase();
+        int year = 2803;
+        apply(upload(workbook(year, s, "2", "1", null), admin), "{}", admin);
+        var season = seasonsWithYear(year).get(0);
+        long seasonId = season.get("id").asLong();
+        long tournament = season.get("tournaments").get(0).get("id").asLong();
+        var category = read(mvc.perform(get("/api/public/tournaments/" + tournament + "/categories"))).get(0);
+        long zone1 = category.get("zones").get(0).get("id").asLong();
+
+        // Data created on the web: second zone with a team, an interzonal walkover, sanction, yellows, champion
+        long zone2 = read(post("/api/admin/categories/" + category.get("id").asLong() + "/zones", "{\"name\":\"Zona 2\"}", admin)).get("id").asLong();
+        long gamma = read(post("/api/teams/register", "{\"name\":\"GAMMA " + s + "\"}", admin)).get("id").asLong();
+        long reg = read(post("/api/teams/" + gamma + "/tournaments/" + tournament + "/register", "", admin)).get("id").asLong();
+        patch("/api/admin/registrations/" + reg + "/zone", "{\"zoneId\":" + zone2 + "}", admin).andExpect(status().isOk());
+        var teams = read(mvc.perform(get("/api/public/zones/" + zone1 + "/standings")));
+        long alfa = teams.get(0).get("team").get("id").asLong();
+        long iz = read(post("/api/admin/fixtures/manual", "{\"tournamentId\":" + tournament + ",\"fixtures\":[{\"homeTeamId\":"
+                + alfa + ",\"awayTeamId\":" + gamma + ",\"round\":2,\"roundLabel\":\"Interzonal\","
+                + "\"scheduledAt\":\"" + year + "-04-12T10:10:00\",\"venue\":\"Anexo\",\"pitch\":\"1\"}]}", admin)).get(0).get("id").asLong();
+        patch("/api/admin/matches/" + iz + "/score", "{\"awayPresent\":false}", admin).andExpect(status().isOk());
+        long player = read(post("/api/teams/" + gamma + "/players", "{\"players\":[{\"fullName\":\"Gomez, Pedro " + s + "\",\"jerseyNo\":5}]}", admin)).get(0).get("id").asLong();
+        post("/api/admin/seasons/" + seasonId + "/sanctions", "{\"playerId\":" + player + ",\"tournamentId\":" + tournament
+                + ",\"type\":\"DIRECT_RED\",\"matchesSuspended\":2,\"matchesServed\":1}", admin).andExpect(status().isOk());
+        put("/api/admin/tournaments/" + tournament + "/yellow-cards", "{\"playerId\":" + player + ",\"yellowCards\":3}", admin);
+        put("/api/admin/champions", "{\"year\":" + year + ",\"categoryName\":\"Q" + s.substring(0, 3) + "\",\"teamId\":" + gamma + "}", admin);
+
+        byte[] exported = mvc.perform(get("/api/admin/imports/export/" + seasonId).header("Authorization", "Bearer " + admin))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsByteArray();
+        JsonNode reimport = upload(exported, admin);
+        for (var c : reimport.get("counters")) {
+            assertEquals(0, c.get("created").asInt() + c.get("updated").asInt() + c.get("conflicts").asInt(),
+                    "re-import of the export changed " + c + " — changes: " + reimport.get("changes"));
+        }
+        assertEquals(0, reimport.get("warnings").size(), "warnings: " + reimport.get("warnings"));
+    }
+
+    @Test
     void rejectsFilesThatAreNotTheLeagueWorkbook() throws Exception {
         String admin = login();
         mvc.perform(multipart("/api/admin/imports").file(new MockMultipartFile("file", "x.xlsx",
@@ -151,6 +190,16 @@ class ExcelImportApiTests {
         JsonNode again = upload(Files.readAllBytes(path), admin);
         for (var c : again.get("counters")) {
             assertEquals(0, c.get("created").asInt() + c.get("updated").asInt(), "re-import changed " + c);
+        }
+
+        // Exporting what was loaded and importing it back changes nothing either
+        byte[] exported = mvc.perform(get("/api/admin/imports/export/" + season.get("id").asLong())
+                .header("Authorization", "Bearer " + admin)).andReturn().getResponse().getContentAsByteArray();
+        Files.write(Path.of("target", "export-2026.xlsx"), exported);
+        JsonNode roundTrip = upload(exported, admin);
+        for (var c : roundTrip.get("counters")) {
+            assertEquals(0, c.get("created").asInt() + c.get("updated").asInt() + c.get("conflicts").asInt(),
+                    "round trip changed " + c + " — " + roundTrip.get("changes"));
         }
     }
 
@@ -236,6 +285,11 @@ class ExcelImportApiTests {
 
     private ResultActions patch(String url, String body, String token) throws Exception {
         return mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch(url)
+                .contentType(MediaType.APPLICATION_JSON).content(body).header("Authorization", "Bearer " + token));
+    }
+
+    private ResultActions put(String url, String body, String token) throws Exception {
+        return mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put(url)
                 .contentType(MediaType.APPLICATION_JSON).content(body).header("Authorization", "Bearer " + token));
     }
 
