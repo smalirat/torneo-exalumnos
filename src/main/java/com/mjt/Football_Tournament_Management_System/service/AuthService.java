@@ -37,7 +37,7 @@ public class AuthService {
         if (userRepo.existsByUsername(req.getUsername())) {
             throw new ConflictException("El nombre de usuario ya está en uso");
         }
-        userRepo.save(new AppUser(null, req.getUsername(), encoder.encode(req.getPassword()), AppUser.Role.CAPTAIN));
+        userRepo.save(new AppUser(null, req.getUsername(), encoder.encode(req.getPassword()), AppUser.Role.CAPTAIN, null));
         return token(req.getUsername());
     }
 

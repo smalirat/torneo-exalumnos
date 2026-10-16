@@ -12,6 +12,8 @@ import com.mjt.Football_Tournament_Management_System.exception.ConflictException
 import com.mjt.Football_Tournament_Management_System.exception.NotFoundException;
 import com.mjt.Football_Tournament_Management_System.repo.ExcelImportRepository;
 import com.mjt.Football_Tournament_Management_System.repo.SeasonRepository;
+import com.mjt.Football_Tournament_Management_System.repo.TournamentRepository;
+import com.mjt.Football_Tournament_Management_System.entire.Notification;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -35,6 +37,8 @@ public class ExcelImportService {
     private final TransactionTemplate tx;
     private final WorkbookExporter exporter;
     private final SeasonRepository seasonRepo;
+    private final TournamentRepository tournamentRepo;
+    private final FollowService followService;
 
     public ResponseDtos.ImportPreviewRes preview(MultipartFile file, String username) {
         if (file == null || file.isEmpty()) throw new BadRequestException("Falta el archivo");
@@ -61,6 +65,11 @@ public class ExcelImportService {
         imp.setStatus(ExcelImport.Status.APPLIED);
         imp.setAppliedAt(LocalDateTime.now());
         imp.setSummary(report.summary());
+        if (!report.changes.isEmpty() && imp.getSeasonYear() != null) {
+            seasonRepo.findByYear(imp.getSeasonYear()).ifPresent(season ->
+                    tournamentRepo.findBySeasonOrderByStageAscIdAsc(season).forEach(t -> followService.notify(
+                            t, Notification.Type.IMPORT, "Se actualizaron resultados y datos desde la planilla de la liga")));
+        }
         return ResponseDtos.ImportPreviewRes.of(importRepo.save(imp), report);
     }
 

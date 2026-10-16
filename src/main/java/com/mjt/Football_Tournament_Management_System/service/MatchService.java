@@ -6,6 +6,7 @@ import com.mjt.Football_Tournament_Management_System.dto.ResponseDtos;
 import com.mjt.Football_Tournament_Management_System.entire.DataSource;
 import com.mjt.Football_Tournament_Management_System.entire.MatchEvent;
 import com.mjt.Football_Tournament_Management_System.entire.MatchGame;
+import com.mjt.Football_Tournament_Management_System.entire.Notification;
 import com.mjt.Football_Tournament_Management_System.entire.Player;
 import com.mjt.Football_Tournament_Management_System.repo.MatchEventRepository;
 import com.mjt.Football_Tournament_Management_System.repo.MatchRepository;
@@ -25,6 +26,7 @@ public class MatchService {
     private final MatchRepository matchRepo;
     private final MatchEventRepository eventRepo;
     private final PlayerRepository playerRepo;
+    private final FollowService followService;
 
     /**
      * Loads the result from per-player events (goals, own goals, cards); the score is derived from them.
@@ -69,7 +71,19 @@ public class MatchService {
         applyPenalties(m, req, home && away);
         m.setStatus(MatchGame.Status.FINISHED);
         m.setSource(DataSource.WEB);
-        return ResponseDtos.MatchRes.from(matchRepo.save(m));
+        var saved = matchRepo.save(m);
+        followService.notify(m.getTournament(), Notification.Type.RESULT, resultMessage(saved));
+        return ResponseDtos.MatchRes.from(saved);
+    }
+
+    /** "Fecha 3: Rojos 2 - 1 Verdes", with penalties or W.O. when it applies. */
+    private static String resultMessage(MatchGame m) {
+        var round = m.getRoundLabel() != null ? m.getRoundLabel() + ": " : m.getRound() != null ? "Fecha " + m.getRound() + ": " : "";
+        var text = round + m.getHomeTeam().getName() + " " + m.getHomeGoals() + " - " + m.getAwayGoals() + " "
+                + m.getAwayTeam().getName();
+        if (m.getHomePenalties() != null) text += " (" + m.getHomePenalties() + "-" + m.getAwayPenalties() + " por penales)";
+        if (!m.present(true) || !m.present(false)) text += " (W.O.)";
+        return text;
     }
 
     /** A drawn promotion/final must be decided on penalties; any other match cannot have them. */

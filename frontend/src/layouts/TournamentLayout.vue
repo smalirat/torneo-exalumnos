@@ -3,6 +3,8 @@ import { computed, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import AppIcon from '../components/AppIcon.vue'
 import UserFooter from './UserFooter.vue'
+import FollowButton from '../components/FollowButton.vue'
+import ShareButton from '../components/ShareButton.vue'
 import { tournamentApi } from '../api/endpoints'
 import type { Tournament } from '../api/types'
 import { t } from '../i18n'
@@ -19,6 +21,7 @@ watch(tournamentId, async (id) => {
 }, { immediate: true })
 
 const pageTitle = computed(() => (route.meta.title as string | undefined) ?? '')
+const publicUrl = computed(() => `${window.location.origin}/ver/${tournamentId.value}`)
 </script>
 
 <template>
@@ -49,13 +52,20 @@ const pageTitle = computed(() => (route.meta.title as string | undefined) ?? '')
       <UserFooter />
     </aside>
     <main class="content">
-      <nav class="crumbs">
-        <RouterLink to="/">{{ t('nav.myTournaments') }}</RouterLink>
-        <span>/</span>
-        <RouterLink :to="`/campeonatos/${tournamentId}`">{{ tournament?.name }}</RouterLink>
-        <span>/</span>
-        <strong>{{ t(pageTitle) }}</strong>
-      </nav>
+      <header class="top">
+        <nav class="crumbs">
+          <RouterLink to="/">{{ t('nav.myTournaments') }}</RouterLink>
+          <span>/</span>
+          <RouterLink :to="`/campeonatos/${tournamentId}`">{{ tournament?.name }}</RouterLink>
+          <span>/</span>
+          <strong>{{ t(pageTitle) }}</strong>
+        </nav>
+        <div class="actions">
+          <RouterLink :to="`/ver/${tournamentId}`" class="public-link"><AppIcon name="eye" :size="18" /> {{ t('nav.publicPage') }}</RouterLink>
+          <ShareButton :url="publicUrl" :title="tournament?.name ?? ''" />
+          <FollowButton :tournament-id="tournamentId" />
+        </div>
+      </header>
       <slot :tournament="tournament" />
     </main>
   </div>
@@ -87,6 +97,9 @@ const pageTitle = computed(() => (route.meta.title as string | undefined) ?? '')
 .item:hover { background: rgba(255, 255, 255, 0.08); }
 .item.active { background: #fff; color: var(--navy); }
 .content { flex: 1; padding: 20px 36px; min-width: 0; }
-.crumbs { display: flex; gap: 10px; font-size: 13px; color: var(--muted); margin-bottom: 20px; }
+.top { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 20px; }
+.crumbs { display: flex; gap: 10px; font-size: 13px; color: var(--muted); flex-wrap: wrap; }
+.actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.public-link { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 500; color: var(--navy); margin-right: 4px; }
 .crumbs strong { color: var(--text); font-weight: 500; }
 </style>

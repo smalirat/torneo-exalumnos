@@ -21,7 +21,7 @@ public class TournamentService {
     private final TeamRepository teamRepo;
     private final RegistrationRepository regRepo;
     private final MatchRepository matchRepo;
-    private final NotificationRepository notificationRepo;
+    private final FollowService followService;
     private final ZoneRepository zoneRepo;
     private final CategoryRepository categoryRepo;
     private final SeasonRepository seasonRepo;
@@ -126,8 +126,7 @@ public class TournamentService {
             list = new ArrayList<>(); list.add(fixed); list.addAll(rot);
         }
         var saved = matchRepo.saveAll(out);
-        notificationRepo.save(new Notification(null, "tournament:"+t.getId(), "FIXTURE",
-                "Fixtures published: "+saved.size(), null));
+        followService.notify(t, Notification.Type.FIXTURE, fixtureMessage(saved));
         return saved.stream().map(ResponseDtos.MatchRes::from).toList();
     }
 
@@ -152,9 +151,20 @@ public class TournamentService {
             ms.add(m);
         }
         var saved = matchRepo.saveAll(ms);
-        notificationRepo.save(new Notification(null, "tournament:"+t.getId(), "FIXTURE",
-                "Fixtures published: "+saved.size(), null));
+        followService.notify(t, Notification.Type.FIXTURE, fixtureMessage(saved));
         return saved.stream().map(ResponseDtos.MatchRes::from).toList();
+    }
+
+    /** "Se publicó el fixture de A · Zona 2 (6 partidos)" or "Nuevo partido de A: X vs Y". */
+    private static String fixtureMessage(List<MatchGame> saved) {
+        var zone = saved.isEmpty() ? null : saved.get(0).getZone();
+        var where = zone == null ? "" : " de " + zone.getCategory().getName()
+                + (zone.getCategory().getZoneCount() > 1 ? " · " + zone.getName() : "");
+        if (saved.size() == 1) {
+            return "Nuevo partido" + where + ": " + saved.get(0).getHomeTeam().getName()
+                    + " vs " + saved.get(0).getAwayTeam().getName();
+        }
+        return "Se publicó el fixture" + where + " (" + saved.size() + " partidos)";
     }
 
     private Zone findZone(Long id) {

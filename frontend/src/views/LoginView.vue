@@ -1,12 +1,15 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { login, register } from '../auth'
 import { ApiError } from '../api/client'
 import { t } from '../i18n'
 
 const props = defineProps<{ mode: 'login' | 'register' }>()
 const router = useRouter()
+const route = useRoute()
+/** Only same-app paths, never an external URL */
+const redirect = typeof route.query.redirect === 'string' && route.query.redirect.startsWith('/') ? route.query.redirect : '/'
 
 const username = ref('')
 const password = ref('')
@@ -20,7 +23,7 @@ async function submit() {
   fieldErrors.value = {}
   try {
     await (props.mode === 'login' ? login : register)(username.value, password.value)
-    router.push('/')
+    router.push(redirect)
   } catch (e) {
     error.value = e instanceof Error ? e.message : t('common.genericError')
     if (e instanceof ApiError) fieldErrors.value = e.fieldErrors

@@ -102,6 +102,20 @@ public class ResponseDtos {
         }
     }
 
+    /** Followers of a tournament and whether the current user (if logged in) is one of them. */
+    public record FollowStatusRes(long followers, boolean following) {}
+
+    public record NotificationRes(Long id, Long tournamentId, String tournamentName, String type, String message,
+                                  LocalDateTime createdAt, boolean unread) {
+        public static NotificationRes from(Notification n, LocalDateTime seenAt) {
+            return new NotificationRes(n.getId(), n.getTournament().getId(), n.getTournament().getName(),
+                    n.getType().name(), n.getMessage(), n.getCreatedAt(),
+                    seenAt == null || n.getCreatedAt().isAfter(seenAt));
+        }
+    }
+
+    public record NotificationsRes(long unread, List<NotificationRes> items) {}
+
     public record TournamentRes(Long id, String name, String location,
                                 LocalDate registrationStart, LocalDate registrationEnd,
                                 LocalDate matchStart, LocalDate matchEnd, String status,

@@ -17,7 +17,11 @@
     "fixture": "Fixture",
     "excel": "Planilla Excel",
     "history": "Historia",
-    "season": "Temporada"
+    "season": "Temporada",
+    "userSection": "Usuario",
+    "following": "Campeonatos que sigo",
+    "notifications": "Notificaciones",
+    "publicPage": "Página pública"
   },
   "auth": {
     "loginTitle": "Iniciar sesión",
@@ -300,5 +304,22 @@
     "top": "Máximos campeones",
     "titles": "Títulos",
     "empty": "Todavía no hay campeones cargados."
+  },
+  "follow": {
+    "follow": "Seguir",
+    "following": "Siguiendo",
+    "followers": "{n} seguidores",
+    "title": "Campeonatos que sigo",
+    "empty": "Todavía no seguís ningún campeonato. Entrá a uno y tocá \"Seguir\" para recibir sus novedades."
+  },
+  "share": {
+    "share": "Compartir",
+    "copied": "¡Link copiado!",
+    "copyManually": "Copiá este link:"
+  },
+  "notifications": {
+    "title": "Notificaciones",
+    "empty": "No hay novedades. Acá vas a ver los fixtures y resultados de los campeonatos que seguís.",
+    "findTournaments": "Ver campeonatos"
   }
 }

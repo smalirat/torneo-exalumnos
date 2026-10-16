@@ -3,6 +3,7 @@ package com.mjt.Football_Tournament_Management_System.controller;
 
 import com.mjt.Football_Tournament_Management_System.dto.ResponseDtos;
 import com.mjt.Football_Tournament_Management_System.service.CategoryService;
+import com.mjt.Football_Tournament_Management_System.service.FollowService;
 import com.mjt.Football_Tournament_Management_System.service.MatchService;
 import com.mjt.Football_Tournament_Management_System.service.PlayoffService;
 import com.mjt.Football_Tournament_Management_System.service.RankingService;
@@ -12,6 +13,7 @@ import com.mjt.Football_Tournament_Management_System.service.TournamentService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -28,6 +30,7 @@ public class PublicApiController {
     private final RankingService rService;
     private final TeamService teamService;
     private final PlayoffService pService;
+    private final FollowService followService;
 
     @GetMapping("/seasons")
     @Operation(summary = "Seasons (years), newest first, with their tournaments")
@@ -38,6 +41,12 @@ public class PublicApiController {
     @GetMapping("/tournaments")
     public List<ResponseDtos.TournamentRes> tournaments() {
         return tService.findAll();
+    }
+
+    @GetMapping("/tournaments/{id}/followers")
+    @Operation(summary = "Follower count, and whether the caller follows it (when a token is sent)")
+    public ResponseDtos.FollowStatusRes followers(@PathVariable Long id, Authentication auth) {
+        return followService.status(id, auth);
     }
 
     @GetMapping("/tournaments/{id}/categories")
