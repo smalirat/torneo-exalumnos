@@ -5,9 +5,15 @@ import com.mjt.Football_Tournament_Management_System.entire.MatchGame;
 import com.mjt.Football_Tournament_Management_System.entire.Team;
 import com.mjt.Football_Tournament_Management_System.entire.Tournament;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import java.util.List;
 
 public interface MatchRepository extends JpaRepository<MatchGame, Long> {
     List<MatchGame> findByTournament(Tournament t);
-    List<MatchGame> findByTournamentAndHomeTeamOrAwayTeam(Tournament t, Team home, Team away);
+
+    /** Matches of a team (home or away) within a single tournament. */
+    @Query("select m from MatchGame m where m.tournament = :tournament"
+            + " and (m.homeTeam = :team or m.awayTeam = :team) order by m.scheduledAt")
+    List<MatchGame> findByTournamentAndTeam(@Param("tournament") Tournament tournament, @Param("team") Team team);
 }

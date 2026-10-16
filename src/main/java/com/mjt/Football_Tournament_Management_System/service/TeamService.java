@@ -72,7 +72,7 @@ public class TeamService {
     public ViewDtos.TeamDashboard dashboard(Long teamId, Long tournamentId) {
         var team = findTeam(teamId);
         var t = findTournament(tournamentId);
-        var matches = matchRepo.findByTournamentAndHomeTeamOrAwayTeam(t, team, team);
+        var matches = matchRepo.findByTournamentAndTeam(t, team);
         int played=0,w=0,d=0,l=0,gf=0,ga=0,pts=0;
         List<ViewDtos.Fixture> fixtures = new ArrayList<>();
         for (var m : matches) {

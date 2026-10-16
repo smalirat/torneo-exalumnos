@@ -118,6 +118,30 @@ class AuthAndTeamApiTests {
                 .andExpect(jsonPath("$[*].homeTeam.id").isNotEmpty());
     }
 
+    @Test
+    void dashboardOnlyIncludesMatchesOfThatTournament() throws Exception {
+        String admin = login("admin", "admin123");
+        long tournamentA = read(post("/api/admin/tournaments", tournamentJson(), admin)).get("id").asLong();
+        long tournamentB = read(post("/api/admin/tournaments", tournamentJson(), admin)).get("id").asLong();
+        long home = read(post("/api/teams/register", "{\"name\":\"Team " + UUID.randomUUID() + "\"}", admin))
+                .get("id").asLong();
+        long away = read(post("/api/teams/register", "{\"name\":\"Team " + UUID.randomUUID() + "\"}", admin))
+                .get("id").asLong();
+
+        // 'away' plays as visitor in tournament B only
+        post("/api/admin/fixtures/manual", "{\"tournamentId\":" + tournamentB + ",\"fixtures\":[{\"homeTeamId\":"
+                + home + ",\"awayTeamId\":" + away + ",\"scheduledAt\":\"2026-11-01T10:00:00\"}]}", admin)
+                .andExpect(status().isOk());
+
+        mvc.perform(get("/api/teams/" + away + "/tournaments/" + tournamentA + "/dashboard")
+                        .header("Authorization", "Bearer " + admin))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.fixtures.length()").value(0));
+        mvc.perform(get("/api/teams/" + away + "/tournaments/" + tournamentB + "/dashboard")
+                        .header("Authorization", "Bearer " + admin))
+                .andExpect(jsonPath("$.fixtures.length()").value(1));
+    }
+
     // --- helpers ---
 
     private String tournamentJson() {
