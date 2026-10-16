@@ -250,10 +250,13 @@ class AuthAndTeamApiTests {
         long zone = newZone(admin);
         long shows = newTeamNamed(admin, "Show " + UUID.randomUUID());
         long absent = newTeamNamed(admin, "Absent " + UUID.randomUUID());
+        long showsPlayer = newPlayer(admin, shows, "Juan Pérez");
         assignToZone(admin, zone, shows, absent);
 
         long match = scheduleMatch(admin, zone, shows, absent);
-        score(admin, match, "{\"homeGoals\":0,\"awayGoals\":5,\"awayPresent\":false}")
+        score(admin, match, "{\"awayPresent\":false,\"events\":[" + event(showsPlayer, "GOAL") + "]}")
+                .andExpect(status().isBadRequest()); // no events in a walkover
+        score(admin, match, "{\"awayPresent\":false}")
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.homeGoals").value(3))
                 .andExpect(jsonPath("$.awayGoals").value(0))
@@ -266,15 +269,75 @@ class AuthAndTeamApiTests {
                 .andExpect(jsonPath("$[1].points").value(0))
                 .andExpect(jsonPath("$[1].presencePoints").value(0))
                 .andExpect(jsonPath("$[1].lost").value(1));
+        // Walkover goals belong to the team only, not to any scorer
+        mvc.perform(get("/api/public/tournaments/" + zoneTournaments.get(zone) + "/scorers"))
+                .andExpect(jsonPath("$.length()").value(0));
     }
 
     @Test
-    void scoreWithoutGoalsWhenBothTeamsShowedUpIs400() throws Exception {
+    void eventsFromPlayersOfOtherTeamsAre400() throws Exception {
         String admin = login("admin", "admin123");
         long zone = newZone(admin);
-        long a = newTeam(admin), b = newTeam(admin);
+        long a = newTeam(admin), b = newTeam(admin), outsider = newTeam(admin);
+        long outsiderPlayer = newPlayer(admin, outsider, "Intruso");
         assignToZone(admin, zone, a, b);
-        score(admin, scheduleMatch(admin, zone, a, b), "{}").andExpect(status().isBadRequest());
+        score(admin, scheduleMatch(admin, zone, a, b), "{\"events\":[" + event(outsiderPlayer, "GOAL") + "]}")
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void scoreIsDerivedFromEventsAndOwnGoalsCountForTheRival() throws Exception {
+        String admin = login("admin", "admin123");
+        long zone = newZone(admin);
+        long home = newTeam(admin), away = newTeam(admin);
+        long striker = newPlayer(admin, home, "Goleador");
+        long defender = newPlayer(admin, away, "Defensor");
+        assignToZone(admin, zone, home, away);
+        long match = scheduleMatch(admin, zone, home, away);
+
+        String events = String.join(",", event(striker, "GOAL"), event(striker, "GOAL"),
+                event(defender, "OWN_GOAL"), event(defender, "YELLOW_CARD"));
+        score(admin, match, "{\"events\":[" + events + "]}")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.homeGoals").value(3))
+                .andExpect(jsonPath("$.awayGoals").value(0));
+        mvc.perform(get("/api/public/matches/" + match + "/events"))
+                .andExpect(jsonPath("$.length()").value(4));
+
+        // Re-scoring replaces the previous events
+        score(admin, match, "{\"events\":[" + event(striker, "GOAL") + "]}")
+                .andExpect(jsonPath("$.homeGoals").value(1));
+        mvc.perform(get("/api/public/matches/" + match + "/events"))
+                .andExpect(jsonPath("$.length()").value(1));
+    }
+
+    @Test
+    void tournamentScorersAndCardsRankings() throws Exception {
+        String admin = login("admin", "admin123");
+        long zone = newZone(admin);
+        long home = newTeam(admin), away = newTeam(admin);
+        long top = newPlayer(admin, home, "Zapata");
+        long second = newPlayer(admin, away, "Acosta");
+        long rough = newPlayer(admin, away, "Brusco");
+        assignToZone(admin, zone, home, away);
+
+        score(admin, scheduleMatch(admin, zone, home, away), "{\"events\":[" + String.join(",",
+                event(top, "GOAL"), event(top, "GOAL"), event(second, "GOAL"), event(second, "OWN_GOAL"),
+                event(second, "YELLOW_CARD"), event(rough, "YELLOW_CARD"), event(rough, "RED_CARD")) + "]}")
+                .andExpect(status().isOk());
+
+        long tournament = zoneTournaments.get(zone);
+        mvc.perform(get("/api/public/tournaments/" + tournament + "/scorers"))
+                .andExpect(jsonPath("$.length()").value(2))
+                .andExpect(jsonPath("$[0].player.id").value(top))
+                .andExpect(jsonPath("$[0].goals").value(2))
+                .andExpect(jsonPath("$[1].player.id").value(second))
+                .andExpect(jsonPath("$[1].goals").value(1)); // own goal not counted
+        mvc.perform(get("/api/public/tournaments/" + tournament + "/cards"))
+                .andExpect(jsonPath("$[0].player.id").value(rough))
+                .andExpect(jsonPath("$[0].redCards").value(1))
+                .andExpect(jsonPath("$[1].player.id").value(second))
+                .andExpect(jsonPath("$[1].yellowCards").value(1));
     }
 
     @Test
@@ -289,9 +352,9 @@ class AuthAndTeamApiTests {
         assignToZone(admin, zone, z, a, c, d);
 
         // Z and A both end with 5 pts, DIF 0, GF 1; Z won the match between them
-        score(admin, scheduleMatch(admin, zone, z, a), "{\"homeGoals\":1,\"awayGoals\":0}");
-        score(admin, scheduleMatch(admin, zone, c, z), "{\"homeGoals\":1,\"awayGoals\":0}");
-        score(admin, scheduleMatch(admin, zone, a, d), "{\"homeGoals\":1,\"awayGoals\":0}");
+        winOneNil(admin, scheduleMatch(admin, zone, z, a), z);
+        winOneNil(admin, scheduleMatch(admin, zone, c, z), c);
+        winOneNil(admin, scheduleMatch(admin, zone, a, d), a);
 
         mvc.perform(get("/api/public/zones/" + zone + "/standings"))
                 .andExpect(jsonPath("$[0].team.id").value(z))
@@ -307,11 +370,13 @@ class AuthAndTeamApiTests {
         String admin = login("admin", "admin123");
         String suffix = UUID.randomUUID().toString();
 
-        // Draw with a yellow card for AAA: ZZZ goes first on fair play
+        // 1-1 draw with a yellow card for AAA: ZZZ goes first on fair play
         long zone1 = newZone(admin);
         long a1 = newTeamNamed(admin, "AAA1 " + suffix), z1 = newTeamNamed(admin, "ZZZ1 " + suffix);
+        long pa1 = newPlayer(admin, a1, "Jugador A1"), pz1 = newPlayer(admin, z1, "Jugador Z1");
         assignToZone(admin, zone1, a1, z1);
-        score(admin, scheduleMatch(admin, zone1, a1, z1), "{\"homeGoals\":1,\"awayGoals\":1,\"homeYellowCards\":1}");
+        score(admin, scheduleMatch(admin, zone1, a1, z1), "{\"events\":[" + String.join(",",
+                event(pa1, "GOAL"), event(pz1, "GOAL"), event(pa1, "YELLOW_CARD")) + "]}");
         mvc.perform(get("/api/public/zones/" + zone1 + "/standings"))
                 .andExpect(jsonPath("$[0].team.id").value(z1))
                 .andExpect(jsonPath("$[1].fairPlay").value(1));
@@ -319,8 +384,10 @@ class AuthAndTeamApiTests {
         // Same draw without cards: alphabetical
         long zone2 = newZone(admin);
         long a2 = newTeamNamed(admin, "AAA2 " + suffix), z2 = newTeamNamed(admin, "ZZZ2 " + suffix);
+        long pa2 = newPlayer(admin, a2, "Jugador A2"), pz2 = newPlayer(admin, z2, "Jugador Z2");
         assignToZone(admin, zone2, z2, a2);
-        score(admin, scheduleMatch(admin, zone2, z2, a2), "{\"homeGoals\":1,\"awayGoals\":1}");
+        score(admin, scheduleMatch(admin, zone2, z2, a2), "{\"events\":[" + String.join(",",
+                event(pa2, "GOAL"), event(pz2, "GOAL")) + "]}");
         mvc.perform(get("/api/public/zones/" + zone2 + "/standings"))
                 .andExpect(jsonPath("$[0].team.id").value(a2))
                 .andExpect(jsonPath("$[0].points").value(2)); // draw + presence
@@ -355,6 +422,22 @@ class AuthAndTeamApiTests {
     private long scheduleMatch(String admin, long zoneId, long home, long away) throws Exception {
         return read(post("/api/admin/fixtures/manual", manualFixture(zoneId, home, away), admin)
                 .andExpect(status().isOk())).get(0).get("id").asLong();
+    }
+
+    private long newPlayer(String token, long teamId, String name) throws Exception {
+        return read(post("/api/teams/" + teamId + "/players",
+                "{\"players\":[{\"fullName\":\"" + name + "\",\"jerseyNo\":10}]}", token)
+                .andExpect(status().isOk())).get(0).get("id").asLong();
+    }
+
+    private String event(long playerId, String type) {
+        return "{\"playerId\":" + playerId + ",\"type\":\"" + type + "\"}";
+    }
+
+    /** The winner scores a single goal through a new player. */
+    private void winOneNil(String admin, long matchId, long winnerTeamId) throws Exception {
+        long scorer = newPlayer(admin, winnerTeamId, "Goleador " + UUID.randomUUID());
+        score(admin, matchId, "{\"events\":[" + event(scorer, "GOAL") + "]}").andExpect(status().isOk());
     }
 
     private ResultActions score(String admin, long matchId, String body) throws Exception {

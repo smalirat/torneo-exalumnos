@@ -26,9 +26,17 @@ Campeonato (Tournament)
 - **Punto de presencia:** +1 al equipo que se presenta a un partido (el admin lo marca al cargar el resultado).
 - **Walkover:** si un equipo no se presenta, el que se presentó gana 3-0 y suma presencia; el ausente no suma nada.
 - **Desempate:** PTS → diferencia de gol → goles a favor → resultado entre ellos → fair play → puntos de presencia → orden alfabético.
-- **Fair play:** penalización de 1 por amarilla y 3 por roja (menos es mejor). Las tarjetas se cargan por equipo junto con el resultado.
+- **Fair play:** penalización de 1 por amarilla y 3 por roja (menos es mejor), a partir de las tarjetas cargadas por jugador.
 - "Resultado entre ellos" = puntos (3/1/0, sin presencia) de los partidos entre los equipos empatados.
 - Las reglas de puntaje viven en `MatchGame` (las usan la tabla y el dashboard del equipo).
+
+## Goles y tarjetas (`MatchEvent`)
+
+- El resultado se carga **siempre por jugador** (`PATCH /api/admin/matches/{id}/score` con `events`): `GOAL`, `OWN_GOAL`, `YELLOW_CARD`, `RED_CARD`. El marcador se calcula a partir de los eventos.
+- Gol en contra: suma al rival y no cuenta para el goleador.
+- Walkover: no se cargan eventos; los 3 goles van solo al equipo (ningún goleador).
+- Volver a cargar un resultado reemplaza los eventos anteriores.
+- Rankings por campeonato: `GET /api/public/tournaments/{id}/scorers` y `/cards` (rojas primero, después amarillas).
 
 ## Promociones y finales (pendiente: `feat/playoffs`)
 

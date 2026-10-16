@@ -2,7 +2,12 @@ package com.mjt.Football_Tournament_Management_System.repo;
 
 
 import com.mjt.Football_Tournament_Management_System.entire.Player;
+import com.mjt.Football_Tournament_Management_System.entire.Team;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-public interface PlayerRepository extends JpaRepository<Player, Long> {}
+import java.util.List;
+
+public interface PlayerRepository extends JpaRepository<Player, Long> {
+    List<Player> findByTeamOrderByJerseyNoAscFullNameAsc(Team team);
+}
 

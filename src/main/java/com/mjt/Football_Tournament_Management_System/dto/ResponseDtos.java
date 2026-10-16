@@ -23,6 +23,23 @@ public class ResponseDtos {
         }
     }
 
+    public record PlayerRef(Long id, String fullName, int jerseyNo) {
+        public static PlayerRef from(Player p) {
+            return new PlayerRef(p.getId(), p.getFullName(), p.getJerseyNo());
+        }
+    }
+
+    public record MatchEventRes(Long id, Long matchId, PlayerRef player, TeamRef team, String type) {
+        public static MatchEventRes from(MatchEvent e) {
+            return new MatchEventRes(e.getId(), e.getMatch().getId(), PlayerRef.from(e.getPlayer()),
+                    TeamRef.from(e.getTeam()), e.getType().name());
+        }
+    }
+
+    public record ScorerRow(PlayerRef player, TeamRef team, int goals) {}
+
+    public record CardRow(PlayerRef player, TeamRef team, int yellowCards, int redCards) {}
+
     public record PlayerRes(Long id, String fullName, int jerseyNo, Long teamId) {
         public static PlayerRes from(Player p) {
             return new PlayerRes(p.getId(), p.getFullName(), p.getJerseyNo(), p.getTeam().getId());

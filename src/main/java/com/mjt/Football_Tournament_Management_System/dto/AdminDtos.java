@@ -3,9 +3,11 @@ package com.mjt.Football_Tournament_Management_System.dto;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
+import com.mjt.Football_Tournament_Management_System.entire.MatchEvent;
 import lombok.Data;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 public class AdminDtos {
@@ -38,13 +40,18 @@ public class AdminDtos {
     }
 
     /**
-     * Match result. If a team did not show up (present=false) the goals are ignored and the
-     * other team wins by walkover 3-0.
+     * Match result as per-player events; the score is derived from them (0-0 = no goal events).
+     * If a team did not show up (present=false) no events are allowed and the other team wins 3-0.
      */
     @Data
     public static class ScoreUpdateReq {
-        @Min(0) private Integer homeGoals, awayGoals;
         private boolean homePresent = true, awayPresent = true;
-        @Min(0) private int homeYellowCards, homeRedCards, awayYellowCards, awayRedCards;
+        @NotNull private List<@Valid EventItem> events = new ArrayList<>();
+    }
+
+    @Data
+    public static class EventItem {
+        @NotNull private Long playerId;
+        @NotNull private MatchEvent.Type type;
     }
 }

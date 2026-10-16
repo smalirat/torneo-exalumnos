@@ -43,6 +43,11 @@ public class TeamService {
         return ResponseDtos.TeamRes.from(teamRepo.save(t));
     }
 
+    public List<ResponseDtos.PlayerRes> players(Long teamId) {
+        return playerRepo.findByTeamOrderByJerseyNoAscFullNameAsc(findTeam(teamId)).stream()
+                .map(ResponseDtos.PlayerRes::from).toList();
+    }
+
     @Transactional
     public List<ResponseDtos.PlayerRes> addPlayers(Long teamId, TeamDtos.AddPlayersReq req, Authentication auth) {
         var team = ownedTeam(teamId, auth);

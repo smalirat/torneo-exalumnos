@@ -145,6 +145,10 @@ mvn spring-boot:run
 | GET    | `/api/public/zones/{id}/registrations`       | Teams of a zone               |
 | GET    | `/api/public/zones/{id}/fixtures`            | Fixtures of a zone            |
 | GET    | `/api/public/zones/{id}/standings`           | Zone table (3/1/0 + presence) |
+| GET    | `/api/public/matches/{id}/events`            | Goals and cards of a match    |
+| GET    | `/api/public/tournaments/{id}/scorers`       | Top scorers                   |
+| GET    | `/api/public/tournaments/{id}/cards`         | Booked players                |
+| GET    | `/api/public/teams/{id}/players`             | Team roster                   |
 
 ### 🧑‍🤝‍🧑 Team APIs
 
@@ -167,7 +171,7 @@ mvn spring-boot:run
 | PATCH  | `/api/admin/registrations/{id}/zone`               | Assign/move team to a zone |
 | POST   | `/api/admin/zones/{id}/fixtures/round-robin`       | Generate zone fixtures |
 | POST   | `/api/admin/fixtures/manual`                       | Manual fixtures (by zone) |
-| PATCH  | `/api/admin/matches/{id}/score`                    | Result, presence (walkover 3-0) and cards |
+| PATCH  | `/api/admin/matches/{id}/score`                    | Result as per-player events; presence (walkover 3-0) |
 
 ---
 

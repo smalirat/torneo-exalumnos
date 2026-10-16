@@ -86,6 +86,7 @@ public class AdminController {
     }
 
     @PatchMapping("/matches/{id}/score")
+    @Operation(summary = "Load the result as per-player events (score is derived); absent team = walkover 3-0")
     public ResponseDtos.MatchRes score(@PathVariable Long id, @Valid @RequestBody AdminDtos.ScoreUpdateReq req) {
         return mService.updateScore(id, req);
     }
