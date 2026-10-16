@@ -29,7 +29,7 @@ npm run build      # chequeo de tipos (vue-tsc) + build
 
 | Ruta | Quién | Qué |
 | ---- | ----- | --- |
-| `/` | todos | Inicio del torneo (edición actual): Última fecha, Tabla de posiciones, Próxima fecha; pestañas Fixture, Goleadores, Sancionados (pendientes y cumplidas de la temporada + amonestados de la edición), Definiciones; selector de edición y compartir |
+| `/` | todos | Inicio del torneo (edición actual): Última fecha, Tabla de posiciones, Próxima fecha; pestañas Fixture, Goleadores, Sancionados (pendientes y cumplidas de la temporada + amonestados de la edición), Definiciones, Historia (campeones de todos los años); selector de edición y compartir |
 | `/ver/:id` | todos | Lo mismo para una edición puntual (es el link que se comparte) |
 | `/siguiendo` | logueado | Campeonatos que sigo |
 | `/ediciones` | logueado | Ediciones del torneo; el admin crea ediciones (FAB +) |

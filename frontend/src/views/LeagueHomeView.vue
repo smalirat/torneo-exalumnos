@@ -3,6 +3,7 @@ import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import PublicLayout from '../layouts/PublicLayout.vue'
 import AppIcon from '../components/AppIcon.vue'
+import ChampionsHistory from '../components/ChampionsHistory.vue'
 import LeagueTable from '../components/LeagueTable.vue'
 import MatchCard from '../components/MatchCard.vue'
 import MatchCarousel from '../components/MatchCarousel.vue'
@@ -13,8 +14,8 @@ import ScoreCard from '../components/ScoreCard.vue'
 import ShareButton from '../components/ShareButton.vue'
 import YellowCardsByTeam from '../components/YellowCardsByTeam.vue'
 import ZonePicker from '../components/ZonePicker.vue'
-import { playoffApi, seasonApi, tournamentApi, zoneApi } from '../api/endpoints'
-import type { Category, Match, Sanction, ScorerRow, SeasonStatRow, StandingRow, Tournament, YellowTally } from '../api/types'
+import { championApi, playoffApi, seasonApi, tournamentApi, zoneApi } from '../api/endpoints'
+import type { Category, CategoryHistory, Match, Sanction, ScorerRow, SeasonStatRow, StandingRow, Tournament, YellowTally } from '../api/types'
 import { isAdmin, isLoggedIn } from '../auth'
 import { currentEdition, sortEditions } from '../editions'
 import { dayLabel, groupRounds, isDone } from '../rounds'
@@ -38,15 +39,19 @@ const figures = ref<SeasonStatRow[]>([])
 const sanctions = ref<Sanction[]>([])
 const yellows = ref<YellowTally[]>([])
 const split = computed(() => splitSanctions(sanctions.value))
+// Champions of every year: league-wide, not tied to the edition
+const history = ref<CategoryHistory[]>([])
+championApi.history().then((h) => { history.value = h })
 const notFound = ref(false)
 const fixtureIndex = ref(0)
 
-const TABS = ['inicio', 'fixture', 'goleadores', 'sancionados', 'definiciones'] as const
+const TABS = ['inicio', 'fixture', 'goleadores', 'sancionados', 'definiciones', 'historia'] as const
 type Tab = (typeof TABS)[number]
 // Sanctions are kept per season and yellow cards per edition (Excel): the tab shows when there is any of them
 const tabs = computed(() => TABS.filter((k) =>
   (k !== 'definiciones' || specials.value.length > 0)
-  && (k !== 'sancionados' || tournament.value?.seasonId != null || yellows.value.length > 0)))
+  && (k !== 'sancionados' || tournament.value?.seasonId != null || yellows.value.length > 0)
+  && (k !== 'historia' || history.value.length > 0)))
 const tab = computed<Tab>({
   get: () => (TABS as readonly string[]).includes(route.query.tab as string) ? route.query.tab as Tab : 'inicio',
   set: (value) => router.replace({ query: { ...route.query, tab: value === 'inicio' ? undefined : value } }),
@@ -270,6 +275,11 @@ function changeEdition(event: Event) {
           <MatchCard v-for="m in g.matches" :key="m.id" :match="m" />
         </template>
       </section>
+
+      <!-- HISTORIA -->
+      <section v-else-if="tab === 'historia'" class="history">
+        <ChampionsHistory :history="history" />
+      </section>
     </template>
   </PublicLayout>
 </template>
@@ -313,6 +323,7 @@ function changeEdition(event: Event) {
 .next-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
 .card-title { font-family: var(--condensed); text-transform: uppercase; color: var(--navy); font-size: 22px; margin-bottom: 8px; }
 .rankings { display: flex; flex-direction: column; gap: 16px; }
+.history :deep(.category) { margin-bottom: 16px; }
 .rankings > .note { margin-top: -6px; }
 .count {
   font-family: 'Roboto', system-ui, sans-serif; font-size: 13px; font-weight: 700; vertical-align: middle;
