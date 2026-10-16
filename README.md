@@ -185,6 +185,9 @@ mvn spring-boot:run
 | PATCH  | `/api/admin/matches/{id}`                          | Edit date, round, field, pitch, note |
 | DELETE | `/api/admin/matches/{id}`                          | Delete match and its events |
 | PATCH  | `/api/admin/registrations/{id}/zone`               | Assign/move team to a zone |
+| POST   | `/api/admin/imports`                               | Upload league .xlsx → preview |
+| POST   | `/api/admin/imports/{id}/apply`                    | Apply preview (`overwrite` conflict keys) |
+| GET    | `/api/admin/imports`                               | Import history |
 | POST   | `/api/admin/zones/{id}/fixtures/round-robin`       | Generate zone fixtures |
 | POST   | `/api/admin/fixtures/manual`                       | Manual fixtures (by zone) |
 | POST   | `/api/admin/tournaments/{id}/special-matches`      | Promotion/final by team or zone position |

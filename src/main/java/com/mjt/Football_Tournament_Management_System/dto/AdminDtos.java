@@ -101,6 +101,12 @@ public class AdminDtos {
         @NotNull private Long teamId;
     }
 
+    @Data
+    public static class ApplyImportReq {
+        /** Conflict keys (from the preview) to overwrite with the Excel value. */
+        private List<String> overwrite;
+    }
+
     /** Name for a category or zone. */
     @Data
     public static class NameReq {
@@ -119,6 +125,11 @@ public class AdminDtos {
     @Data
     public static class ScoreUpdateReq {
         private boolean homePresent = true, awayPresent = true;
+        /**
+         * Score. Optional: when missing it is derived from the goal events. When given, the per-player goals
+         * are an optional detail and cannot add up to more than it.
+         */
+        @Min(0) private Integer homeGoals, awayGoals;
         @NotNull private List<@Valid EventItem> events = new ArrayList<>();
         /** Only for a promotion/final that ends in a draw; required then, and cannot be tied. */
         @Min(0) private Integer homePenalties, awayPenalties;

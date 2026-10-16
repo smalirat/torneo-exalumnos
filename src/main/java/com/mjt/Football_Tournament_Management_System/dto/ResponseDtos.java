@@ -1,6 +1,7 @@
 package com.mjt.Football_Tournament_Management_System.dto;
 
 import com.mjt.Football_Tournament_Management_System.entire.*;
+import com.mjt.Football_Tournament_Management_System.excel.ImportReport;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -71,6 +72,24 @@ public class ResponseDtos {
     }
 
     public record TitleCount(TeamRef team, int titles) {}
+
+    /** Result of an Excel upload (preview) or of applying it. */
+    public record ImportPreviewRes(Long importId, String fileName, String status, Integer seasonYear,
+                                   List<ImportReport.Counter> counters, List<ImportReport.Change> changes,
+                                   List<ImportReport.Conflict> conflicts, List<String> warnings, List<String> notices) {
+        public static ImportPreviewRes of(ExcelImport imp, ImportReport r) {
+            return new ImportPreviewRes(imp.getId(), imp.getFileName(), imp.getStatus().name(), imp.getSeasonYear(),
+                    r.counters(), r.changes, r.conflicts, r.warnings, r.notices);
+        }
+    }
+
+    public record ImportHistoryRes(Long id, String fileName, String uploadedBy, LocalDateTime createdAt,
+                                   LocalDateTime appliedAt, String status, Integer seasonYear, String summary) {
+        public static ImportHistoryRes from(ExcelImport i) {
+            return new ImportHistoryRes(i.getId(), i.getFileName(), i.getUploadedBy(), i.getCreatedAt(), i.getAppliedAt(),
+                    i.getStatus().name(), i.getSeasonYear(), i.getSummary());
+        }
+    }
 
     /** History of one category: champions by year (newest first) and teams ranked by titles. */
     public record CategoryHistory(String categoryName, List<ChampionRes> champions, List<TitleCount> topChampions) {}

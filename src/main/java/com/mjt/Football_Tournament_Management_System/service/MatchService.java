@@ -45,8 +45,17 @@ public class MatchService {
         eventRepo.saveAll(events);
 
         if (home && away) {
-            m.setHomeGoals(count(events, m, true, MatchEvent.Type.GOAL) + count(events, m, false, MatchEvent.Type.OWN_GOAL));
-            m.setAwayGoals(count(events, m, false, MatchEvent.Type.GOAL) + count(events, m, true, MatchEvent.Type.OWN_GOAL));
+            int homeFromEvents = count(events, m, true, MatchEvent.Type.GOAL) + count(events, m, false, MatchEvent.Type.OWN_GOAL);
+            int awayFromEvents = count(events, m, false, MatchEvent.Type.GOAL) + count(events, m, true, MatchEvent.Type.OWN_GOAL);
+            boolean explicit = req.getHomeGoals() != null || req.getAwayGoals() != null;
+            if (explicit && (req.getHomeGoals() == null || req.getAwayGoals() == null)) {
+                throw new BadRequestException("Indicá los goles de los dos equipos");
+            }
+            if (explicit && (homeFromEvents > req.getHomeGoals() || awayFromEvents > req.getAwayGoals())) {
+                throw new BadRequestException("Hay más goles cargados por jugador que en el resultado");
+            }
+            m.setHomeGoals(explicit ? req.getHomeGoals() : homeFromEvents);
+            m.setAwayGoals(explicit ? req.getAwayGoals() : awayFromEvents);
         } else {
             // Walkover: whoever showed up wins 3-0; if neither did, 0-0 and nobody scores points
             m.setHomeGoals(home ? MatchGame.WALKOVER_GOALS : 0);
