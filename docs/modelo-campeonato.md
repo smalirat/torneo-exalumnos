@@ -27,7 +27,7 @@ Campeonato (Tournament)   etapa APERTURA / CLAUSURA
 - Victoria 3, empate 1, derrota 0.
 - **Punto de presencia:** +1 al equipo que se presenta a un partido (el admin lo marca al cargar el resultado).
 - **Walkover:** si un equipo no se presenta, el que se presentó gana 3-0 y suma presencia; el ausente no suma nada.
-- **Walkover anticipado:** si un walkover ya está cargado pero su fecha todavía no llegó (p. ej. un equipo que se retiró y el Excel trae los 3-0 de las próximas fechas), se guarda pero **no cuenta en la tabla hasta el día del partido** (hora de Argentina). La UI lo marca con "Cuenta en la tabla desde su fecha".
+- **Walkover anticipado:** si un walkover ya está cargado pero su fecha todavía no se jugó (p. ej. un equipo que se retiró y el Excel trae los 3-0 de las próximas fechas), se guarda pero **no cuenta en la tabla hasta que se juegue algún otro partido de esa fecha** (misma zona y número de fecha). El día del calendario no alcanza porque las fechas se postergan. Solo si la fecha no tiene otros partidos se usa el día (hora de Argentina). La UI lo marca con "Cuenta en la tabla cuando se juegue la fecha" y no lo toma como fecha jugada.
 - **Desempate:** PTS → diferencia de gol → goles a favor → resultado entre ellos → fair play → puntos de presencia → orden alfabético.
 - **Fair play:** penalización de 1 por amarilla y 3 por roja (menos es mejor), a partir de las tarjetas cargadas por jugador.
 - "Resultado entre ellos" = puntos (3/1/0, sin presencia) de los partidos entre los equipos empatados.

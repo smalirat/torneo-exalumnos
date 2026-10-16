@@ -31,5 +31,5 @@ export function dayLabel(day: string | null) {
   return text.charAt(0).toUpperCase() + text.slice(1)
 }
 
-/** Already played. A walkover loaded ahead of its date is still upcoming (it shows its W.O. mark there). */
+/** Already played. A walkover loaded before its round is played is still upcoming (it shows its W.O. mark there). */
 export const isDone = (m: Match) => m.status === 'FINISHED' && !m.advanceWalkover

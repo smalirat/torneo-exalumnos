@@ -568,6 +568,31 @@ class AuthAndTeamApiTests {
     }
 
     @Test
+    void walkoverOfAPostponedRoundCountsOnlyOnceTheRoundIsPlayed() throws Exception {
+        String admin = login("admin", "admin123");
+        long zone = newZone(admin);
+        long shows = newTeam(admin), withdrew = newTeam(admin), c = newTeam(admin), d = newTeam(admin);
+        assignToZone(admin, zone, shows, withdrew, c, d);
+        long walkover = scheduleMatch(admin, zone, shows, withdrew);
+        long other = scheduleMatch(admin, zone, c, d);
+        // Same round, date already passed, but the round was postponed: only the walkover is loaded
+        for (long m : new long[]{walkover, other}) {
+            patch("/api/admin/matches/" + m, "{\"round\":6,\"scheduledAt\":\"2025-11-01T10:00:00\"}", admin)
+                    .andExpect(status().isOk());
+        }
+        score(admin, walkover, "{\"awayPresent\":false}")
+                .andExpect(jsonPath("$.advanceWalkover").value(true));
+        mvc.perform(get("/api/public/zones/" + zone + "/standings"))
+                .andExpect(jsonPath("$[?(@.team.id == " + shows + ")].played").value(0));
+
+        score(admin, other, "{\"homeGoals\":1,\"awayGoals\":0}").andExpect(status().isOk());
+        mvc.perform(get("/api/public/zones/" + zone + "/fixtures"))
+                .andExpect(jsonPath("$[?(@.id == " + walkover + ")].advanceWalkover").value(false));
+        mvc.perform(get("/api/public/zones/" + zone + "/standings"))
+                .andExpect(jsonPath("$[?(@.team.id == " + shows + ")].played").value(1));
+    }
+
+    @Test
     void eventsFromPlayersOfOtherTeamsAre400() throws Exception {
         String admin = login("admin", "admin123");
         long zone = newZone(admin);

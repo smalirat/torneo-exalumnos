@@ -73,7 +73,7 @@ public class MatchService {
         m.setSource(DataSource.WEB);
         var saved = matchRepo.save(m);
         followService.notify(m.getTournament(), Notification.Type.RESULT, resultMessage(saved));
-        return ResponseDtos.MatchRes.from(saved);
+        return ResponseDtos.MatchRes.from(saved, MatchGame.pendingWalkovers(matchRepo.findByTournament(saved.getTournament())));
     }
 
     /** "Fecha 3: Rojos 2 - 1 Verdes", with penalties or W.O. when it applies. */
@@ -114,7 +114,7 @@ public class MatchService {
         m.setPitch(TournamentService.blankToNull(req.getPitch()));
         m.setNotes(TournamentService.blankToNull(req.getNotes()));
         m.setSource(DataSource.WEB);
-        return ResponseDtos.MatchRes.from(m);
+        return ResponseDtos.MatchRes.from(m, MatchGame.pendingWalkovers(matchRepo.findByTournament(m.getTournament())));
     }
 
     /** Deletes a match together with its goals and cards. */

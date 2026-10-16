@@ -58,9 +58,10 @@ public class PlayoffService {
 
     public List<ResponseDtos.MatchRes> list(Long tournamentId) {
         var t = tournamentRepo.findById(tournamentId).orElseThrow(() -> NotFoundException.of("Campeonato", tournamentId));
+        var pending = MatchGame.pendingWalkovers(matchRepo.findByTournament(t));
         return matchRepo.findByTournamentAndTypeInOrderByScheduledAtAsc(t,
                         List.of(MatchGame.Type.PROMOTION, MatchGame.Type.FINAL)).stream()
-                .sorted(MatchGame.BY_DATE).map(ResponseDtos.MatchRes::from).toList();
+                .sorted(MatchGame.BY_DATE).map(m -> ResponseDtos.MatchRes.from(m, pending)).toList();
     }
 
     private void applySlot(MatchGame m, boolean home, AdminDtos.SlotReq slot) {

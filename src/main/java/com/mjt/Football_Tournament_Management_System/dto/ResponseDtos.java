@@ -6,6 +6,7 @@ import com.mjt.Football_Tournament_Management_System.excel.ImportReport;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Set;
 
 /** API responses. Entities are never serialized directly. */
 public class ResponseDtos {
@@ -173,7 +174,11 @@ public class ResponseDtos {
                            String notes, String status, Integer homeGoals, Integer awayGoals,
                            Integer homePenalties, Integer awayPenalties, TeamRef winner,
                            boolean homePresent, boolean awayPresent, boolean advanceWalkover) {
-        public static MatchRes from(MatchGame m) {
+        /** For a match that is not a walkover waiting for its round (new, unplayed or special). */
+        public static MatchRes from(MatchGame m) { return from(m, Set.of()); }
+
+        /** pendingWalkovers: from {@link MatchGame#pendingWalkovers}, over the tournament's matches. */
+        public static MatchRes from(MatchGame m, Set<Long> pendingWalkovers) {
             return new MatchRes(m.getId(), m.getTournament().getId(), m.getZone() == null ? null : m.getZone().getId(),
                     m.typeOrRegular().name(), TeamRef.from(m.getHomeTeam()), TeamRef.from(m.getAwayTeam()),
                     SlotRes.of(m.getHomeSourceZone(), m.getHomeSourcePosition()),
@@ -182,7 +187,7 @@ public class ResponseDtos {
                     m.getStatus().name(), m.getHomeGoals(), m.getAwayGoals(),
                     m.getHomePenalties(), m.getAwayPenalties(),
                     m.winner() == null ? null : TeamRef.from(m.winner()),
-                    m.present(true), m.present(false), m.isAdvanceWalkover());
+                    m.present(true), m.present(false), pendingWalkovers.contains(m.getId()));
         }
     }
 

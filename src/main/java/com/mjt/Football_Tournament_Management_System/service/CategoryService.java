@@ -140,11 +140,13 @@ public class CategoryService {
         var zone = findZone(zoneId);
         var teamIds = regRepo.findByZone(zone).stream().map(r -> r.getTeam().getId()).collect(Collectors.toSet());
         // Zone matches plus interzonal regular matches (no zone) involving one of its teams
-        return matchRepo.findByTournament(zone.getCategory().getTournament()).stream()
+        var all = matchRepo.findByTournament(zone.getCategory().getTournament());
+        var pending = MatchGame.pendingWalkovers(all);
+        return all.stream()
                 .filter(m -> !m.isSpecial())
                 .filter(m -> m.getZone() != null ? m.getZone().getId().equals(zoneId)
                         : teamIds.contains(m.getHomeTeam().getId()) || teamIds.contains(m.getAwayTeam().getId()))
-                .sorted(MatchGame.BY_DATE).map(ResponseDtos.MatchRes::from).toList();
+                .sorted(MatchGame.BY_DATE).map(m -> ResponseDtos.MatchRes.from(m, pending)).toList();
     }
 
     private Zone findZone(Long id) {

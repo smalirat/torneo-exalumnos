@@ -10,7 +10,13 @@ import lombok.Setter;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Comparator;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor
 @Entity @Table(name="matches")
@@ -111,14 +117,41 @@ public class MatchGame {
     /** League time zone: "today" for walkovers loaded ahead of their date. */
     public static final ZoneId LEAGUE_ZONE = ZoneId.of("America/Argentina/Buenos_Aires");
 
-    /** A walkover already decided (e.g. a team withdrew) whose date has not arrived yet: it does not count until then. */
-    public boolean isAdvanceWalkover() {
-        return isFinished() && (!present(true) || !present(false)) && scheduledAt != null
-                && scheduledAt.toLocalDate().isAfter(LocalDate.now(LEAGUE_ZONE));
+    public boolean isWalkover() { return isFinished() && (!present(true) || !present(false)); }
+
+    /**
+     * Ids of walkovers decided ahead (e.g. a team withdrew) that do not count yet. A walkover counts once some
+     * other match of its round (same zone and round) has been played: rounds get postponed, so its date alone
+     * says nothing. Only a round with no other matches falls back to the date.
+     */
+    public static Set<Long> pendingWalkovers(Collection<MatchGame> matches) {
+        var rounds = matches.stream().collect(Collectors.groupingBy(MatchGame::roundKey));
+        var out = new HashSet<Long>();
+        var today = LocalDate.now(LEAGUE_ZONE);
+        for (var round : rounds.values()) {
+            var others = round.stream().filter(m -> !m.isWalkover()).toList();
+            boolean played = others.stream().anyMatch(MatchGame::isFinished);
+            for (var m : round) {
+                if (!m.isWalkover()) continue;
+                boolean pending = others.isEmpty()
+                        ? m.scheduledAt != null && m.scheduledAt.toLocalDate().isAfter(today)
+                        : !played;
+                if (pending) out.add(m.id);
+            }
+        }
+        return out;
+    }
+
+    /** Same zone and type, and same round number (else label, else day). */
+    private List<Object> roundKey() {
+        Object round = this.round != null ? this.round
+                : roundLabel != null ? roundLabel
+                : scheduledAt != null ? scheduledAt.toLocalDate() : "";
+        return Arrays.asList(tournament.getId(), zone == null ? null : zone.getId(), typeOrRegular(), round);
     }
 
     /** Finished and already in effect: what standings and dashboards count. */
-    public boolean counts() { return isFinished() && !isAdvanceWalkover(); }
+    public boolean counts(Set<Long> pendingWalkovers) { return isFinished() && !pendingWalkovers.contains(id); }
 
     public boolean isHome(Team team) { return homeTeam.getId().equals(team.getId()); }
 

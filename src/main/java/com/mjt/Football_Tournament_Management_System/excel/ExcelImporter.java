@@ -348,10 +348,33 @@ public class ExcelImporter {
             return t.getName() + " · " + round + " · " + m.getHomeTeam().getName() + " vs " + m.getAwayTeam().getName();
         }
 
+        private Set<ParsedMatch> pendingWalkovers;
+
+        /** Same rule as {@link MatchGame#pendingWalkovers}: a walkover counts once another match of its round was played. */
         boolean isAdvanceWalkover(ParsedMatch m) {
-            return (!m.homePresent() || !m.awayPresent()) && m.date() != null
-                    && m.date().isAfter(LocalDate.now(MatchGame.LEAGUE_ZONE));
+            if (pendingWalkovers == null) {
+                pendingWalkovers = Collections.newSetFromMap(new IdentityHashMap<>());
+                var today = LocalDate.now(MatchGame.LEAGUE_ZONE);
+                var rounds = new HashMap<List<Object>, List<ParsedMatch>>();
+                for (var x : wb.matches) {
+                    Object round = x.round() != null ? x.round() : x.roundLabel() != null ? x.roundLabel() : x.date();
+                    rounds.computeIfAbsent(Arrays.asList(x.stage(), x.type(), x.group(), x.interzonal(), round),
+                            k -> new ArrayList<>()).add(x);
+                }
+                for (var round : rounds.values()) {
+                    var others = round.stream().filter(x -> !isWalkover(x)).toList();
+                    boolean played = others.stream().anyMatch(ParsedMatch::played);
+                    for (var x : round) {
+                        if (!isWalkover(x)) continue;
+                        boolean pending = others.isEmpty() ? x.date() != null && x.date().isAfter(today) : !played;
+                        if (pending) pendingWalkovers.add(x);
+                    }
+                }
+            }
+            return pendingWalkovers.contains(m);
         }
+
+        private static boolean isWalkover(ParsedMatch m) { return m.played() && (!m.homePresent() || !m.awayPresent()); }
 
         /** The Excel's PR should be one point per match the team showed up to (our rule). */
         void checkPresencePoints() {
@@ -361,7 +384,7 @@ public class ExcelImporter {
                 int present = 0, absent = 0;
                 for (var m : wb.matches) {
                     if (m.stage() != row.stage() || m.type() != MatchGame.Type.REGULAR || !m.played()) continue;
-                    if (isAdvanceWalkover(m)) continue; // not in the table until its date, same as StandingsService
+                    if (isAdvanceWalkover(m)) continue; // not in the table until its round is played, same as StandingsService
                     if (!m.home().isPlaceholder() && Sheet.norm(m.home().team()).equals(key)) {
                         if (m.homePresent()) present++; else absent++;
                     } else if (!m.away().isPlaceholder() && Sheet.norm(m.away().team()).equals(key)) {

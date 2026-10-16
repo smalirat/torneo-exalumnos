@@ -94,8 +94,9 @@ public class TournamentService {
     }
 
     public List<ResponseDtos.MatchRes> fixtures(Long tournamentId) {
-        return matchRepo.findByTournament(findTournament(tournamentId)).stream()
-                .sorted(MatchGame.BY_DATE).map(ResponseDtos.MatchRes::from).toList();
+        var all = matchRepo.findByTournament(findTournament(tournamentId));
+        var pending = MatchGame.pendingWalkovers(all);
+        return all.stream().sorted(MatchGame.BY_DATE).map(m -> ResponseDtos.MatchRes.from(m, pending)).toList();
     }
 
     @Transactional

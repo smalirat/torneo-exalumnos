@@ -141,10 +141,11 @@ public class TeamService {
         var team = findTeam(teamId);
         var t = findTournament(tournamentId);
         var matches = matchRepo.findByTournamentAndTeam(t, team);
+        var pending = MatchGame.pendingWalkovers(matchRepo.findByTournament(t));
         int played=0,w=0,d=0,l=0,gf=0,ga=0,pts=0;
         List<ViewDtos.Fixture> fixtures = new ArrayList<>();
         for (var m : matches) {
-            if (m.counts()) {
+            if (m.counts(pending)) {
                 played++;
                 boolean home = m.isHome(team);
                 gf += m.goalsFor(home); ga += m.goalsAgainst(home);
