@@ -1,14 +1,9 @@
 package com.mjt.Football_Tournament_Management_System.controller;
 
 
-import com.mjt.Football_Tournament_Management_System.entire.MatchGame;
-import com.mjt.Football_Tournament_Management_System.entire.Registration;
-import com.mjt.Football_Tournament_Management_System.entire.Tournament;
-import com.mjt.Football_Tournament_Management_System.repo.MatchRepository;
-import com.mjt.Football_Tournament_Management_System.repo.RegistrationRepository;
-import com.mjt.Football_Tournament_Management_System.repo.TournamentRepository;
+import com.mjt.Football_Tournament_Management_System.dto.ResponseDtos;
+import com.mjt.Football_Tournament_Management_System.service.TournamentService;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import com.mjt.Football_Tournament_Management_System.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -19,23 +14,20 @@ import java.util.List;
 @RequiredArgsConstructor
 @Tag(name="Public API")
 public class PublicApiController {
-    private final TournamentRepository tRepo;
-    private final RegistrationRepository rRepo; private final MatchRepository mRepo;
+    private final TournamentService tService;
 
     @GetMapping("/tournaments")
-    public List<Tournament> tournaments() {
-        return tRepo.findAll();
+    public List<ResponseDtos.TournamentRes> tournaments() {
+        return tService.findAll();
     }
 
     @GetMapping("/tournaments/{id}/registrations")
-    public List<Registration> regs(@PathVariable Long id) {
-        var t = tRepo.findById(id).orElseThrow(() -> NotFoundException.of("Campeonato", id));
-        return rRepo.findByTournament(t);
+    public List<ResponseDtos.RegistrationRes> regs(@PathVariable Long id) {
+        return tService.registrations(id);
     }
 
     @GetMapping("/tournaments/{id}/fixtures")
-    public List<MatchGame> fixtures(@PathVariable Long id) {
-        var t = tRepo.findById(id).orElseThrow(() -> NotFoundException.of("Campeonato", id));
-        return mRepo.findByTournament(t);
+    public List<ResponseDtos.MatchRes> fixtures(@PathVariable Long id) {
+        return tService.fixtures(id);
     }
 }

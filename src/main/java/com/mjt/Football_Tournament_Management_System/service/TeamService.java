@@ -1,6 +1,7 @@
 package com.mjt.Football_Tournament_Management_System.service;
 
 
+import com.mjt.Football_Tournament_Management_System.dto.ResponseDtos;
 import com.mjt.Football_Tournament_Management_System.dto.TeamDtos;
 import com.mjt.Football_Tournament_Management_System.dto.ViewDtos;
 import com.mjt.Football_Tournament_Management_System.entire.AppUser;
@@ -31,7 +32,7 @@ public class TeamService {
 
     /** A captain creating a team becomes its owner; teams created by an admin have no captain. */
     @Transactional
-    public Team createTeam(TeamDtos.RegisterTeamReq req, Authentication auth) {
+    public ResponseDtos.TeamRes createTeam(TeamDtos.RegisterTeamReq req, Authentication auth) {
         var t = new Team();
         t.setName(req.getName()); t.setManagerName(req.getManagerName());
         t.setPhone(req.getPhone()); t.setEmail(req.getEmail());
@@ -39,22 +40,22 @@ public class TeamService {
             t.setCaptain(userRepo.findByUsername(auth.getName())
                     .orElseThrow(() -> NotFoundException.of("Usuario", auth.getName())));
         }
-        return teamRepo.save(t);
+        return ResponseDtos.TeamRes.from(teamRepo.save(t));
     }
 
     @Transactional
-    public List<Player> addPlayers(Long teamId, TeamDtos.AddPlayersReq req, Authentication auth) {
+    public List<ResponseDtos.PlayerRes> addPlayers(Long teamId, TeamDtos.AddPlayersReq req, Authentication auth) {
         var team = ownedTeam(teamId, auth);
         List<Player> list = new ArrayList<>();
         for (var p : req.getPlayers()) {
             var pl = new Player(); pl.setTeam(team); pl.setFullName(p.getFullName()); pl.setJerseyNo(p.getJerseyNo());
             list.add(pl);
         }
-        return playerRepo.saveAll(list);
+        return playerRepo.saveAll(list).stream().map(ResponseDtos.PlayerRes::from).toList();
     }
 
     @Transactional
-    public Registration registerTeamForTournament(Long teamId, Long tournamentId, Authentication auth) {
+    public ResponseDtos.RegistrationRes registerTeamForTournament(Long teamId, Long tournamentId, Authentication auth) {
         var team = ownedTeam(teamId, auth);
         var t = findTournament(tournamentId);
         var today = java.time.LocalDate.now();
@@ -66,7 +67,7 @@ public class TeamService {
             throw new ConflictException("El equipo ya está inscripto en este campeonato");
         }
         var r = new Registration(); r.setTournament(t); r.setTeam(team); r.setApproved(true);
-        return regRepo.save(r);
+        return ResponseDtos.RegistrationRes.from(regRepo.save(r));
     }
 
     public ViewDtos.TeamDashboard dashboard(Long teamId, Long tournamentId) {

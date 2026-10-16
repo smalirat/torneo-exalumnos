@@ -142,6 +142,24 @@ class AuthAndTeamApiTests {
                 .andExpect(jsonPath("$.fixtures.length()").value(1));
     }
 
+    @Test
+    void publicRegistrationsDoNotExposeTeamContactData() throws Exception {
+        String admin = login("admin", "admin123");
+        String captain = register(uniqueUser());
+        long tournamentId = read(post("/api/admin/tournaments", tournamentJson(), admin)).get("id").asLong();
+        long teamId = read(post("/api/teams/register", "{\"name\":\"Team " + UUID.randomUUID()
+                + "\",\"phone\":\"1155554444\",\"email\":\"capi@example.com\"}", captain)
+                .andExpect(jsonPath("$.captainId").isNumber())
+                .andExpect(jsonPath("$.captain").doesNotExist())).get("id").asLong();
+        post("/api/teams/" + teamId + "/tournaments/" + tournamentId + "/register", "", captain);
+
+        mvc.perform(get("/api/public/tournaments/" + tournamentId + "/registrations"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].team.id").value(teamId))
+                .andExpect(jsonPath("$[0].team.phone").doesNotExist())
+                .andExpect(jsonPath("$[0].team.email").doesNotExist());
+    }
+
     // --- helpers ---
 
     private String tournamentJson() {

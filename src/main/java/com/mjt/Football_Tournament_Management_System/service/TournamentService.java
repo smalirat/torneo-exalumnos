@@ -2,6 +2,7 @@ package com.mjt.Football_Tournament_Management_System.service;
 
 
 import com.mjt.Football_Tournament_Management_System.dto.AdminDtos;
+import com.mjt.Football_Tournament_Management_System.dto.ResponseDtos;
 import com.mjt.Football_Tournament_Management_System.entire.*;
 import com.mjt.Football_Tournament_Management_System.repo.*;
 import com.mjt.Football_Tournament_Management_System.exception.NotFoundException;
@@ -20,26 +21,35 @@ public class TournamentService {
     private final MatchRepository matchRepo;
     private final NotificationRepository notificationRepo;
 
-    public Tournament create(AdminDtos.CreateTournamentReq req) {
+    public ResponseDtos.TournamentRes create(AdminDtos.CreateTournamentReq req) {
         var t = new Tournament();
         t.setName(req.getName()); t.setLocation(req.getLocation());
         t.setRegistrationStart(req.getRegistrationStart()); t.setRegistrationEnd(req.getRegistrationEnd());
         t.setMatchStart(req.getMatchStart()); t.setMatchEnd(req.getMatchEnd());
-        return tournamentRepo.save(t);
+        return ResponseDtos.TournamentRes.from(tournamentRepo.save(t));
     }
 
-    public List<Registration> registrations(Long tournamentId) {
-        var t = tournamentRepo.findById(tournamentId).orElseThrow(() -> NotFoundException.of("Campeonato", tournamentId));
-        return regRepo.findByTournament(t);
+    public List<ResponseDtos.TournamentRes> findAll() {
+        return tournamentRepo.findAll().stream().map(ResponseDtos.TournamentRes::from).toList();
+    }
+
+    public List<ResponseDtos.RegistrationRes> registrations(Long tournamentId) {
+        return regRepo.findByTournament(findTournament(tournamentId)).stream()
+                .map(ResponseDtos.RegistrationRes::from).toList();
+    }
+
+    public List<ResponseDtos.MatchRes> fixtures(Long tournamentId) {
+        return matchRepo.findByTournament(findTournament(tournamentId)).stream()
+                .map(ResponseDtos.MatchRes::from).toList();
     }
 
     @Transactional
-    public List<MatchGame> createRoundRobinFixtures(Long tournamentId, LocalDateTime start, int minutesBetween) {
-        var t = tournamentRepo.findById(tournamentId).orElseThrow(() -> NotFoundException.of("Campeonato", tournamentId));
+    public List<ResponseDtos.MatchRes> createRoundRobinFixtures(Long tournamentId, LocalDateTime start, int minutesBetween) {
+        var t = findTournament(tournamentId);
         var regs = regRepo.findByTournament(t);
         var teams = regs.stream().map(Registration::getTeam).toList();
         List<MatchGame> out = new ArrayList<>();
-        if (teams.size() < 2) return out;
+        if (teams.size() < 2) return List.of();
 
         var list = new ArrayList<>(teams);
         if (list.size() % 2 == 1) list.add(null); // null slot = BYE (team rests that round)
@@ -62,13 +72,12 @@ public class TournamentService {
         var saved = matchRepo.saveAll(out);
         notificationRepo.save(new Notification(null, "tournament:"+t.getId(), "FIXTURE",
                 "Fixtures published: "+saved.size(), null));
-        return saved;
+        return saved.stream().map(ResponseDtos.MatchRes::from).toList();
     }
 
     @Transactional
-    public List<MatchGame> createManualFixtures(AdminDtos.ManualFixtureReq req) {
-        var t = tournamentRepo.findById(req.getTournamentId())
-                .orElseThrow(() -> NotFoundException.of("Campeonato", req.getTournamentId()));
+    public List<ResponseDtos.MatchRes> createManualFixtures(AdminDtos.ManualFixtureReq req) {
+        var t = findTournament(req.getTournamentId());
         List<MatchGame> ms = new ArrayList<>();
         for (var f : req.getFixtures()) {
             var m = new MatchGame();
@@ -81,7 +90,10 @@ public class TournamentService {
         var saved = matchRepo.saveAll(ms);
         notificationRepo.save(new Notification(null, "tournament:"+t.getId(), "FIXTURE",
                 "Fixtures published: "+saved.size(), null));
-        return saved;
+        return saved.stream().map(ResponseDtos.MatchRes::from).toList();
     }
 
+    private Tournament findTournament(Long id) {
+        return tournamentRepo.findById(id).orElseThrow(() -> NotFoundException.of("Campeonato", id));
+    }
 }
