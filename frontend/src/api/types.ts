@@ -101,9 +101,14 @@ export interface Match {
 export interface TeamSummary {
   id: number
   name: string
-  captainId: number | null
+  captainId: number
+  /** null while the captain is pending (nobody claimed the team yet) */
+  captainUsername: string | null
+  captainPending: boolean
   playerCount: number
 }
+
+export interface InviteRes { token: string; teamName: string }
 
 export interface Player {
   id: number

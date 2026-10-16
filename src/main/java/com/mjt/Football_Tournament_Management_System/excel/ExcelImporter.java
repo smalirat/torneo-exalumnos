@@ -39,6 +39,7 @@ public class ExcelImporter {
     private final SanctionRepository sanctionRepo;
     private final YellowCardTallyRepository yellowRepo;
     private final ChampionRepository championRepo;
+    private final AppUserRepository userRepo;
     private final StandingsService standingsService;
 
     private record TablePoints(int points, int presence) {}
@@ -589,6 +590,8 @@ public class ExcelImporter {
             return teams.computeIfAbsent(Sheet.norm(name), k -> {
                 var t = new Team();
                 t.setName(name.trim());
+                // Every team needs a captain: a pending one, claimed later with the invitation link
+                t.setCaptain(userRepo.save(AppUser.pendingCaptain()));
                 report.created(TEAMS, t.getName());
                 return teamRepo.save(t);
             });

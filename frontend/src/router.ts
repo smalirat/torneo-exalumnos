@@ -14,6 +14,7 @@ export const router = createRouter({
     { path: '/equipos/:teamId', component: () => import('./views/TeamView.vue') },
     { path: '/login', component: () => import('./views/LoginView.vue'), props: { mode: 'login' } },
     { path: '/registro', component: () => import('./views/LoginView.vue'), props: { mode: 'register' } },
+    { path: '/invitacion/:token', component: () => import('./views/InviteView.vue') },
     {
       path: '/campeonatos/:id',
       component: () => import('./views/TournamentHomeView.vue'),

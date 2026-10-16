@@ -296,9 +296,14 @@ class AuthAndTeamApiTests {
         put("/api/teams/" + team, "{\"name\":\"" + newName + "\"}", captain)
                 .andExpect(jsonPath("$.name").value(newName));
 
-        long registered = newTeam(captain);
-        enroll(registered, newTournament(login("admin", "admin123")), captain).andExpect(status().isOk());
-        delete("/api/teams/" + registered, captain).andExpect(status().isConflict());
+        // One team per captain
+        post("/api/teams/register", "{\"name\":\"Otro " + UUID.randomUUID() + "\"}", captain)
+                .andExpect(status().isConflict());
+
+        String other = register(uniqueUser());
+        long registered = newTeam(other);
+        enroll(registered, newTournament(login("admin", "admin123")), other).andExpect(status().isOk());
+        delete("/api/teams/" + registered, other).andExpect(status().isConflict());
         newPlayer(captain, team, "Suplente");
         delete("/api/teams/" + team, captain).andExpect(status().isNoContent());
     }

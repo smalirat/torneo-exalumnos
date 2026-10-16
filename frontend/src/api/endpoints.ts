@@ -1,6 +1,6 @@
 import { del, download, get, patch, post, put, upload } from './client'
 import type {
-  CardRow, Category, CategoryHistory, CollageItem, CollagePhoto, ImportHistory, ImportPreview, Match, MatchDetails, MatchEvent, Me, Player,
+  CardRow, Category, CategoryHistory, CollageItem, CollagePhoto, InviteRes, ImportHistory, ImportPreview, Match, MatchDetails, MatchEvent, Me, Player,
   Registration, Sanction, ScoreReq, ScorerRow, Season, SeasonStatRow, SlotReq, StandingRow, TeamRef, TeamRegistration,
   TeamSummary, TokenRes, Tournament, TournamentStatus, YellowTally, Zone,
 } from './types'
@@ -13,6 +13,12 @@ export const authApi = {
   login: (username: string, password: string) => post<TokenRes>('/api/auth/login', { username, password }),
   register: (username: string, password: string) => post<TokenRes>('/api/auth/register', { username, password }),
   me: () => get<Me>('/api/auth/me'),
+  /** Captain invitations: teams created by the Excel / an admin start with a pending captain */
+  invite: (teamId: number) => post<InviteRes>(`/api/admin/teams/${teamId}/invite`),
+  inviteInfo: (token: string) => get<{ teamName: string }>(`/api/auth/invites/${token}`),
+  claim: (token: string, username: string, password: string) =>
+    post<TokenRes>('/api/auth/claim', { token, username, password }),
+  acceptInvite: (token: string) => post<Me>(`/api/me/invites/${token}/accept`),
 }
 
 /** Body for creating/updating a tournament (status is ignored on create). */

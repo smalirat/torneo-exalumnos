@@ -134,7 +134,27 @@
     "registered": "Equipo inscripto. El organizador le asignará categoría y zona.",
     "empty": "Todavía no registraste equipos.",
     "delete": "Eliminar equipo",
-    "deleteConfirm": "Se eliminará \"{name}\" con su plantel. Solo es posible si no está inscripto en ningún campeonato."
+    "deleteConfirm": "Se eliminará \"{name}\" con su plantel. Solo es posible si no está inscripto en ningún campeonato.",
+    "captain": "Capitán: {name}",
+    "captainPending": "Capitán pendiente",
+    "invite": "Invitar capitán",
+    "inviteTitle": "Link de invitación para el capitán de {name}",
+    "inviteHelp": "Mandáselo al capitán: con el link elige su usuario y contraseña (o lo acepta con su cuenta si ya tiene una). Sirve una sola vez.",
+    "copy": "Copiar",
+    "copied": "¡Copiado!",
+    "whatsapp": "Enviar por WhatsApp",
+    "whatsappText": "Hola! Con este link activás tu usuario de capitán de {name} en el torneo: {url}"
+  },
+  "invite": {
+    "title": "Capitán de {name}",
+    "text": "Te invitaron a ser el capitán de {name}. Elegí tu usuario y contraseña para administrar el equipo.",
+    "submit": "Activar mi usuario",
+    "haveAccount": "Ya tengo cuenta",
+    "acceptAs": "Estás conectado como {name}. ¿Querés ser el capitán de {team} con esta cuenta?",
+    "accept": "Aceptar con mi cuenta",
+    "otherAccount": "Usar otra cuenta",
+    "alreadyCaptain": "Tu cuenta ({name}) ya es capitán de un equipo. Cerrá sesión para activar este usuario con otra cuenta.",
+    "invalid": "La invitación no existe o ya se usó. Pedile al organizador un link nuevo."
   },
   "tournamentTeams": {
     "unassigned": "Sin asignar ({n})",

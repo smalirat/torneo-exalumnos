@@ -29,6 +29,17 @@ export async function register(username: string, password: string) {
   me.value = await authApi.me()
 }
 
+/** Claims a pending captain account from an invitation link and logs in with it. */
+export async function claimInvite(token: string, username: string, password: string) {
+  setToken((await authApi.claim(token, username, password)).token)
+  me.value = await authApi.me()
+}
+
+/** A logged-in captain without a team takes the invited one. */
+export async function acceptInvite(token: string) {
+  me.value = await authApi.acceptInvite(token)
+}
+
 export function logout() {
   setToken(null)
   me.value = null

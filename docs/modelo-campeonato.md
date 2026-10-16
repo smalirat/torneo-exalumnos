@@ -68,3 +68,13 @@ Campeonato (Tournament)   etapa APERTURA / CLAUSURA
 - Fotos sueltas, **no asociadas a un campeón** (`collage_photos`, imagen en `bytea`). Layout libre: `x`, `y` y `w` son fracciones del ancho del tablero, así el collage conserva su forma en cualquier pantalla; `z` es la capa (más alto = encima). Una sola foto puede ser la **destacada** (banner arriba del collage).
 - Público: `GET /api/public/collage` (layout) y `/collage/{id}/image` (cacheada un año: una foto nunca cambia). Admin: `POST /api/admin/collage` (JPG/PNG hasta 5 MB; el navegador la achica a 1600 px antes), `PUT /layout`, `PUT /{id}/featured`, `DELETE /{id}`.
 - En la web, el admin ve un botón flotante "+" (elige varias fotos a la vez), arrastra para mover, usa la esquina para agrandar y toca una foto para traerla al frente / atrás, destacarla o borrarla. Las nuevas entran en una grilla suelta de 4 columnas.
+
+## Capitanes
+
+- **Todo equipo tiene exactamente un capitán, y un capitán un solo equipo** (`teams.captain_id` obligatorio y único, migración `V8`).
+- Un equipo creado por la **importación del Excel** o por un **admin** nace con un capitán **pendiente**: usuario `pendiente-…`, sin contraseña válida, no puede iniciar sesión. No se pide ningún dato extra para importar.
+- En Registro de equipos el admin ve "Capitán pendiente" y el botón **Invitar capitán**: genera un link `/invitacion/{token}` (el mismo hasta que se use) para copiar o mandar por WhatsApp (`POST /api/admin/teams/{id}/invite`).
+- Con el link, el capitán elige usuario y contraseña (`POST /api/auth/claim`) y queda logueado. Si ya tenía cuenta y todavía no tiene equipo, lo acepta con esa cuenta (`POST /api/me/invites/{token}/accept`) y la cuenta pendiente se borra. El link sirve una sola vez.
+- Un capitán que se registra solo (`/registro`) puede crear **un** equipo. Nadie puede elegir un usuario que empiece con `pendiente-`.
+- Un equipo que se da de baja conserva su capitán (por si vuelve). Al **borrar** un equipo se borra su capitán solo si seguía pendiente.
+

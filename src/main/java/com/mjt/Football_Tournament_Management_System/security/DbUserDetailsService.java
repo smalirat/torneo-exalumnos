@@ -20,6 +20,7 @@ public class DbUserDetailsService implements UserDetailsService {
         return User.withUsername(u.getUsername())
                 .password(u.getPasswordHash())
                 .roles(u.getRole().name())
+                .disabled(u.isPending())
                 .build();
     }
 }

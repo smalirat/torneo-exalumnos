@@ -17,8 +17,8 @@ public class Team {
     private String phone;
     private String email;
 
-    // Owner of the team; not serialized (would expose the user)
+    // Owner of the team (required, one team per captain; may be a pending captain); not serialized
     @JsonIgnore
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     private AppUser captain;
 }

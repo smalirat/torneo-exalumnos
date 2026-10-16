@@ -20,13 +20,25 @@ public class ResponseDtos {
 
     public record TeamRes(Long id, String name, String managerName, String phone, String email, Long captainId) {
         public static TeamRes from(Team t) {
-            var captainId = t.getCaptain() == null ? null : t.getCaptain().getId();
-            return new TeamRes(t.getId(), t.getName(), t.getManagerName(), t.getPhone(), t.getEmail(), captainId);
+            return new TeamRes(t.getId(), t.getName(), t.getManagerName(), t.getPhone(), t.getEmail(), t.getCaptain().getId());
         }
     }
 
-    /** Team list item for the team registry screen. */
-    public record TeamSummaryRes(Long id, String name, Long captainId, int playerCount) {}
+    /**
+     * Team list item for the team registry screen. captainUsername is null while the captain is pending
+     * (nobody claimed the team yet: the admin can send an invitation link).
+     */
+    public record TeamSummaryRes(Long id, String name, Long captainId, String captainUsername, boolean captainPending,
+                                 int playerCount) {
+        public static TeamSummaryRes of(Team t, int playerCount) {
+            var c = t.getCaptain();
+            return new TeamSummaryRes(t.getId(), t.getName(), c.getId(), c.isPending() ? null : c.getUsername(),
+                    c.isPending(), playerCount);
+        }
+    }
+
+    /** Invitation to claim a team's pending captain account: the link is /invitacion/{token}. */
+    public record InviteRes(String token, String teamName) {}
 
     public record PlayerRef(Long id, String fullName, int jerseyNo) {
         public static PlayerRef from(Player p) {

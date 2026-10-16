@@ -35,25 +35,32 @@ public class TeamService {
     private final YellowCardTallyRepository yellowRepo;
     private final ChampionRepository championRepo;
 
-    /** A captain creating a team becomes its owner; teams created by an admin have no captain. */
+    /**
+     * A captain creating a team becomes its owner (one team per captain). A team created by an admin gets a
+     * pending captain, claimed later with an invitation link.
+     */
     @Transactional
     public ResponseDtos.TeamRes createTeam(TeamDtos.RegisterTeamReq req, Authentication auth) {
         var t = new Team();
         t.setName(req.getName()); t.setManagerName(req.getManagerName());
         t.setPhone(req.getPhone()); t.setEmail(req.getEmail());
-        if (!isAdmin(auth)) {
-            t.setCaptain(userRepo.findByUsername(auth.getName())
-                    .orElseThrow(() -> NotFoundException.of("Usuario", auth.getName())));
+        if (isAdmin(auth)) {
+            t.setCaptain(userRepo.save(AppUser.pendingCaptain()));
+        } else {
+            var captain = userRepo.findByUsername(auth.getName())
+                    .orElseThrow(() -> NotFoundException.of("Usuario", auth.getName()));
+            if (!teamRepo.findByCaptain(captain).isEmpty()) throw new ConflictException("Ya sos capitán de un equipo");
+            t.setCaptain(captain);
         }
         return ResponseDtos.TeamRes.from(teamRepo.save(t));
     }
 
-    /** Admins see every team; captains only the ones they own. */
+    /** Admins see every team; captains only the one they own. */
+    @Transactional(readOnly = true)
     public List<ResponseDtos.TeamSummaryRes> listFor(Authentication auth) {
         var teams = isAdmin(auth) ? teamRepo.findAllByOrderByNameAsc()
                 : teamRepo.findByCaptain_UsernameOrderByNameAsc(auth.getName());
-        return teams.stream().map(t -> new ResponseDtos.TeamSummaryRes(t.getId(), t.getName(),
-                t.getCaptain() == null ? null : t.getCaptain().getId(), playerRepo.countByTeam(t))).toList();
+        return teams.stream().map(t -> ResponseDtos.TeamSummaryRes.of(t, playerRepo.countByTeam(t))).toList();
     }
 
     @Transactional
@@ -75,7 +82,13 @@ public class TeamService {
             throw new ConflictException("El equipo está inscripto en un campeonato; no se puede eliminar");
         }
         playerRepo.deleteAll(playerRepo.findByTeamOrderByJerseyNoAscFullNameAsc(t));
+        var captain = t.getCaptain();
         teamRepo.delete(t);
+        // A pending captain only existed for this team; a real account stays (it may register another team)
+        if (captain.isPending()) {
+            teamRepo.flush();
+            userRepo.delete(captain);
+        }
     }
 
     /** Removes a player from the roster; not allowed once they have goals or cards. */
@@ -177,7 +190,7 @@ public class TeamService {
         var team = findTeam(teamId);
         if (isAdmin(auth)) return team;
         AppUser captain = team.getCaptain();
-        if (captain == null || !captain.getUsername().equals(auth.getName())) {
+        if (!captain.getUsername().equals(auth.getName())) {
             throw new AccessDeniedException("Not the captain of team " + teamId);
         }
         return team;
