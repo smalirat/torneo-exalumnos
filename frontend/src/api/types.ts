@@ -90,6 +90,30 @@ export interface Registration {
   approved: boolean
 }
 
+export type EventType = 'GOAL' | 'OWN_GOAL' | 'YELLOW_CARD' | 'RED_CARD'
+
+export interface PlayerRef {
+  id: number
+  fullName: string
+  jerseyNo: number
+}
+
+export interface MatchEvent {
+  id: number
+  matchId: number
+  player: PlayerRef
+  team: TeamRef
+  type: EventType
+}
+
+export interface ScoreReq {
+  homePresent: boolean
+  awayPresent: boolean
+  events: { playerId: number; type: EventType }[]
+  homePenalties: number | null
+  awayPenalties: number | null
+}
+
 export interface TokenRes {
   token: string
   tokenType: string

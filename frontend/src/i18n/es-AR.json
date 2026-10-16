@@ -84,7 +84,8 @@
   },
   "common": {
     "loading": "Cargando…",
-    "genericError": "Algo salió mal. Probá de nuevo."
+    "genericError": "Algo salió mal. Probá de nuevo.",
+    "close": "Cerrar"
   },
   "teams": {
     "title": "Registro de equipos",
@@ -113,5 +114,20 @@
     "zoneName": "Nombre de la zona",
     "noTeamsInZone": "Sin equipos.",
     "needCategory": "Creá al menos una categoría en Inicio para poder asignar equipos."
+  },
+  "results": {
+    "title": "Resultado del partido",
+    "showedUp": "Se presentó",
+    "walkoverHint": "Walkover: el equipo que se presentó gana 3 a 0. No se cargan goles ni tarjetas.",
+    "player": "Jugador",
+    "noRoster": "Este equipo no tiene jugadores cargados (Registro de equipos).",
+    "penalties": "Penales",
+    "load": "Cargar resultado",
+    "types": {
+      "GOAL": "Gol",
+      "OWN_GOAL": "En contra",
+      "YELLOW_CARD": "Amarilla",
+      "RED_CARD": "Roja"
+    }
   }
 }

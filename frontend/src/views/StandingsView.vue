@@ -3,6 +3,7 @@ import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import TournamentLayout from '../layouts/TournamentLayout.vue'
 import TeamBadge from '../components/TeamBadge.vue'
+import MatchResultEditor from '../components/MatchResultEditor.vue'
 import { tournamentApi, zoneApi } from '../api/endpoints'
 import type { Category, Match, StandingRow } from '../api/types'
 import { t } from '../i18n'
@@ -38,6 +39,13 @@ async function reloadZone() {
   ;[rows.value, matches.value] = await Promise.all([zoneApi.standings(id), zoneApi.fixtures(id)])
 }
 watch(zoneId, reloadZone)
+
+// --- admin: result editor ---
+const editing = ref<Match | null>(null)
+async function onSaved() {
+  editing.value = null
+  await reloadZone()
+}
 
 // --- admin: fixture tools ---
 const tool = ref<'generate' | 'add' | null>(null)
@@ -162,7 +170,11 @@ const formatDate = (d: string | null) =>
         </div>
         <div class="games-body">
           <p v-if="matches.length === 0" class="muted">{{ t('standings.noGames') }}</p>
-          <div v-for="m in matches" :key="m.id" class="match">
+          <div
+            v-for="m in matches" :key="m.id" :class="['match', { editable: isAdmin }]"
+            :title="isAdmin ? t('results.load') : undefined"
+            @click="isAdmin && (editing = m)"
+          >
             <span class="date muted">{{ formatDate(m.scheduledAt) }}</span>
             <div class="line">
               <span class="side"><TeamBadge :name="m.homeTeam.name" :size="22" /> {{ m.homeTeam.name }}</span>
@@ -177,6 +189,7 @@ const formatDate = (d: string | null) =>
         </div>
       </aside>
     </div>
+    <MatchResultEditor v-if="editing" :match="editing" @saved="onSaved" @close="editing = null" />
   </TournamentLayout>
 </template>
 
@@ -200,6 +213,8 @@ tbody tr:nth-child(even) td { background: var(--row-alt); }
 .games-body { padding: 12px 16px; }
 .match { padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 14px; }
 .match:last-child { border-bottom: 0; }
+.match.editable { cursor: pointer; }
+.match.editable:hover { background: var(--row-alt); }
 .date { font-size: 12px; }
 .line { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 8px; margin-top: 4px; }
 .side { display: inline-flex; align-items: center; gap: 6px; }

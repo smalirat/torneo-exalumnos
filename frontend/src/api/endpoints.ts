@@ -1,5 +1,7 @@
 import { del, get, patch, post } from './client'
-import type { Category, Match, Me, Player, Registration, StandingRow, TeamSummary, TokenRes, Tournament, Zone } from './types'
+import type {
+  Category, Match, MatchEvent, Me, Player, Registration, ScoreReq, StandingRow, TeamSummary, TokenRes, Tournament, Zone,
+} from './types'
 
 export const authApi = {
   login: (username: string, password: string) => post<TokenRes>('/api/auth/login', { username, password }),
@@ -34,6 +36,11 @@ export const teamApi = {
   deletePlayer: (teamId: number, playerId: number) => del(`/api/teams/${teamId}/players/${playerId}`),
   registerIn: (teamId: number, tournamentId: number) =>
     post<Registration>(`/api/teams/${teamId}/tournaments/${tournamentId}/register`),
+}
+
+export const matchApi = {
+  events: (matchId: number) => get<MatchEvent[]>(`/api/public/matches/${matchId}/events`),
+  score: (matchId: number, body: ScoreReq) => patch<Match>(`/api/admin/matches/${matchId}/score`, body),
 }
 
 export const zoneApi = {
