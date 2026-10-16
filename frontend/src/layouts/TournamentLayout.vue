@@ -34,6 +34,9 @@ const pageTitle = computed(() => (route.meta.title as string | undefined) ?? '')
       <RouterLink :to="`/campeonatos/${tournamentId}/clasificacion`" class="item" active-class="active">
         <AppIcon name="chart" /> {{ t('nav.standings') }}
       </RouterLink>
+      <RouterLink :to="`/campeonatos/${tournamentId}/fixture`" class="item" active-class="active">
+        <AppIcon name="calendar" /> {{ t('nav.fixture') }}
+      </RouterLink>
       <RouterLink :to="`/campeonatos/${tournamentId}/rankings`" class="item" active-class="active">
         <AppIcon name="star" /> {{ t('nav.rankings') }}
       </RouterLink>

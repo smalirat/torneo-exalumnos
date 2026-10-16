@@ -13,7 +13,8 @@
     "teams": "Registro de equipos",
     "tournamentTeams": "Equipos",
     "rankings": "Rankings",
-    "playoffs": "Definiciones"
+    "playoffs": "Definiciones",
+    "fixture": "Fixture"
   },
   "auth": {
     "loginTitle": "Iniciar sesión",
@@ -175,5 +176,13 @@
     "resolve": "Recalcular",
     "pens": "pen.",
     "winner": "Ganador: {team}"
+  },
+  "fixture": {
+    "rounds": "Fechas",
+    "round": "Fecha {n}",
+    "previous": "Fecha anterior",
+    "next": "Fecha siguiente",
+    "noDate": "Sin fecha asignada",
+    "progress": "{played} de {total} partidos jugados"
   }
 }

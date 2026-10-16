@@ -13,6 +13,11 @@ export const router = createRouter({
       meta: { title: 'nav.home' },
     },
     {
+      path: '/campeonatos/:id/fixture',
+      component: () => import('./views/FixtureView.vue'),
+      meta: { title: 'nav.fixture' },
+    },
+    {
       path: '/campeonatos/:id/rankings',
       component: () => import('./views/RankingsView.vue'),
       meta: { title: 'nav.rankings' },
