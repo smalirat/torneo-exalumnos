@@ -3,7 +3,6 @@ import { computed, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import AppIcon from '../components/AppIcon.vue'
 import UserFooter from './UserFooter.vue'
-import FollowButton from '../components/FollowButton.vue'
 import ShareButton from '../components/ShareButton.vue'
 import { tournamentApi } from '../api/endpoints'
 import type { Tournament } from '../api/types'
@@ -63,7 +62,6 @@ const publicUrl = computed(() => `${window.location.origin}/ver/${tournamentId.v
         <div class="actions">
           <RouterLink :to="`/ver/${tournamentId}`" class="public-link"><AppIcon name="eye" :size="18" /> {{ t('nav.publicPage') }}</RouterLink>
           <ShareButton :url="publicUrl" :title="tournament?.name ?? ''" />
-          <FollowButton :tournament-id="tournamentId" />
         </div>
       </header>
       <slot :tournament="tournament" />

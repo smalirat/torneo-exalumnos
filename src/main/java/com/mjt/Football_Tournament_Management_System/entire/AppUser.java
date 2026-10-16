@@ -19,9 +19,6 @@ public class AppUser {
     @Column(nullable = false)
     private Role role = Role.CAPTAIN;
 
-    /** Notifications created after this instant are unread (null = never opened them). */
-    private java.time.LocalDateTime notificationsSeenAt;
-
     // ADMIN manages everything; CAPTAIN can only edit the teams they own
     public enum Role { ADMIN, CAPTAIN }
 }

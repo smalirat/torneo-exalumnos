@@ -3,10 +3,6 @@ import AppIcon from '../components/AppIcon.vue'
 import UserFooter from './UserFooter.vue'
 import { t } from '../i18n'
 import { isAdmin, isLoggedIn } from '../auth'
-import { refreshUnread, unreadNotifications } from '../notifications'
-import { watch } from 'vue'
-
-watch(isLoggedIn, refreshUnread, { immediate: true })
 </script>
 
 <template>
@@ -28,16 +24,6 @@ watch(isLoggedIn, refreshUnread, { immediate: true })
       <RouterLink to="/historia" class="item" active-class="active">
         <AppIcon name="star" /> {{ t('nav.history') }}
       </RouterLink>
-      <template v-if="isLoggedIn">
-        <p class="section user">{{ t('nav.userSection') }}</p>
-        <RouterLink to="/siguiendo" class="item" active-class="active">
-          <AppIcon name="eye" /> {{ t('nav.following') }}
-        </RouterLink>
-        <RouterLink to="/notificaciones" class="item" active-class="active">
-          <AppIcon name="bell" /> {{ t('nav.notifications') }}
-          <span v-if="unreadNotifications" class="badge">{{ unreadNotifications }}</span>
-        </RouterLink>
-      </template>
       <UserFooter />
     </aside>
     <main class="content"><slot /></main>
@@ -68,11 +54,5 @@ watch(isLoggedIn, refreshUnread, { immediate: true })
 }
 .item:hover { background: rgba(255, 255, 255, 0.08); }
 .item.active { background: rgba(255, 255, 255, 0.15); opacity: 1; }
-.section.user { margin-top: 20px; }
-.badge {
-  margin-left: auto; min-width: 22px; height: 22px; padding: 0 6px; border-radius: 999px;
-  background: #e05a4f; color: #fff; font-size: 12px; font-weight: 700;
-  display: inline-flex; align-items: center; justify-content: center;
-}
 .content { flex: 1; padding: 28px 36px; min-width: 0; }
 </style>

@@ -1,6 +1,6 @@
-import { api, del, download, get, patch, post, put, upload } from './client'
+import { del, download, get, patch, post, put, upload } from './client'
 import type {
-  CardRow, Category, CategoryHistory, FollowStatus, ImportHistory, Notifications, ImportPreview, Match, MatchDetails, MatchEvent, Me, Player,
+  CardRow, Category, CategoryHistory, ImportHistory, ImportPreview, Match, MatchDetails, MatchEvent, Me, Player,
   Registration, Sanction, ScoreReq, ScorerRow, Season, SeasonStatRow, SlotReq, StandingRow, TeamRef, TeamRegistration,
   TeamSummary, TokenRes, Tournament, TournamentStatus, YellowTally, Zone,
 } from './types'
@@ -30,7 +30,6 @@ export interface TournamentInput {
 
 export const tournamentApi = {
   list: () => get<Tournament[]>('/api/public/tournaments'),
-  followers: (id: number) => get<FollowStatus>(`/api/public/tournaments/${id}/followers`),
   fixtures: (id: number) => get<Match[]>(`/api/public/tournaments/${id}/fixtures`),
   create: (body: TournamentInput) => post<Tournament>('/api/admin/tournaments', body),
   update: (id: number, body: TournamentInput) => put<Tournament>(`/api/admin/tournaments/${id}`, body),
@@ -50,15 +49,6 @@ export const tournamentApi = {
   createZone: (categoryId: number, name: string) => post<Zone>(`/api/admin/categories/${categoryId}/zones`, { name }),
   drawZones: (categoryId: number, registrationIds: number[]) =>
     post<Registration[]>(`/api/admin/categories/${categoryId}/zone-draw`, { registrationIds }),
-}
-
-/** The logged-in user's follows and notifications */
-export const meApi = {
-  follows: () => get<Tournament[]>('/api/me/follows'),
-  follow: (tournamentId: number) => put<FollowStatus>(`/api/me/follows/${tournamentId}`),
-  unfollow: (tournamentId: number) => api<FollowStatus>('DELETE', `/api/me/follows/${tournamentId}`),
-  notifications: () => get<Notifications>('/api/me/notifications'),
-  markSeen: () => post<void>('/api/me/notifications/seen'),
 }
 
 export const teamApi = {

@@ -30,7 +30,7 @@ public class AdminBootstrap implements ApplicationRunner {
             log.warn("No admin user '{}' and APP_ADMIN_PASSWORD is empty: no admin was created", adminUsername);
             return;
         }
-        userRepo.save(new AppUser(null, adminUsername, encoder.encode(adminPassword), AppUser.Role.ADMIN, null));
+        userRepo.save(new AppUser(null, adminUsername, encoder.encode(adminPassword), AppUser.Role.ADMIN));
         log.info("Admin user '{}' created", adminUsername);
     }
 }

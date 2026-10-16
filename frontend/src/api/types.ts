@@ -16,26 +16,6 @@ export interface Tournament {
   stage: 'APERTURA' | 'CLAUSURA' | null
 }
 
-export interface FollowStatus {
-  followers: number
-  following: boolean
-}
-
-export interface AppNotification {
-  id: number
-  tournamentId: number
-  tournamentName: string
-  type: 'FIXTURE' | 'RESULT' | 'IMPORT'
-  message: string
-  createdAt: string
-  unread: boolean
-}
-
-export interface Notifications {
-  unread: number
-  items: AppNotification[]
-}
-
 export interface Season {
   id: number
   year: number

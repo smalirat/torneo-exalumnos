@@ -53,10 +53,7 @@ Campeonato (Tournament)   etapa APERTURA / CLAUSURA
 
 ## Seguir campeonatos y notificaciones
 
-- Cualquier usuario logueado puede seguir un campeonato (`PUT`/`DELETE /api/me/follows/{id}`, idempotentes). La cantidad de seguidores es pública (`GET /api/public/tournaments/{id}/followers`, que además dice si el que pregunta lo sigue cuando manda token).
-- Las novedades son por campeonato (`notifications.tournament_id`) y las ve quien lo sigue (`GET /api/me/notifications`). Se generan al publicar fixture o un partido nuevo, al cargar un resultado y al aplicar la planilla Excel.
-- Leído / no leído: el usuario guarda `notifications_seen_at`; todo lo más nuevo cuenta como no leído. Abrir la pantalla de notificaciones llama a `POST /api/me/notifications/seen`.
-- Por ahora solo dentro de la app (badge en el menú). Mail o push quedan para más adelante.
+- Se sacaron del producto (migración `V6` borra `follows`, `notifications` y `users.notifications_seen_at`). Para enterarse alcanza con la página pública y el link compartido.
 
 ## Vista pública (inicio del sitio)
 

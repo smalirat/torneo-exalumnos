@@ -3,7 +3,6 @@ import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import PublicLayout from '../layouts/PublicLayout.vue'
 import AppIcon from '../components/AppIcon.vue'
-import FollowButton from '../components/FollowButton.vue'
 import LeagueTable from '../components/LeagueTable.vue'
 import MatchCard from '../components/MatchCard.vue'
 import MatchCarousel from '../components/MatchCarousel.vue'
@@ -133,7 +132,6 @@ function changeEdition(event: Event) {
             <div v-if="tournament" class="hero-actions">
               <span class="status">{{ t(`tournaments.statuses.${tournament.status}`) }}</span>
               <ShareButton :url="publicUrl" :title="tournament.name" tone="light" />
-              <FollowButton :tournament-id="tournament.id" tone="light" />
             </div>
           </div>
           <label v-if="sortedEditions.length > 1 && tournament" class="edition">

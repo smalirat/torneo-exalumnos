@@ -10,8 +10,6 @@ export const router = createRouter({
     { path: '/historia', component: () => import('./views/HistoryView.vue') },
     { path: '/ver', redirect: '/' },
     { path: '/ver/:id', component: () => import('./views/LeagueHomeView.vue') },
-    { path: '/siguiendo', component: () => import('./views/FollowingView.vue') },
-    { path: '/notificaciones', component: () => import('./views/NotificationsView.vue') },
     { path: '/temporadas/:id', component: () => import('./views/SeasonView.vue') },
     { path: '/equipos/:teamId', component: () => import('./views/TeamView.vue') },
     { path: '/login', component: () => import('./views/LoginView.vue'), props: { mode: 'login' } },
