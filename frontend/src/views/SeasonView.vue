@@ -7,6 +7,7 @@ import TabsNav from '../components/TabsNav.vue'
 import SanctionsTable from '../components/SanctionsTable.vue'
 import { seasonApi } from '../api/endpoints'
 import type { Sanction, Season, SeasonStatRow } from '../api/types'
+import { splitSanctions } from '../sanctions'
 import { t } from '../i18n'
 
 // Annual data of a season: scorers, figures, goalkeepers (totals, e.g. from the Excel) and sanctions
@@ -22,6 +23,7 @@ const tabs = [
 ]
 const rankings = ref<Record<string, SeasonStatRow[]>>({ scorers: [], figures: [], goalkeepers: [] })
 const sanctions = ref<Sanction[]>([])
+const split = computed(() => splitSanctions(sanctions.value))
 
 watch(seasonId, async (id) => {
   const [seasons, scorers, figures, goalkeepers, sanc] = await Promise.all([
@@ -47,7 +49,12 @@ const valueLabel = computed(() => ({
     <section class="card">
       <TabsNav v-model="tab" :tabs="tabs" />
       <PlayerRankingTable v-if="tab !== 'sanctions'" :rows="rankings[tab] ?? []" :value-label="valueLabel" />
-      <SanctionsTable v-else :sanctions="sanctions" />
+      <template v-else>
+        <h3 class="sub">{{ t('season.openSanctions') }}</h3>
+        <SanctionsTable :rows="split.open" />
+        <h3 class="sub">{{ t('season.servedSanctions') }}</h3>
+        <SanctionsTable :rows="split.served" served />
+      </template>
     </section>
   </GlobalLayout>
 </template>
@@ -55,5 +62,6 @@ const valueLabel = computed(() => ({
 <style scoped>
 .title { font-size: 28px; color: var(--navy); margin-bottom: 12px; }
 .tournaments { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+.sub { font-size: 15px; color: var(--navy); margin: 12px 0 4px; }
 .chip { font-size: 13px; padding: 4px 12px; border-radius: 999px; background: #fff; color: var(--navy); font-weight: 500; box-shadow: var(--shadow); }
 </style>

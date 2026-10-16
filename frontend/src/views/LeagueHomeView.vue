@@ -11,13 +11,14 @@ import RoundNav from '../components/RoundNav.vue'
 import SanctionsTable from '../components/SanctionsTable.vue'
 import ScoreCard from '../components/ScoreCard.vue'
 import ShareButton from '../components/ShareButton.vue'
-import YellowCardsTable from '../components/YellowCardsTable.vue'
+import YellowCardsByTeam from '../components/YellowCardsByTeam.vue'
 import ZonePicker from '../components/ZonePicker.vue'
 import { playoffApi, seasonApi, tournamentApi, zoneApi } from '../api/endpoints'
 import type { Category, Match, Sanction, ScorerRow, SeasonStatRow, StandingRow, Tournament, YellowTally } from '../api/types'
 import { isAdmin, isLoggedIn } from '../auth'
 import { currentEdition, sortEditions } from '../editions'
 import { dayLabel, groupRounds, isDone } from '../rounds'
+import { splitSanctions } from '../sanctions'
 import { t } from '../i18n'
 
 // Home of the league (no login needed). "/" shows the current edition; "/ver/:id" a given one.
@@ -36,6 +37,7 @@ const scorers = ref<SeasonStatRow[]>([])
 const figures = ref<SeasonStatRow[]>([])
 const sanctions = ref<Sanction[]>([])
 const yellows = ref<YellowTally[]>([])
+const split = computed(() => splitSanctions(sanctions.value))
 const notFound = ref(false)
 const fixtureIndex = ref(0)
 
@@ -243,14 +245,20 @@ function changeEdition(event: Event) {
 
       <!-- SANCIONADOS -->
       <section v-else-if="tab === 'sancionados'" class="rankings">
-        <div v-if="tournament.seasonId" class="card">
-          <h2 class="card-title">{{ t('publicSite.sanctions') }}</h2>
-          <SanctionsTable :sanctions="sanctions" />
+        <template v-if="tournament.seasonId">
+          <div class="card">
+            <h2 class="card-title">{{ t('publicSite.openSanctions') }} <span class="count">{{ split.open.length }}</span></h2>
+            <SanctionsTable :rows="split.open" />
+          </div>
+          <div class="card">
+            <h2 class="card-title">{{ t('publicSite.servedSanctions') }} <span class="count">{{ split.served.length }}</span></h2>
+            <SanctionsTable :rows="split.served" served />
+          </div>
           <p class="muted note">{{ t('publicSite.sanctionsHelp', { year: tournament.seasonYear ?? '' }) }}</p>
-        </div>
+        </template>
         <div class="card">
           <h2 class="card-title">{{ t('publicSite.yellows', { name: tournament.name }) }}</h2>
-          <YellowCardsTable :rows="yellows" />
+          <YellowCardsByTeam :rows="yellows" />
           <p class="muted note">{{ t('publicSite.yellowsHelp') }}</p>
         </div>
       </section>
@@ -305,6 +313,11 @@ function changeEdition(event: Event) {
 .next-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
 .card-title { font-family: var(--condensed); text-transform: uppercase; color: var(--navy); font-size: 22px; margin-bottom: 8px; }
 .rankings { display: flex; flex-direction: column; gap: 16px; }
+.rankings > .note { margin-top: -6px; }
+.count {
+  font-family: 'Roboto', system-ui, sans-serif; font-size: 13px; font-weight: 700; vertical-align: middle;
+  padding: 2px 9px; border-radius: 999px; background: var(--bg); color: var(--muted);
+}
 .empty { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 8px; padding: 40px 20px; }
 .empty h2 { font-size: 20px; color: var(--navy); }
 .empty-icon {

@@ -193,6 +193,7 @@
     "yellows": "Amarillas acumuladas",
     "yellowCount": "Amarillas",
     "suspensions": "Fechas de suspensión",
+    "suspensionsShort": "Fechas",
     "noYellows": "Sin amarillas acumuladas."
   },
   "playoffs": {
@@ -324,7 +325,8 @@
     "scorers": "Goleadores",
     "figures": "Figuras",
     "annualHelp": "Rankings acumulados de la temporada {year} (Apertura y Clausura).",
-    "sanctions": "Sancionados",
+    "openSanctions": "Sancionados con fechas pendientes",
+    "servedSanctions": "Sanciones cumplidas",
     "sanctionsHelp": "Sanciones de toda la temporada {year} (Apertura y Clausura).",
     "yellows": "Amonestados · {name}",
     "yellowsHelp": "Amarillas acumuladas en esta edición: 4 amarillas = 1 fecha de suspensión, 8 = 2 fechas.",
