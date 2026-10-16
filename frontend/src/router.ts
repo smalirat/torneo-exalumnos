@@ -18,6 +18,11 @@ export const router = createRouter({
       meta: { title: 'nav.rankings' },
     },
     {
+      path: '/campeonatos/:id/definiciones',
+      component: () => import('./views/PlayoffsView.vue'),
+      meta: { title: 'nav.playoffs' },
+    },
+    {
       path: '/campeonatos/:id/equipos',
       component: () => import('./views/TournamentTeamsView.vue'),
       meta: { title: 'nav.tournamentTeams' },

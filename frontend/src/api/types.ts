@@ -49,6 +49,19 @@ export interface StandingRow {
   fairPlay: number
 }
 
+export interface SlotRes {
+  zoneId: number
+  zoneName: string
+  zoneCount: number
+  categoryName: string
+  tournamentId: number
+  tournamentName: string
+  position: number
+}
+
+/** One side of a promotion/final: a fixed team or "position N of zone X". */
+export type SlotReq = { teamId: number } | { zoneId: number; position: number }
+
 export interface Match {
   id: number
   tournamentId: number
@@ -56,6 +69,8 @@ export interface Match {
   type: 'REGULAR' | 'PROMOTION' | 'FINAL'
   homeTeam: TeamRef
   awayTeam: TeamRef
+  homeSource: SlotRes | null
+  awaySource: SlotRes | null
   scheduledAt: string | null
   status: 'SCHEDULED' | 'FINISHED'
   homeGoals: number

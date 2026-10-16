@@ -12,7 +12,8 @@
     "login": "Iniciar sesión",
     "teams": "Registro de equipos",
     "tournamentTeams": "Equipos",
-    "rankings": "Rankings"
+    "rankings": "Rankings",
+    "playoffs": "Definiciones"
   },
   "auth": {
     "loginTitle": "Iniciar sesión",
@@ -139,5 +140,23 @@
     "goals": "Goles",
     "noGoals": "Todavía no hay goles cargados.",
     "noCards": "Todavía no hay tarjetas."
+  },
+  "playoffs": {
+    "title": "Promociones y finales",
+    "new": "Nueva definición",
+    "empty": "Todavía no hay promociones ni finales en este campeonato.",
+    "type": "Tipo",
+    "types": {
+      "PROMOTION": "Promoción",
+      "FINAL": "Final"
+    },
+    "byPosition": "Por posición",
+    "byTeam": "Equipo fijo",
+    "position": "Posición",
+    "tournament": "Campeonato",
+    "team": "Equipo",
+    "resolve": "Recalcular",
+    "pens": "pen.",
+    "winner": "Ganador: {team}"
   }
 }

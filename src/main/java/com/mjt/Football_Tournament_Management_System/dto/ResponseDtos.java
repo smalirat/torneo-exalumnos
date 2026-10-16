@@ -97,10 +97,14 @@ public class ResponseDtos {
         }
     }
 
-    public record SlotRes(Long zoneId, String zoneName, Long tournamentId, int position) {
+    /** Rule "position N of zone X"; names included so the UI can label it ("3º · A (Apertura)"). */
+    public record SlotRes(Long zoneId, String zoneName, int zoneCount, String categoryName,
+                          Long tournamentId, String tournamentName, int position) {
         static SlotRes of(Zone zone, Integer position) {
             if (zone == null || position == null) return null;
-            return new SlotRes(zone.getId(), zone.getName(), zone.getCategory().getTournament().getId(), position);
+            var c = zone.getCategory();
+            return new SlotRes(zone.getId(), zone.getName(), c.getZoneCount(), c.getName(),
+                    c.getTournament().getId(), c.getTournament().getName(), position);
         }
     }
 

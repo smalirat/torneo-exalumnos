@@ -444,7 +444,10 @@ class AuthAndTeamApiTests {
                 .andExpect(jsonPath("$.zoneId").doesNotExist())
                 .andExpect(jsonPath("$.homeTeam.id").value(a3))
                 .andExpect(jsonPath("$.awayTeam.id").value(b1))
-                .andExpect(jsonPath("$.homeSource.position").value(3))).get("id").asLong();
+                .andExpect(jsonPath("$.homeSource.position").value(3))
+                .andExpect(jsonPath("$.homeSource.categoryName").value("A"))
+                .andExpect(jsonPath("$.homeSource.zoneCount").value(1))
+                .andExpect(jsonPath("$.awaySource.categoryName").value("B"))).get("id").asLong();
 
         winOneNil(admin, promo, a3);
         mvc.perform(get("/api/public/zones/" + zoneA + "/standings"))

@@ -1,6 +1,6 @@
 import { del, get, patch, post } from './client'
 import type {
-  CardRow, Category, Match, MatchEvent, Me, Player, Registration, ScoreReq, ScorerRow, StandingRow, TeamSummary,
+  CardRow, Category, Match, MatchEvent, Me, Player, Registration, ScoreReq, ScorerRow, SlotReq, StandingRow, TeamSummary,
   TokenRes, Tournament, Zone,
 } from './types'
 
@@ -44,6 +44,20 @@ export const teamApi = {
 export const matchApi = {
   events: (matchId: number) => get<MatchEvent[]>(`/api/public/matches/${matchId}/events`),
   score: (matchId: number, body: ScoreReq) => patch<Match>(`/api/admin/matches/${matchId}/score`, body),
+}
+
+export interface NewSpecialMatch {
+  type: 'PROMOTION' | 'FINAL'
+  scheduledAt: string | null
+  home: SlotReq
+  away: SlotReq
+}
+
+export const playoffApi = {
+  list: (tournamentId: number) => get<Match[]>(`/api/public/tournaments/${tournamentId}/special-matches`),
+  create: (tournamentId: number, body: NewSpecialMatch) =>
+    post<Match>(`/api/admin/tournaments/${tournamentId}/special-matches`, body),
+  resolve: (matchId: number) => post<Match>(`/api/admin/matches/${matchId}/resolve`),
 }
 
 export const zoneApi = {
