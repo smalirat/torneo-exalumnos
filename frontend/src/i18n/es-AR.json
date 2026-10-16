@@ -297,6 +297,25 @@
       "TRIBUNAL": "En tribunal"
     }
   },
+  "collage": {
+    "add": "Agregar fotos",
+    "uploading": "Subiendo {n} de {total}…",
+    "uploadError": "No se pudo subir {name}: {error}",
+    "empty": "Todavía no hay fotos. Usá el botón + para agregarlas.",
+    "editHint": "Arrastrá las fotos para moverlas y usá la esquina para agrandarlas. Tocá una para ver sus opciones.",
+    "featured": "Foto destacada",
+    "toFront": "Al frente",
+    "toBack": "Atrás",
+    "feature": "Destacar",
+    "unfeature": "Quitar destacada",
+    "remove": "Borrar",
+    "confirmRemove": "¿Borrar esta foto del collage?",
+    "resize": "Agrandar o achicar",
+    "photo": "Foto {n}",
+    "close": "Cerrar",
+    "prev": "Anterior",
+    "next": "Siguiente"
+  },
   "historyPage": {
     "title": "Historia de campeones",
     "category": "Categoría {name}",

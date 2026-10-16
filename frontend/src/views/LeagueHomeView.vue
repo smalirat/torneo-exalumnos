@@ -3,6 +3,7 @@ import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import PublicLayout from '../layouts/PublicLayout.vue'
 import AppIcon from '../components/AppIcon.vue'
+import ChampionsCollage from '../components/ChampionsCollage.vue'
 import ChampionsHistory from '../components/ChampionsHistory.vue'
 import LeagueTable from '../components/LeagueTable.vue'
 import MatchCard from '../components/MatchCard.vue'
@@ -14,8 +15,8 @@ import ScoreCard from '../components/ScoreCard.vue'
 import ShareButton from '../components/ShareButton.vue'
 import YellowCardsByTeam from '../components/YellowCardsByTeam.vue'
 import ZonePicker from '../components/ZonePicker.vue'
-import { championApi, playoffApi, seasonApi, tournamentApi, zoneApi } from '../api/endpoints'
-import type { Category, CategoryHistory, Match, Sanction, ScorerRow, SeasonStatRow, StandingRow, Tournament, YellowTally } from '../api/types'
+import { championApi, collageApi, playoffApi, seasonApi, tournamentApi, zoneApi } from '../api/endpoints'
+import type { Category, CategoryHistory, CollagePhoto, Match, Sanction, ScorerRow, SeasonStatRow, StandingRow, Tournament, YellowTally } from '../api/types'
 import { isAdmin, isLoggedIn } from '../auth'
 import { currentEdition, sortEditions } from '../editions'
 import { dayLabel, groupRounds, isDone } from '../rounds'
@@ -41,7 +42,9 @@ const yellows = ref<YellowTally[]>([])
 const split = computed(() => splitSanctions(sanctions.value))
 // Champions of every year: league-wide, not tied to the edition
 const history = ref<CategoryHistory[]>([])
+const photos = ref<CollagePhoto[]>([])
 championApi.history().then((h) => { history.value = h })
+collageApi.list().then((p) => { photos.value = p })
 const notFound = ref(false)
 const fixtureIndex = ref(0)
 
@@ -51,7 +54,7 @@ type Tab = (typeof TABS)[number]
 const tabs = computed(() => TABS.filter((k) =>
   (k !== 'definiciones' || specials.value.length > 0)
   && (k !== 'sancionados' || tournament.value?.seasonId != null || yellows.value.length > 0)
-  && (k !== 'historia' || history.value.length > 0)))
+  && (k !== 'historia' || history.value.length > 0 || photos.value.length > 0 || isAdmin.value)))
 const tab = computed<Tab>({
   get: () => (TABS as readonly string[]).includes(route.query.tab as string) ? route.query.tab as Tab : 'inicio',
   set: (value) => router.replace({ query: { ...route.query, tab: value === 'inicio' ? undefined : value } }),
@@ -278,6 +281,7 @@ function changeEdition(event: Event) {
 
       <!-- HISTORIA -->
       <section v-else-if="tab === 'historia'" class="history">
+        <ChampionsCollage v-model:photos="photos" />
         <ChampionsHistory :history="history" />
       </section>
     </template>

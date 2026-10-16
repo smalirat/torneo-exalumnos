@@ -1,6 +1,6 @@
 import { del, download, get, patch, post, put, upload } from './client'
 import type {
-  CardRow, Category, CategoryHistory, ImportHistory, ImportPreview, Match, MatchDetails, MatchEvent, Me, Player,
+  CardRow, Category, CategoryHistory, CollageItem, CollagePhoto, ImportHistory, ImportPreview, Match, MatchDetails, MatchEvent, Me, Player,
   Registration, Sanction, ScoreReq, ScorerRow, Season, SeasonStatRow, SlotReq, StandingRow, TeamRef, TeamRegistration,
   TeamSummary, TokenRes, Tournament, TournamentStatus, YellowTally, Zone,
 } from './types'
@@ -97,6 +97,18 @@ export const seasonApi = {
 
 export const championApi = {
   history: () => get<CategoryHistory[]>('/api/public/champions'),
+}
+
+export const collageApi = {
+  list: () => get<CollagePhoto[]>('/api/public/collage'),
+  upload: (file: Blob, name: string) => {
+    const form = new FormData()
+    form.append('file', file, name)
+    return upload<CollagePhoto>('/api/admin/collage', form)
+  },
+  layout: (items: CollageItem[]) => put<CollagePhoto[]>('/api/admin/collage/layout', { items }),
+  featured: (id: number, featured: boolean) => put<CollagePhoto[]>(`/api/admin/collage/${id}/featured`, { featured }),
+  remove: (id: number) => del(`/api/admin/collage/${id}`),
 }
 
 export const importApi = {

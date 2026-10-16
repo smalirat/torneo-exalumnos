@@ -102,6 +102,24 @@ public class AdminDtos {
     }
 
     @Data
+    public static class CollageLayoutReq {
+        @NotEmpty private List<@Valid CollageItem> items;
+    }
+    /** x, y, w: fractions of the board width (top-left corner and width); z: layer, higher on top. */
+    @Data
+    public static class CollageItem {
+        @NotNull private Long id;
+        @NotNull @DecimalMin("-0.5") @DecimalMax("1") private Double x;
+        @NotNull @DecimalMin("-0.5") @DecimalMax("20") private Double y;
+        @NotNull @DecimalMin("0.05") @DecimalMax("1") private Double w;
+        @NotNull @Min(0) private Integer z;
+    }
+    @Data
+    public static class FeaturedReq {
+        @NotNull private Boolean featured;
+    }
+
+    @Data
     public static class ApplyImportReq {
         /** Conflict keys (from the preview) to overwrite with the Excel value. */
         private List<String> overwrite;

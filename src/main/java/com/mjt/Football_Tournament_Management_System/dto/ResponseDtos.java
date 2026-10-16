@@ -74,6 +74,18 @@ public class ResponseDtos {
 
     public record TitleCount(TeamRef team, int titles) {}
 
+    /** x, y, w: fractions of the board width; z: layer (higher on top). The image is at `url`. */
+    public record CollagePhotoRes(Long id, String url, int width, int height, double x, double y, double w, int z,
+                                  boolean featured) {
+        public CollagePhotoRes(Long id, int width, int height, double x, double y, double w, int z, boolean featured) {
+            this(id, "/api/public/collage/" + id + "/image", width, height, x, y, w, z, featured);
+        }
+        public static CollagePhotoRes from(CollagePhoto p) {
+            return new CollagePhotoRes(p.getId(), p.getWidth(), p.getHeight(), p.getPosX(), p.getPosY(), p.getSize(),
+                    p.getLayer(), p.isFeatured());
+        }
+    }
+
     /** Result of an Excel upload (preview) or of applying it. */
     public record ImportPreviewRes(Long importId, String fileName, String status, Integer seasonYear,
                                    List<ImportReport.Counter> counters, List<ImportReport.Change> changes,

@@ -62,3 +62,9 @@ Campeonato (Tournament)   etapa APERTURA / CLAUSURA
 - El nombre del torneo de la barra superior sale de `app.league.title` (`GET /api/public/league`).
 - Goleadores y figuras: si el campeonato pertenece a una temporada se muestran los totales anuales (los del Excel); si no, los goles cargados por partido.
 - Diseño inspirado en la referencia de rugby (títulos condensados, carrusel y tabla con encabezado de color) pero con la paleta azul y blanca de la app; sin marcas ni lógica de ese deporte.
+
+## Collage de campeones (pestaña Historia)
+
+- Fotos sueltas, **no asociadas a un campeón** (`collage_photos`, imagen en `bytea`). Layout libre: `x`, `y` y `w` son fracciones del ancho del tablero, así el collage conserva su forma en cualquier pantalla; `z` es la capa (más alto = encima). Una sola foto puede ser la **destacada** (banner arriba del collage).
+- Público: `GET /api/public/collage` (layout) y `/collage/{id}/image` (cacheada un año: una foto nunca cambia). Admin: `POST /api/admin/collage` (JPG/PNG hasta 5 MB; el navegador la achica a 1600 px antes), `PUT /layout`, `PUT /{id}/featured`, `DELETE /{id}`.
+- En la web, el admin ve un botón flotante "+" (elige varias fotos a la vez), arrastra para mover, usa la esquina para agrandar y toca una foto para traerla al frente / atrás, destacarla o borrarla. Las nuevas entran en una grilla suelta de 4 columnas.

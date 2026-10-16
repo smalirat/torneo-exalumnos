@@ -208,6 +208,21 @@ export interface YellowTally {
   suspensions: number
 }
 
+/** Champions' collage photo. x, y, w: fractions of the board width (top-left corner, width); z: layer. */
+export interface CollagePhoto {
+  id: number
+  url: string
+  width: number
+  height: number
+  x: number
+  y: number
+  w: number
+  z: number
+  featured: boolean
+}
+
+export type CollageItem = Pick<CollagePhoto, 'id' | 'x' | 'y' | 'w' | 'z'>
+
 export interface CategoryHistory {
   categoryName: string
   champions: { id: number; year: number; categoryName: string; team: TeamRef }[]
