@@ -91,14 +91,12 @@ class AuthAndTeamApiTests {
         String admin = login("admin", "admin123");
         String captain = register(uniqueUser());
         long tournamentId = newTournament(admin);
-        long categoryA = newCategory(admin, tournamentId, "A").get("id").asLong();
-        long categoryB = newCategory(admin, tournamentId, "B").get("id").asLong();
         long teamId = newTeam(captain);
 
-        enroll(teamId, categoryA, captain).andExpect(status().isOk());
-        enroll(teamId, categoryA, captain).andExpect(status().isConflict());
-        // One zone per tournament: a second category of the same tournament is rejected too
-        enroll(teamId, categoryB, captain).andExpect(status().isConflict());
+        enroll(teamId, tournamentId, captain)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.zoneId").doesNotExist()); // unassigned until the admin places it
+        enroll(teamId, tournamentId, captain).andExpect(status().isConflict());
     }
 
     @Test
@@ -108,7 +106,7 @@ class AuthAndTeamApiTests {
         long zoneId = category.get("zones").get(0).get("id").asLong();
         for (int i = 0; i < 3; i++) {
             String captain = register(uniqueUser());
-            enroll(newTeam(captain), category.get("id").asLong(), captain).andExpect(status().isOk());
+            enrollInZone(newTeam(captain), category, captain, admin);
         }
 
         post("/api/admin/zones/" + zoneId + "/fixtures/round-robin?start=2026-11-01T10:00:00", "", admin)
@@ -127,8 +125,8 @@ class AuthAndTeamApiTests {
         long tournamentB = categoryB.get("tournamentId").asLong();
         long home = newTeam(admin);
         long away = newTeam(admin);
-        enroll(home, categoryB.get("id").asLong(), admin).andExpect(status().isOk());
-        enroll(away, categoryB.get("id").asLong(), admin).andExpect(status().isOk());
+        enrollInZone(home, categoryB, admin, admin);
+        enrollInZone(away, categoryB, admin, admin);
 
         // 'away' plays as visitor in tournament B only
         post("/api/admin/fixtures/manual", manualFixture(categoryB.get("zones").get(0).get("id").asLong(), home, away), admin)
@@ -148,12 +146,13 @@ class AuthAndTeamApiTests {
         String admin = login("admin", "admin123");
         String captain = register(uniqueUser());
         long tournamentId = newTournament(admin);
-        long categoryId = newCategory(admin, tournamentId, "A").get("id").asLong();
+        JsonNode category = newCategory(admin, tournamentId, "A");
+        long categoryId = category.get("id").asLong();
         long teamId = read(post("/api/teams/register", "{\"name\":\"Team " + UUID.randomUUID()
                 + "\",\"phone\":\"1155554444\",\"email\":\"capi@example.com\"}", captain)
                 .andExpect(jsonPath("$.captainId").isNumber())
                 .andExpect(jsonPath("$.captain").doesNotExist())).get("id").asLong();
-        enroll(teamId, categoryId, captain).andExpect(status().isOk());
+        enrollInZone(teamId, category, captain, admin);
 
         mvc.perform(get("/api/public/tournaments/" + tournamentId + "/registrations"))
                 .andExpect(status().isOk())
@@ -184,25 +183,27 @@ class AuthAndTeamApiTests {
     }
 
     @Test
-    void teamStartsInFirstZoneAndAdminCanMoveItWithinCategory() throws Exception {
+    void onlyAdminAssignsZoneWithinTheSameTournament() throws Exception {
         String admin = login("admin", "admin123");
         String captain = register(uniqueUser());
         long tournamentId = newTournament(admin);
         JsonNode categoryA = newCategory(admin, tournamentId, "A");
         JsonNode categoryB = newCategory(admin, tournamentId, "B");
-        long zone1 = categoryA.get("zones").get(0).get("id").asLong();
-        long zone2 = read(post("/api/admin/categories/" + categoryA.get("id").asLong() + "/zones",
-                "{\"name\":\"Zona 2\"}", admin)).get("id").asLong();
+        JsonNode otherTournament = newCategory(admin, newTournament(admin), "A");
 
-        JsonNode reg = read(enroll(newTeam(captain), categoryA.get("id").asLong(), captain)
-                .andExpect(jsonPath("$.zoneId").value(zone1)));
-        String moveUrl = "/api/admin/registrations/" + reg.get("id").asLong() + "/zone";
+        long regId = read(enroll(newTeam(captain), tournamentId, captain)).get("id").asLong();
+        String url = "/api/admin/registrations/" + regId + "/zone";
+        long zoneA = categoryA.get("zones").get(0).get("id").asLong();
+        long zoneB = categoryB.get("zones").get(0).get("id").asLong();
 
-        patch(moveUrl, "{\"zoneId\":" + zone2 + "}", captain).andExpect(status().isForbidden());
-        patch(moveUrl, "{\"zoneId\":" + zone2 + "}", admin)
+        patch(url, "{\"zoneId\":" + zoneA + "}", captain).andExpect(status().isForbidden());
+        patch(url, "{\"zoneId\":" + zoneA + "}", admin)
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.zoneId").value(zone2));
-        patch(moveUrl, "{\"zoneId\":" + categoryB.get("zones").get(0).get("id").asLong() + "}", admin)
+                .andExpect(jsonPath("$.categoryId").value(categoryA.get("id").asLong()));
+        patch(url, "{\"zoneId\":" + zoneB + "}", admin) // another category, same tournament: allowed
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.zoneId").value(zoneB));
+        patch(url, "{\"zoneId\":" + otherTournament.get("zones").get(0).get("id").asLong() + "}", admin)
                 .andExpect(status().isConflict());
     }
 
@@ -213,7 +214,7 @@ class AuthAndTeamApiTests {
         long tournamentId = newTournament(admin);
         JsonNode used = newCategory(admin, tournamentId, "A");
         JsonNode empty = newCategory(admin, tournamentId, "B");
-        enroll(newTeam(captain), used.get("id").asLong(), captain).andExpect(status().isOk());
+        enrollInZone(newTeam(captain), used, captain, admin);
 
         delete("/api/admin/zones/" + empty.get("zones").get(0).get("id").asLong(), admin)
                 .andExpect(status().isConflict()); // last zone of the category
@@ -233,7 +234,7 @@ class AuthAndTeamApiTests {
         long zoneId = category.get("zones").get(0).get("id").asLong();
         long inZone = newTeam(admin);
         long outside = newTeam(admin);
-        enroll(inZone, category.get("id").asLong(), admin).andExpect(status().isOk());
+        enrollInZone(inZone, category, admin, admin);
 
         post("/api/admin/fixtures/manual", manualFixture(zoneId, inZone, outside), admin)
                 .andExpect(status().isConflict());
@@ -264,8 +265,17 @@ class AuthAndTeamApiTests {
                 .andExpect(status().isOk())).get("id").asLong();
     }
 
-    private ResultActions enroll(long teamId, long categoryId, String token) throws Exception {
-        return post("/api/teams/" + teamId + "/categories/" + categoryId + "/register", "", token);
+    private ResultActions enroll(long teamId, long tournamentId, String token) throws Exception {
+        return post("/api/teams/" + teamId + "/tournaments/" + tournamentId + "/register", "", token);
+    }
+
+    /** Registers the team in the category's tournament and assigns it to the category's first zone. */
+    private void enrollInZone(long teamId, JsonNode category, String token, String admin) throws Exception {
+        long regId = read(enroll(teamId, category.get("tournamentId").asLong(), token)
+                .andExpect(status().isOk())).get("id").asLong();
+        patch("/api/admin/registrations/" + regId + "/zone",
+                "{\"zoneId\":" + category.get("zones").get(0).get("id").asLong() + "}", admin)
+                .andExpect(status().isOk());
     }
 
     private String manualFixture(long zoneId, long home, long away) {

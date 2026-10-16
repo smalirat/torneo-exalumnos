@@ -32,11 +32,11 @@ public class TeamController {
         return teamService.addPlayers(teamId, req, auth);
     }
 
-    @PostMapping("/{teamId}/categories/{categoryId}/register")
-    @Operation(summary = "Register the team in a category; it is placed in the category's first zone")
-    public ResponseDtos.RegistrationRes regTeam(@PathVariable Long teamId, @PathVariable Long categoryId,
+    @PostMapping("/{teamId}/tournaments/{tournamentId}/register")
+    @Operation(summary = "Register the team in a tournament; the admin then assigns its category/zone")
+    public ResponseDtos.RegistrationRes regTeam(@PathVariable Long teamId, @PathVariable Long tournamentId,
                                                 Authentication auth) {
-        return teamService.registerTeamForCategory(teamId, categoryId, auth);
+        return teamService.registerTeamForTournament(teamId, tournamentId, auth);
     }
 
     @GetMapping("/{teamId}/tournaments/{tournamentId}/dashboard")

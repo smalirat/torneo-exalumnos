@@ -67,10 +67,10 @@ public class AdminController {
     }
 
     @PatchMapping("/registrations/{id}/zone")
-    @Operation(summary = "Move a registered team to another zone of its category")
-    public ResponseDtos.RegistrationRes moveRegistration(@PathVariable Long id,
-                                                         @Valid @RequestBody AdminDtos.MoveRegistrationReq req) {
-        return cService.moveRegistration(id, req.getZoneId());
+    @Operation(summary = "Assign a registered team to a category zone (or move it, if it has no matches yet)")
+    public ResponseDtos.RegistrationRes assignZone(@PathVariable Long id,
+                                                         @Valid @RequestBody AdminDtos.AssignZoneReq req) {
+        return cService.assignZone(id, req.getZoneId());
     }
 
     @PostMapping("/zones/{id}/fixtures/round-robin")

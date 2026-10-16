@@ -81,16 +81,16 @@ public class CategoryService {
         zoneRepo.delete(z);
     }
 
-    /** Moves a registered team to another zone of the same category, if it has no matches yet. */
+    /** Assigns (or reassigns) a registered team to a zone of the same tournament, if it has no matches yet. */
     @Transactional
-    public ResponseDtos.RegistrationRes moveRegistration(Long registrationId, Long zoneId) {
+    public ResponseDtos.RegistrationRes assignZone(Long registrationId, Long zoneId) {
         var r = regRepo.findById(registrationId)
                 .orElseThrow(() -> NotFoundException.of("Inscripción", registrationId));
         var target = findZone(zoneId);
-        if (r.getZone() == null || !r.getZone().getCategory().getId().equals(target.getCategory().getId())) {
-            throw new ConflictException("La zona destino no pertenece a la categoría del equipo");
+        if (!target.getCategory().getTournament().getId().equals(r.getTournament().getId())) {
+            throw new ConflictException("La zona no pertenece al campeonato de la inscripción");
         }
-        if (matchRepo.existsByZoneAndTeam(r.getZone(), r.getTeam())) {
+        if (r.getZone() != null && matchRepo.existsByZoneAndTeam(r.getZone(), r.getTeam())) {
             throw new ConflictException("El equipo ya tiene partidos en su zona actual");
         }
         r.setZone(target);
@@ -106,18 +106,12 @@ public class CategoryService {
                 .map(ResponseDtos.MatchRes::from).toList();
     }
 
-    Zone findZone(Long id) {
+    private Zone findZone(Long id) {
         return zoneRepo.findById(id).orElseThrow(() -> NotFoundException.of("Zona", id));
     }
 
-    Category findCategory(Long id) {
+    private Category findCategory(Long id) {
         return categoryRepo.findById(id).orElseThrow(() -> NotFoundException.of("Categoría", id));
-    }
-
-    /** First zone of the category, where newly registered teams are placed. */
-    Zone defaultZone(Category c) {
-        return zoneRepo.findByCategoryOrderByDisplayOrderAscIdAsc(c).stream().findFirst()
-                .orElseThrow(() -> new ConflictException("La categoría no tiene zonas"));
     }
 
     private Tournament findTournament(Long id) {

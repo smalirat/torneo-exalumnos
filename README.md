@@ -151,7 +151,7 @@ mvn spring-boot:run
 | ------ | ---------------------------------------------------------- | ---------------- |
 | POST   | `/api/teams/register`                                      | Register a team  |
 | POST   | `/api/teams/{teamId}/players`                              | Add players      |
-| POST   | `/api/teams/{teamId}/categories/{categoryId}/register`     | Join a category (first zone) |
+| POST   | `/api/teams/{teamId}/tournaments/{tournamentId}/register`  | Join tournament (admin assigns zone) |
 | GET    | `/api/teams/{teamId}/tournaments/{tournamentId}/dashboard` | Team performance |
 
 ### 🛡 Admin APIs (JWT required)
@@ -163,7 +163,7 @@ mvn spring-boot:run
 | PUT/DELETE | `/api/admin/categories/{id}`                   | Rename / delete category |
 | POST   | `/api/admin/categories/{id}/zones`                 | Add zone            |
 | PUT/DELETE | `/api/admin/zones/{id}`                        | Rename / delete zone |
-| PATCH  | `/api/admin/registrations/{id}/zone`               | Move team to another zone |
+| PATCH  | `/api/admin/registrations/{id}/zone`               | Assign/move team to a zone |
 | POST   | `/api/admin/zones/{id}/fixtures/round-robin`       | Generate zone fixtures |
 | POST   | `/api/admin/fixtures/manual`                       | Manual fixtures (by zone) |
 | PATCH  | `/api/admin/matches/{id}/score`                    | Update match score  |

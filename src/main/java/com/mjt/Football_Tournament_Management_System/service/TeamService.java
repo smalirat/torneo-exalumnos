@@ -29,7 +29,6 @@ public class TeamService {
     private final RegistrationRepository regRepo;
     private final MatchRepository matchRepo;
     private final AppUserRepository userRepo;
-    private final CategoryService categoryService;
 
     /** A captain creating a team becomes its owner; teams created by an admin have no captain. */
     @Transactional
@@ -56,10 +55,10 @@ public class TeamService {
     }
 
     @Transactional
-    public ResponseDtos.RegistrationRes registerTeamForCategory(Long teamId, Long categoryId, Authentication auth) {
+    /** The team joins the tournament unassigned; the admin later places it in a category/zone. */
+    public ResponseDtos.RegistrationRes registerTeamForTournament(Long teamId, Long tournamentId, Authentication auth) {
         var team = ownedTeam(teamId, auth);
-        var category = categoryService.findCategory(categoryId);
-        var t = category.getTournament();
+        var t = findTournament(tournamentId);
         var today = java.time.LocalDate.now();
         if (t.getRegistrationStart() == null || t.getRegistrationEnd() == null
                 || today.isBefore(t.getRegistrationStart()) || today.isAfter(t.getRegistrationEnd())) {
@@ -69,7 +68,6 @@ public class TeamService {
             throw new ConflictException("El equipo ya está inscripto en este campeonato");
         }
         var r = new Registration(); r.setTournament(t); r.setTeam(team); r.setApproved(true);
-        r.setZone(categoryService.defaultZone(category));
         return ResponseDtos.RegistrationRes.from(regRepo.save(r));
     }
 

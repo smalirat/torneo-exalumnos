@@ -33,7 +33,7 @@ public class AdminDtos {
     }
 
     @Data
-    public static class MoveRegistrationReq {
+    public static class AssignZoneReq {
         @NotNull private Long zoneId;
     }
 
