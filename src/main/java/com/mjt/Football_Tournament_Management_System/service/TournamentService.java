@@ -5,6 +5,7 @@ import com.mjt.Football_Tournament_Management_System.dto.AdminDtos;
 import com.mjt.Football_Tournament_Management_System.dto.ResponseDtos;
 import com.mjt.Football_Tournament_Management_System.entire.*;
 import com.mjt.Football_Tournament_Management_System.repo.*;
+import com.mjt.Football_Tournament_Management_System.exception.ConflictException;
 import com.mjt.Football_Tournament_Management_System.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -20,6 +21,7 @@ public class TournamentService {
     private final RegistrationRepository regRepo;
     private final MatchRepository matchRepo;
     private final NotificationRepository notificationRepo;
+    private final ZoneRepository zoneRepo;
 
     public ResponseDtos.TournamentRes create(AdminDtos.CreateTournamentReq req) {
         var t = new Tournament();
@@ -44,9 +46,10 @@ public class TournamentService {
     }
 
     @Transactional
-    public List<ResponseDtos.MatchRes> createRoundRobinFixtures(Long tournamentId, LocalDateTime start, int minutesBetween) {
-        var t = findTournament(tournamentId);
-        var regs = regRepo.findByTournament(t);
+    public List<ResponseDtos.MatchRes> createRoundRobinFixtures(Long zoneId, LocalDateTime start, int minutesBetween) {
+        var zone = findZone(zoneId);
+        var t = zone.getCategory().getTournament();
+        var regs = regRepo.findByZone(zone);
         var teams = regs.stream().map(Registration::getTeam).toList();
         List<MatchGame> out = new ArrayList<>();
         if (teams.size() < 2) return List.of();
@@ -61,7 +64,7 @@ public class TournamentService {
                 var home = list.get(i); var away = list.get(n-1-i);
                 if (home == null || away == null) continue;
                 var m = new MatchGame();
-                m.setTournament(t); m.setHomeTeam(home); m.setAwayTeam(away); m.setScheduledAt(cursor);
+                m.setTournament(t); m.setZone(zone); m.setHomeTeam(home); m.setAwayTeam(away); m.setScheduledAt(cursor);
                 out.add(m); cursor = cursor.plusMinutes(minutesBetween);
             }
             var fixed = list.get(0);
@@ -77,13 +80,18 @@ public class TournamentService {
 
     @Transactional
     public List<ResponseDtos.MatchRes> createManualFixtures(AdminDtos.ManualFixtureReq req) {
-        var t = findTournament(req.getTournamentId());
+        var zone = findZone(req.getZoneId());
+        var t = zone.getCategory().getTournament();
         List<MatchGame> ms = new ArrayList<>();
         for (var f : req.getFixtures()) {
+            if (f.getHomeTeamId().equals(f.getAwayTeamId())) {
+                throw new ConflictException("Un equipo no puede jugar contra sí mismo");
+            }
             var m = new MatchGame();
             m.setTournament(t);
-            m.setHomeTeam(teamRepo.findById(f.getHomeTeamId()).orElseThrow(() -> NotFoundException.of("Equipo", f.getHomeTeamId())));
-            m.setAwayTeam(teamRepo.findById(f.getAwayTeamId()).orElseThrow(() -> NotFoundException.of("Equipo", f.getAwayTeamId())));
+            m.setZone(zone);
+            m.setHomeTeam(teamInZone(zone, f.getHomeTeamId()));
+            m.setAwayTeam(teamInZone(zone, f.getAwayTeamId()));
             m.setScheduledAt(f.getScheduledAt());
             ms.add(m);
         }
@@ -91,6 +99,18 @@ public class TournamentService {
         notificationRepo.save(new Notification(null, "tournament:"+t.getId(), "FIXTURE",
                 "Fixtures published: "+saved.size(), null));
         return saved.stream().map(ResponseDtos.MatchRes::from).toList();
+    }
+
+    private Zone findZone(Long id) {
+        return zoneRepo.findById(id).orElseThrow(() -> NotFoundException.of("Zona", id));
+    }
+
+    private Team teamInZone(Zone zone, Long teamId) {
+        var team = teamRepo.findById(teamId).orElseThrow(() -> NotFoundException.of("Equipo", teamId));
+        if (!regRepo.existsByZoneAndTeam(zone, team)) {
+            throw new ConflictException("El equipo " + team.getName() + " no está inscripto en la zona");
+        }
+        return team;
     }
 
     private Tournament findTournament(Long id) {

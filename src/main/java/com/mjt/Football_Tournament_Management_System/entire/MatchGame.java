@@ -15,6 +15,10 @@ public class MatchGame {
     @ManyToOne(optional=false)
     private Tournament tournament;
 
+    // Zone of a regular match; null for special matches (promotion/final, coming later)
+    @ManyToOne
+    private Zone zone;
+
     @ManyToOne(optional=false) @JoinColumn(name="home_team_id")
     private Team homeTeam;
 

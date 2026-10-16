@@ -3,12 +3,15 @@ package com.mjt.Football_Tournament_Management_System.controller;
 
 import com.mjt.Football_Tournament_Management_System.dto.AdminDtos;
 import com.mjt.Football_Tournament_Management_System.dto.ResponseDtos;
+import com.mjt.Football_Tournament_Management_System.service.CategoryService;
 import com.mjt.Football_Tournament_Management_System.service.MatchService;
 import com.mjt.Football_Tournament_Management_System.service.TournamentService;
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
@@ -21,13 +24,56 @@ import java.util.List;
 public class AdminController {
     private final TournamentService tService;
     private final MatchService mService;
+    private final CategoryService cService;
 
     @PostMapping("/tournaments")
     public ResponseDtos.TournamentRes create(@Valid @RequestBody AdminDtos.CreateTournamentReq req) {
         return tService.create(req);
     }
 
-    @PostMapping("/tournaments/{id}/fixtures/round-robin")
+    @PostMapping("/tournaments/{id}/categories")
+    @Operation(summary = "Create a category (with a default zone)")
+    public ResponseDtos.CategoryRes createCategory(@PathVariable Long id, @Valid @RequestBody AdminDtos.NameReq req) {
+        return cService.create(id, req.getName());
+    }
+
+    @PutMapping("/categories/{id}")
+    public ResponseDtos.CategoryRes renameCategory(@PathVariable Long id, @Valid @RequestBody AdminDtos.NameReq req) {
+        return cService.rename(id, req.getName());
+    }
+
+    @DeleteMapping("/categories/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Operation(summary = "Delete a category; 409 if it has teams or matches")
+    public void deleteCategory(@PathVariable Long id) {
+        cService.delete(id);
+    }
+
+    @PostMapping("/categories/{id}/zones")
+    public ResponseDtos.ZoneRes createZone(@PathVariable Long id, @Valid @RequestBody AdminDtos.NameReq req) {
+        return cService.addZone(id, req.getName());
+    }
+
+    @PutMapping("/zones/{id}")
+    public ResponseDtos.ZoneRes renameZone(@PathVariable Long id, @Valid @RequestBody AdminDtos.NameReq req) {
+        return cService.renameZone(id, req.getName());
+    }
+
+    @DeleteMapping("/zones/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Operation(summary = "Delete a zone; 409 if it has teams or matches, or is the category's last zone")
+    public void deleteZone(@PathVariable Long id) {
+        cService.deleteZone(id);
+    }
+
+    @PatchMapping("/registrations/{id}/zone")
+    @Operation(summary = "Move a registered team to another zone of its category")
+    public ResponseDtos.RegistrationRes moveRegistration(@PathVariable Long id,
+                                                         @Valid @RequestBody AdminDtos.MoveRegistrationReq req) {
+        return cService.moveRegistration(id, req.getZoneId());
+    }
+
+    @PostMapping("/zones/{id}/fixtures/round-robin")
     public List<ResponseDtos.MatchRes> rr(@PathVariable Long id,
                                           @RequestParam @DateTimeFormat(iso= DateTimeFormat.ISO.DATE_TIME) LocalDateTime start,
                                           @RequestParam(defaultValue="90") int minutesBetween) {

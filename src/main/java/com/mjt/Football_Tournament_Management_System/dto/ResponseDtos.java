@@ -4,6 +4,7 @@ import com.mjt.Football_Tournament_Management_System.entire.*;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 
 /** API responses. Entities are never serialized directly. */
 public class ResponseDtos {
@@ -38,16 +39,30 @@ public class ResponseDtos {
         }
     }
 
-    public record RegistrationRes(Long id, Long tournamentId, TeamRef team, boolean approved) {
+    public record RegistrationRes(Long id, Long tournamentId, Long categoryId, Long zoneId, TeamRef team,
+                                  boolean approved) {
         public static RegistrationRes from(Registration r) {
-            return new RegistrationRes(r.getId(), r.getTournament().getId(), TeamRef.from(r.getTeam()), r.isApproved());
+            var z = r.getZone();
+            return new RegistrationRes(r.getId(), r.getTournament().getId(),
+                    z == null ? null : z.getCategory().getId(), z == null ? null : z.getId(),
+                    TeamRef.from(r.getTeam()), r.isApproved());
         }
     }
 
-    public record MatchRes(Long id, Long tournamentId, TeamRef homeTeam, TeamRef awayTeam,
+    public record ZoneRes(Long id, Long categoryId, String name, int displayOrder) {
+        public static ZoneRes from(Zone z) {
+            return new ZoneRes(z.getId(), z.getCategory().getId(), z.getName(), z.getDisplayOrder());
+        }
+    }
+
+    /** zoneCount lets the UI hide the zone level when a category has a single zone. */
+    public record CategoryRes(Long id, Long tournamentId, String name, int displayOrder,
+                              int zoneCount, List<ZoneRes> zones) {}
+
+    public record MatchRes(Long id, Long tournamentId, Long zoneId, TeamRef homeTeam, TeamRef awayTeam,
                            LocalDateTime scheduledAt, String status, Integer homeGoals, Integer awayGoals) {
         public static MatchRes from(MatchGame m) {
-            return new MatchRes(m.getId(), m.getTournament().getId(),
+            return new MatchRes(m.getId(), m.getTournament().getId(), m.getZone() == null ? null : m.getZone().getId(),
                     TeamRef.from(m.getHomeTeam()), TeamRef.from(m.getAwayTeam()),
                     m.getScheduledAt(), m.getStatus().name(), m.getHomeGoals(), m.getAwayGoals());
         }

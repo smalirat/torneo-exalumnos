@@ -17,5 +17,9 @@ public class Registration {
     @ManyToOne(optional=false)
     private Team team;
 
+    // Nullable only for rows created before zones existed; always set on new registrations
+    @ManyToOne
+    private Zone zone;
+
     private boolean approved = true;
 }

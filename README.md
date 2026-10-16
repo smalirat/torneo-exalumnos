@@ -141,6 +141,9 @@ mvn spring-boot:run
 | GET    | `/api/public/tournaments`                    | List all tournaments          |
 | GET    | `/api/public/tournaments/{id}/fixtures`      | List fixtures of a tournament |
 | GET    | `/api/public/tournaments/{id}/registrations` | List registered teams         |
+| GET    | `/api/public/tournaments/{id}/categories`    | Categories with their zones   |
+| GET    | `/api/public/zones/{id}/registrations`       | Teams of a zone               |
+| GET    | `/api/public/zones/{id}/fixtures`            | Fixtures of a zone            |
 
 ### 🧑‍🤝‍🧑 Team APIs
 
@@ -148,7 +151,7 @@ mvn spring-boot:run
 | ------ | ---------------------------------------------------------- | ---------------- |
 | POST   | `/api/teams/register`                                      | Register a team  |
 | POST   | `/api/teams/{teamId}/players`                              | Add players      |
-| POST   | `/api/teams/{teamId}/tournaments/{tournamentId}/register`  | Join tournament  |
+| POST   | `/api/teams/{teamId}/categories/{categoryId}/register`     | Join a category (first zone) |
 | GET    | `/api/teams/{teamId}/tournaments/{tournamentId}/dashboard` | Team performance |
 
 ### 🛡 Admin APIs (JWT required)
@@ -156,7 +159,13 @@ mvn spring-boot:run
 | Method | Endpoint                                           | Description         |
 | ------ | -------------------------------------------------- | ------------------- |
 | POST   | `/api/admin/tournaments`                           | Create a tournament |
-| POST   | `/api/admin/tournaments/{id}/fixtures/round-robin` | Generate fixtures   |
+| POST   | `/api/admin/tournaments/{id}/categories`           | Create category (+ default zone) |
+| PUT/DELETE | `/api/admin/categories/{id}`                   | Rename / delete category |
+| POST   | `/api/admin/categories/{id}/zones`                 | Add zone            |
+| PUT/DELETE | `/api/admin/zones/{id}`                        | Rename / delete zone |
+| PATCH  | `/api/admin/registrations/{id}/zone`               | Move team to another zone |
+| POST   | `/api/admin/zones/{id}/fixtures/round-robin`       | Generate zone fixtures |
+| POST   | `/api/admin/fixtures/manual`                       | Manual fixtures (by zone) |
 | PATCH  | `/api/admin/matches/{id}/score`                    | Update match score  |
 
 ---

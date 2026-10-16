@@ -18,7 +18,7 @@ public class AdminDtos {
     }
     @Data
     public static class ManualFixtureReq {
-        @NotNull private Long tournamentId;
+        @NotNull private Long zoneId;
         @NotEmpty private List<@Valid FixtureItem> fixtures;
     }
     @Data
@@ -26,6 +26,17 @@ public class AdminDtos {
         @NotNull private Long homeTeamId, awayTeamId;
         private LocalDateTime scheduledAt;
     }
+    /** Name for a category or zone. */
+    @Data
+    public static class NameReq {
+        @NotBlank @Size(max = 60) private String name;
+    }
+
+    @Data
+    public static class MoveRegistrationReq {
+        @NotNull private Long zoneId;
+    }
+
     @Data
     public static class ScoreUpdateReq {
         @NotNull @Min(0) private Integer homeGoals, awayGoals;

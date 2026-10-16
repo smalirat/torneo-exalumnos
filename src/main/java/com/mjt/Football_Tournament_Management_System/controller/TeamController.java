@@ -5,6 +5,7 @@ import com.mjt.Football_Tournament_Management_System.dto.ResponseDtos;
 import com.mjt.Football_Tournament_Management_System.dto.TeamDtos;
 import com.mjt.Football_Tournament_Management_System.dto.ViewDtos;
 import com.mjt.Football_Tournament_Management_System.service.TeamService;
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -31,9 +32,11 @@ public class TeamController {
         return teamService.addPlayers(teamId, req, auth);
     }
 
-    @PostMapping("/{teamId}/tournaments/{tournamentId}/register")
-    public ResponseDtos.RegistrationRes regTeam(@PathVariable Long teamId, @PathVariable Long tournamentId, Authentication auth) {
-        return teamService.registerTeamForTournament(teamId, tournamentId, auth);
+    @PostMapping("/{teamId}/categories/{categoryId}/register")
+    @Operation(summary = "Register the team in a category; it is placed in the category's first zone")
+    public ResponseDtos.RegistrationRes regTeam(@PathVariable Long teamId, @PathVariable Long categoryId,
+                                                Authentication auth) {
+        return teamService.registerTeamForCategory(teamId, categoryId, auth);
     }
 
     @GetMapping("/{teamId}/tournaments/{tournamentId}/dashboard")
