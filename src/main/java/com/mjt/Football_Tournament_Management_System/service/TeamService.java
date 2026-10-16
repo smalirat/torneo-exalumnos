@@ -85,6 +85,16 @@ public class TeamService {
         playerRepo.delete(player);
     }
 
+    public ResponseDtos.TeamRef team(Long teamId) {
+        return ResponseDtos.TeamRef.from(findTeam(teamId));
+    }
+
+    /** Tournaments a team is registered in, newest first. */
+    public List<ResponseDtos.TeamRegistrationRes> registrations(Long teamId) {
+        return regRepo.findByTeamOrderByIdDesc(findTeam(teamId)).stream()
+                .map(ResponseDtos.TeamRegistrationRes::from).toList();
+    }
+
     public List<ResponseDtos.PlayerRes> players(Long teamId) {
         return playerRepo.findByTeamOrderByJerseyNoAscFullNameAsc(findTeam(teamId)).stream()
                 .map(ResponseDtos.PlayerRes::from).toList();

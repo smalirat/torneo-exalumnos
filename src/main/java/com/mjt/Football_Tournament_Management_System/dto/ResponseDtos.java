@@ -69,6 +69,18 @@ public class ResponseDtos {
         }
     }
 
+    /** A team's place in a tournament: category/zone are null until the admin assigns them. */
+    public record TeamRegistrationRes(Long registrationId, TournamentRes tournament, Long categoryId, String categoryName,
+                                      Long zoneId, String zoneName, int zoneCount) {
+        public static TeamRegistrationRes from(Registration r) {
+            var z = r.getZone();
+            var c = z == null ? null : z.getCategory();
+            return new TeamRegistrationRes(r.getId(), TournamentRes.from(r.getTournament()),
+                    c == null ? null : c.getId(), c == null ? null : c.getName(),
+                    z == null ? null : z.getId(), z == null ? null : z.getName(), c == null ? 0 : c.getZoneCount());
+        }
+    }
+
     public record ZoneRes(Long id, Long categoryId, String name, int displayOrder) {
         public static ZoneRes from(Zone z) {
             return new ZoneRes(z.getId(), z.getCategory().getId(), z.getName(), z.getDisplayOrder());

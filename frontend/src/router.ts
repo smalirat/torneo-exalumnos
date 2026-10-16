@@ -5,6 +5,7 @@ export const router = createRouter({
   routes: [
     { path: '/', component: () => import('./views/TournamentsView.vue') },
     { path: '/equipos', component: () => import('./views/TeamsView.vue') },
+    { path: '/equipos/:teamId', component: () => import('./views/TeamView.vue') },
     { path: '/login', component: () => import('./views/LoginView.vue'), props: { mode: 'login' } },
     { path: '/registro', component: () => import('./views/LoginView.vue'), props: { mode: 'register' } },
     {

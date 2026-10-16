@@ -184,5 +184,14 @@
     "next": "Fecha siguiente",
     "noDate": "Sin fecha asignada",
     "progress": "{played} de {total} partidos jugados"
+  },
+  "teamPage": {
+    "noTournaments": "Este equipo todavía no está inscripto en ningún campeonato.",
+    "unassigned": "Esperando que el organizador asigne categoría y zona",
+    "position": "{n}º",
+    "next": "Próximo partido",
+    "noNext": "No hay partidos pendientes.",
+    "results": "Resultados",
+    "noResults": "Todavía no jugó partidos."
   }
 }

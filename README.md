@@ -151,6 +151,8 @@ mvn spring-boot:run
 | GET    | `/api/public/matches/{id}/events`            | Goals and cards of a match    |
 | GET    | `/api/public/tournaments/{id}/scorers`       | Top scorers                   |
 | GET    | `/api/public/tournaments/{id}/cards`         | Booked players                |
+| GET    | `/api/public/teams/{id}`                     | Team name                     |
+| GET    | `/api/public/teams/{id}/registrations`       | Team's tournaments and zones  |
 | GET    | `/api/public/teams/{id}/players`             | Team roster                   |
 | GET    | `/api/public/tournaments/{id}/special-matches` | Promotions and finals       |
 

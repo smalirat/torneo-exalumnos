@@ -324,6 +324,25 @@ class AuthAndTeamApiTests {
                 .andExpect(jsonPath("$.length()").value(0));
     }
 
+    @Test
+    void teamRegistrationsShowTournamentAndZoneOnceAssigned() throws Exception {
+        String admin = login("admin", "admin123");
+        long zone = newZone(admin);
+        long team = newTeam(admin);
+        long other = newTournament(admin);
+        enroll(team, other, admin).andExpect(status().isOk()); // unassigned
+        assignToZone(admin, zone, team);
+
+        mvc.perform(get("/api/public/teams/" + team + "/registrations"))
+                .andExpect(jsonPath("$.length()").value(2))
+                .andExpect(jsonPath("$[0].tournament.id").value(zoneTournaments.get(zone)))
+                .andExpect(jsonPath("$[0].zoneId").value(zone))
+                .andExpect(jsonPath("$[0].categoryName").value("A"))
+                .andExpect(jsonPath("$[0].zoneCount").value(1))
+                .andExpect(jsonPath("$[1].tournament.id").value(other))
+                .andExpect(jsonPath("$[1].zoneId").doesNotExist());
+    }
+
     // --- standings ---
 
     @Test

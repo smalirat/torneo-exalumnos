@@ -70,6 +70,17 @@ public class PublicApiController {
         return rService.cards(id);
     }
 
+    @GetMapping("/teams/{id}")
+    public ResponseDtos.TeamRef team(@PathVariable Long id) {
+        return teamService.team(id);
+    }
+
+    @GetMapping("/teams/{id}/registrations")
+    @Operation(summary = "Tournaments a team is registered in, with its category/zone (null until assigned)")
+    public List<ResponseDtos.TeamRegistrationRes> teamRegistrations(@PathVariable Long id) {
+        return teamService.registrations(id);
+    }
+
     @GetMapping("/teams/{id}/players")
     public List<ResponseDtos.PlayerRes> players(@PathVariable Long id) {
         return teamService.players(id);

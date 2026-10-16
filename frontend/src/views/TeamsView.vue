@@ -107,7 +107,11 @@ const countLabel = (n: number) => (n === 1 ? t('teams.onePlayer') : t('teams.pla
           <div class="row">
             <TeamBadge :name="team.name" :size="54" />
             <div class="info">
-              <span class="name"><InlineEdit :value="team.name" :save="(name) => renameTeam(team, name)" /></span>
+              <span class="name">
+                <InlineEdit :value="team.name" :save="(name) => renameTeam(team, name)">
+                  <RouterLink :to="`/equipos/${team.id}`" class="team-link">{{ team.name }}</RouterLink>
+                </InlineEdit>
+              </span>
               <span class="muted small">{{ countLabel(team.playerCount) }}</span>
             </div>
             <ConfirmButton
@@ -160,6 +164,7 @@ const countLabel = (n: number) => (n === 1 ? t('teams.onePlayer') : t('teams.pla
 .row { display: flex; align-items: center; gap: 16px; padding: 12px 6px; }
 .info { flex: 1; display: flex; flex-direction: column; gap: 2px; }
 .name { font-size: 16px; }
+.team-link:hover { color: var(--navy); text-decoration: underline; }
 .small { font-size: 13px; }
 .round {
   width: 40px; height: 40px; border-radius: 50%; border: 0; background: var(--bg); color: var(--navy);

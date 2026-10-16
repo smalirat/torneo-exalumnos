@@ -1,7 +1,7 @@
 import { del, get, patch, post, put } from './client'
 import type {
-  CardRow, Category, Match, MatchEvent, Me, Player, Registration, ScoreReq, ScorerRow, SlotReq, StandingRow, TeamSummary,
-  TokenRes, Tournament, TournamentStatus, Zone,
+  CardRow, Category, Match, MatchEvent, Me, Player, Registration, ScoreReq, ScorerRow, SlotReq, StandingRow, TeamRef,
+  TeamRegistration, TeamSummary, TokenRes, Tournament, TournamentStatus, Zone,
 } from './types'
 
 export const authApi = {
@@ -45,6 +45,8 @@ export const teamApi = {
   create: (name: string) => post<{ id: number; name: string }>('/api/teams/register', { name }),
   rename: (teamId: number, name: string) => put<{ id: number; name: string }>(`/api/teams/${teamId}`, { name }),
   remove: (teamId: number) => del(`/api/teams/${teamId}`),
+  get: (teamId: number) => get<TeamRef>(`/api/public/teams/${teamId}`),
+  registrations: (teamId: number) => get<TeamRegistration[]>(`/api/public/teams/${teamId}/registrations`),
   players: (teamId: number) => get<Player[]>(`/api/public/teams/${teamId}/players`),
   addPlayer: (teamId: number, fullName: string, jerseyNo: number) =>
     post<Player[]>(`/api/teams/${teamId}/players`, { players: [{ fullName, jerseyNo }] }),

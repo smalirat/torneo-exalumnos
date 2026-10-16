@@ -96,6 +96,16 @@ export interface Player {
   teamId: number
 }
 
+export interface TeamRegistration {
+  registrationId: number
+  tournament: Tournament
+  categoryId: number | null
+  categoryName: string | null
+  zoneId: number | null
+  zoneName: string | null
+  zoneCount: number
+}
+
 export interface Registration {
   id: number
   tournamentId: number

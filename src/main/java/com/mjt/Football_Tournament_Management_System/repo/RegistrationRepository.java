@@ -13,6 +13,7 @@ public interface RegistrationRepository extends JpaRepository<Registration, Long
     List<Registration> findByTournament(Tournament t);
     boolean existsByTournament(Tournament t);
     boolean existsByTeam(Team team);
+    List<Registration> findByTeamOrderByIdDesc(Team team);
     boolean existsByTournamentAndTeam(Tournament t, Team team);
     List<Registration> findByZone(Zone zone);
     boolean existsByZone(Zone zone);
