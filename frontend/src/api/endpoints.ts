@@ -1,6 +1,7 @@
 import { del, get, patch, post } from './client'
 import type {
-  Category, Match, MatchEvent, Me, Player, Registration, ScoreReq, StandingRow, TeamSummary, TokenRes, Tournament, Zone,
+  CardRow, Category, Match, MatchEvent, Me, Player, Registration, ScoreReq, ScorerRow, StandingRow, TeamSummary,
+  TokenRes, Tournament, Zone,
 } from './types'
 
 export const authApi = {
@@ -22,6 +23,8 @@ export const tournamentApi = {
   categories: (id: number) => get<Category[]>(`/api/public/tournaments/${id}/categories`),
   createCategory: (id: number, name: string) => post<Category>(`/api/admin/tournaments/${id}/categories`, { name }),
   registrations: (id: number) => get<Registration[]>(`/api/public/tournaments/${id}/registrations`),
+  scorers: (id: number) => get<ScorerRow[]>(`/api/public/tournaments/${id}/scorers`),
+  cards: (id: number) => get<CardRow[]>(`/api/public/tournaments/${id}/cards`),
   assignZone: (registrationId: number, zoneId: number) =>
     patch<Registration>(`/api/admin/registrations/${registrationId}/zone`, { zoneId }),
   createZone: (categoryId: number, name: string) => post<Zone>(`/api/admin/categories/${categoryId}/zones`, { name }),

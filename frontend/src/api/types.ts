@@ -106,6 +106,19 @@ export interface MatchEvent {
   type: EventType
 }
 
+export interface ScorerRow {
+  player: PlayerRef
+  team: TeamRef
+  goals: number
+}
+
+export interface CardRow {
+  player: PlayerRef
+  team: TeamRef
+  yellowCards: number
+  redCards: number
+}
+
 export interface ScoreReq {
   homePresent: boolean
   awayPresent: boolean

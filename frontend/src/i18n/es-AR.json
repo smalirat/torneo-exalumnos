@@ -11,7 +11,8 @@
     "logout": "Cerrar sesión",
     "login": "Iniciar sesión",
     "teams": "Registro de equipos",
-    "tournamentTeams": "Equipos"
+    "tournamentTeams": "Equipos",
+    "rankings": "Rankings"
   },
   "auth": {
     "loginTitle": "Iniciar sesión",
@@ -129,5 +130,14 @@
       "YELLOW_CARD": "Amarilla",
       "RED_CARD": "Roja"
     }
+  },
+  "rankings": {
+    "scorers": "Goleadores",
+    "cards": "Amonestados",
+    "player": "Jugador",
+    "team": "Equipo",
+    "goals": "Goles",
+    "noGoals": "Todavía no hay goles cargados.",
+    "noCards": "Todavía no hay tarjetas."
   }
 }
