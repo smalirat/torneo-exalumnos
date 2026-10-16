@@ -29,6 +29,7 @@ public class TeamService {
     private final RegistrationRepository regRepo;
     private final MatchRepository matchRepo;
     private final AppUserRepository userRepo;
+    private final MatchEventRepository eventRepo;
 
     /** A captain creating a team becomes its owner; teams created by an admin have no captain. */
     @Transactional
@@ -41,6 +42,28 @@ public class TeamService {
                     .orElseThrow(() -> NotFoundException.of("Usuario", auth.getName())));
         }
         return ResponseDtos.TeamRes.from(teamRepo.save(t));
+    }
+
+    /** Admins see every team; captains only the ones they own. */
+    public List<ResponseDtos.TeamSummaryRes> listFor(Authentication auth) {
+        var teams = isAdmin(auth) ? teamRepo.findAllByOrderByNameAsc()
+                : teamRepo.findByCaptain_UsernameOrderByNameAsc(auth.getName());
+        return teams.stream().map(t -> new ResponseDtos.TeamSummaryRes(t.getId(), t.getName(),
+                t.getCaptain() == null ? null : t.getCaptain().getId(), playerRepo.countByTeam(t))).toList();
+    }
+
+    /** Removes a player from the roster; not allowed once they have goals or cards. */
+    @Transactional
+    public void deletePlayer(Long teamId, Long playerId, Authentication auth) {
+        var team = ownedTeam(teamId, auth);
+        var player = playerRepo.findById(playerId).orElseThrow(() -> NotFoundException.of("Jugador", playerId));
+        if (player.getTeam() == null || !player.getTeam().getId().equals(team.getId())) {
+            throw NotFoundException.of("Jugador", playerId);
+        }
+        if (eventRepo.existsByPlayer(player)) {
+            throw new ConflictException("El jugador tiene goles o tarjetas cargados; no se puede eliminar");
+        }
+        playerRepo.delete(player);
     }
 
     public List<ResponseDtos.PlayerRes> players(Long teamId) {

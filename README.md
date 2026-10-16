@@ -158,7 +158,9 @@ mvn spring-boot:run
 
 | Method | Endpoint                                                   | Description      |
 | ------ | ---------------------------------------------------------- | ---------------- |
+| GET    | `/api/teams`                                               | My teams (all for admin) |
 | POST   | `/api/teams/register`                                      | Register a team  |
+| DELETE | `/api/teams/{teamId}/players/{playerId}`                   | Remove player (409 if it has events) |
 | POST   | `/api/teams/{teamId}/players`                              | Add players      |
 | POST   | `/api/teams/{teamId}/tournaments/{tournamentId}/register`  | Join tournament (admin assigns zone) |
 | GET    | `/api/teams/{teamId}/tournaments/{tournamentId}/dashboard` | Team performance |

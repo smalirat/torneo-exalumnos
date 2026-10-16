@@ -9,5 +9,6 @@ import java.util.List;
 
 public interface PlayerRepository extends JpaRepository<Player, Long> {
     List<Player> findByTeamOrderByJerseyNoAscFullNameAsc(Team team);
+    int countByTeam(Team team);
 }
 

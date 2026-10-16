@@ -67,6 +67,29 @@ export interface Match {
   awayPresent: boolean
 }
 
+export interface TeamSummary {
+  id: number
+  name: string
+  captainId: number | null
+  playerCount: number
+}
+
+export interface Player {
+  id: number
+  fullName: string
+  jerseyNo: number
+  teamId: number
+}
+
+export interface Registration {
+  id: number
+  tournamentId: number
+  categoryId: number | null
+  zoneId: number | null
+  team: TeamRef
+  approved: boolean
+}
+
 export interface TokenRes {
   token: string
   tokenType: string

@@ -41,6 +41,7 @@ h1, h2, h3 { margin: 0; }
   font: inherit;
   font-weight: 500;
   cursor: pointer;
+  white-space: nowrap;
   background: var(--navy);
   color: #fff;
 }

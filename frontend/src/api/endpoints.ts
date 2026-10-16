@@ -1,5 +1,5 @@
-import { get, post } from './client'
-import type { Category, Match, Me, StandingRow, TokenRes, Tournament } from './types'
+import { del, get, post } from './client'
+import type { Category, Match, Me, Player, Registration, StandingRow, TeamSummary, TokenRes, Tournament } from './types'
 
 export const authApi = {
   login: (username: string, password: string) => post<TokenRes>('/api/auth/login', { username, password }),
@@ -19,6 +19,17 @@ export const tournamentApi = {
   create: (body: NewTournament) => post<Tournament>('/api/admin/tournaments', body),
   categories: (id: number) => get<Category[]>(`/api/public/tournaments/${id}/categories`),
   createCategory: (id: number, name: string) => post<Category>(`/api/admin/tournaments/${id}/categories`, { name }),
+}
+
+export const teamApi = {
+  list: () => get<TeamSummary[]>('/api/teams'),
+  create: (name: string) => post<{ id: number; name: string }>('/api/teams/register', { name }),
+  players: (teamId: number) => get<Player[]>(`/api/public/teams/${teamId}/players`),
+  addPlayer: (teamId: number, fullName: string, jerseyNo: number) =>
+    post<Player[]>(`/api/teams/${teamId}/players`, { players: [{ fullName, jerseyNo }] }),
+  deletePlayer: (teamId: number, playerId: number) => del(`/api/teams/${teamId}/players/${playerId}`),
+  registerIn: (teamId: number, tournamentId: number) =>
+    post<Registration>(`/api/teams/${teamId}/tournaments/${tournamentId}/register`),
 }
 
 export const zoneApi = {

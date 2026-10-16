@@ -2,6 +2,7 @@
 import AppIcon from '../components/AppIcon.vue'
 import UserFooter from './UserFooter.vue'
 import { t } from '../i18n'
+import { isLoggedIn } from '../auth'
 </script>
 
 <template>
@@ -10,6 +11,9 @@ import { t } from '../i18n'
       <p class="section">{{ t('nav.organize') }}</p>
       <RouterLink to="/" class="item" exact-active-class="active">
         <AppIcon name="trophy" /> {{ t('nav.myTournaments') }}
+      </RouterLink>
+      <RouterLink v-if="isLoggedIn" to="/equipos" class="item" active-class="active">
+        <AppIcon name="shield" /> {{ t('nav.teams') }}
       </RouterLink>
       <UserFooter />
     </aside>

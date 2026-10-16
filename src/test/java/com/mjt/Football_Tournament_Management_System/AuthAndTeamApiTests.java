@@ -242,6 +242,32 @@ class AuthAndTeamApiTests {
                 .andExpect(status().isConflict());
     }
 
+    @Test
+    void teamListIsScopedToTheCaptainAndPlayersCanBeRemovedUntilTheyHaveEvents() throws Exception {
+        String admin = login("admin", "admin123");
+        String captain = register(uniqueUser());
+        long mine = newTeam(captain);
+        newTeam(register(uniqueUser())); // someone else's team
+
+        mvc.perform(get("/api/teams").header("Authorization", "Bearer " + captain))
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].id").value(mine))
+                .andExpect(jsonPath("$[0].playerCount").value(0));
+
+        long zone = newZone(admin);
+        long rival = newTeam(admin);
+        long scorer = newPlayer(captain, mine, "Goleador");
+        long bench = newPlayer(captain, mine, "Suplente");
+        assignToZone(admin, zone, mine, rival);
+        score(admin, scheduleMatch(admin, zone, mine, rival), "{\"events\":[" + event(scorer, "GOAL") + "]}");
+
+        delete("/api/teams/" + mine + "/players/" + scorer, captain).andExpect(status().isConflict());
+        delete("/api/teams/" + mine + "/players/" + bench, register(uniqueUser())).andExpect(status().isForbidden());
+        delete("/api/teams/" + mine + "/players/" + bench, captain).andExpect(status().isNoContent());
+        mvc.perform(get("/api/teams").header("Authorization", "Bearer " + captain))
+                .andExpect(jsonPath("$[0].playerCount").value(1));
+    }
+
     // --- standings ---
 
     @Test

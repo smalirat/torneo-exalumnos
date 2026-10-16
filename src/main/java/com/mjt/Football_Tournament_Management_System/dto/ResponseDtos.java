@@ -23,6 +23,9 @@ public class ResponseDtos {
         }
     }
 
+    /** Team list item for the team registry screen. */
+    public record TeamSummaryRes(Long id, String name, Long captainId, int playerCount) {}
+
     public record PlayerRef(Long id, String fullName, int jerseyNo) {
         public static PlayerRef from(Player p) {
             return new PlayerRef(p.getId(), p.getFullName(), p.getJerseyNo());

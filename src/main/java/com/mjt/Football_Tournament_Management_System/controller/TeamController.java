@@ -9,6 +9,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
@@ -20,6 +21,19 @@ import java.util.List;
 @Tag(name="Teams API")
 public class TeamController {
     private final TeamService teamService;
+
+    @GetMapping
+    @Operation(summary = "Teams of the current user (all teams for admins), with player count")
+    public List<ResponseDtos.TeamSummaryRes> list(Authentication auth) {
+        return teamService.listFor(auth);
+    }
+
+    @DeleteMapping("/{teamId}/players/{playerId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Operation(summary = "Remove a player from the roster (409 if they have goals or cards)")
+    public void deletePlayer(@PathVariable Long teamId, @PathVariable Long playerId, Authentication auth) {
+        teamService.deletePlayer(teamId, playerId, auth);
+    }
 
     @PostMapping("/register")
     public ResponseDtos.TeamRes register(@Valid @RequestBody TeamDtos.RegisterTeamReq req, Authentication auth) {

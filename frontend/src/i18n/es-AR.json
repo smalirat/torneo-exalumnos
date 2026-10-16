@@ -1,5 +1,7 @@
 {
-  "app": { "name": "Torneos" },
+  "app": {
+    "name": "Torneos"
+  },
   "nav": {
     "organize": "Organizar campeonatos",
     "myTournaments": "Mis campeonatos",
@@ -7,7 +9,8 @@
     "home": "Inicio",
     "standings": "Clasificación",
     "logout": "Cerrar sesión",
-    "login": "Iniciar sesión"
+    "login": "Iniciar sesión",
+    "teams": "Registro de equipos"
   },
   "auth": {
     "loginTitle": "Iniciar sesión",
@@ -71,5 +74,23 @@
   "common": {
     "loading": "Cargando…",
     "genericError": "Algo salió mal. Probá de nuevo."
+  },
+  "teams": {
+    "title": "Registro de equipos",
+    "namePlaceholder": "Nombre del equipo",
+    "add": "Añadir",
+    "total": "Total: {n}",
+    "players": "{n} jugadores",
+    "onePlayer": "1 jugador",
+    "roster": "Plantel",
+    "noPlayers": "Todavía no hay jugadores.",
+    "playerName": "Nombre y apellido",
+    "jerseyNo": "N°",
+    "addPlayer": "Agregar jugador",
+    "removePlayer": "Quitar",
+    "registerIn": "Inscribir en",
+    "register": "Inscribir",
+    "registered": "Equipo inscripto. El organizador le asignará categoría y zona.",
+    "empty": "Todavía no registraste equipos."
   }
 }

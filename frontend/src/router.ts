@@ -4,6 +4,7 @@ export const router = createRouter({
   history: createWebHistory(),
   routes: [
     { path: '/', component: () => import('./views/TournamentsView.vue') },
+    { path: '/equipos', component: () => import('./views/TeamsView.vue') },
     { path: '/login', component: () => import('./views/LoginView.vue'), props: { mode: 'login' } },
     { path: '/registro', component: () => import('./views/LoginView.vue'), props: { mode: 'register' } },
     {
