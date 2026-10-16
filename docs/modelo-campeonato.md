@@ -58,8 +58,10 @@ Campeonato (Tournament)   etapa APERTURA / CLAUSURA
 - Leído / no leído: el usuario guarda `notifications_seen_at`; todo lo más nuevo cuenta como no leído. Abrir la pantalla de notificaciones llama a `POST /api/me/notifications/seen`.
 - Por ahora solo dentro de la app (badge en el menú). Mail o push quedan para más adelante.
 
-## Vista pública
+## Vista pública (inicio del sitio)
 
-- `/ver` (todos los campeonatos por temporada) y `/ver/:id` (Resultados, Posiciones, Próximos partidos, Goleadores y Definiciones), sin login y pensada para celular. Categoría, zona y pestaña quedan en la URL: el link compartido abre exactamente lo mismo.
+- Se organiza **un solo torneo** en ediciones (cada `Tournament` es una edición: Apertura/Clausura de una temporada). Por eso `/` es la página pública de la **edición actual** (la más nueva "En juego"; si no hay, la más nueva) y `/ver/:id` muestra una edición puntual. La gestión de ediciones quedó en `/ediciones`.
+- Inicio: **Última fecha** (carrusel), **Tabla de posiciones** y **Próxima fecha**, más las pestañas Fixture, Goleadores y Definiciones. Sin login y pensada para celular. Categoría, zona y pestaña quedan en la URL: el link compartido abre exactamente lo mismo.
+- El nombre del torneo de la barra superior sale de `app.league.title` (`GET /api/public/league`).
 - Goleadores y figuras: si el campeonato pertenece a una temporada se muestran los totales anuales (los del Excel); si no, los goles cargados por partido.
-- Estética inspirada en la referencia de rugby (bordó, títulos condensados); sin marcas ni lógica de ese deporte.
+- Diseño inspirado en la referencia de rugby (títulos condensados, carrusel y tabla con encabezado de color) pero con la paleta azul y blanca de la app; sin marcas ni lógica de ese deporte.

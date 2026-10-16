@@ -58,7 +58,7 @@ const saveTournament = (input: TournamentInput) => run(async () => {
 
 const deleteTournament = () => run(async () => {
   await tournamentApi.remove(tournamentId.value)
-  router.push('/')
+  router.push('/ediciones')
 })
 
 const renameCategory = async (c: Category, name: string) => {

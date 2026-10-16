@@ -29,11 +29,11 @@ npm run build      # chequeo de tipos (vue-tsc) + build
 
 | Ruta | Quién | Qué |
 | ---- | ----- | --- |
-| `/ver` | todos | Vista pública: campeonatos por temporada |
-| `/ver/:id` | todos | Vista pública del campeonato: resultados por fecha, posiciones, próximos partidos, goleadores, definiciones; compartir y seguir |
+| `/` | todos | Inicio del torneo (edición actual): Última fecha, Tabla de posiciones, Próxima fecha; pestañas Fixture, Goleadores, Definiciones; selector de edición, compartir y seguir |
+| `/ver/:id` | todos | Lo mismo para una edición puntual (es el link que se comparte) |
 | `/siguiendo` | logueado | Campeonatos que sigo |
 | `/notificaciones` | logueado | Novedades de los campeonatos seguidos (badge de no leídas en el menú) |
-| `/` | todos | Mis campeonatos; el admin crea campeonatos (FAB +) |
+| `/ediciones` | logueado | Ediciones del torneo; el admin crea ediciones (FAB +) |
 | `/login`, `/registro` | todos | Login y alta de capitán |
 | `/equipos` | logueado | Registro de equipos: plantel, inscripción, renombrar/eliminar |
 | `/planilla` | admin | Planilla Excel: importar con vista previa y conflictos, historial, exportar temporada |

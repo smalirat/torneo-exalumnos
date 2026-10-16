@@ -54,7 +54,7 @@ const publicUrl = computed(() => `${window.location.origin}/ver/${tournamentId.v
     <main class="content">
       <header class="top">
         <nav class="crumbs">
-          <RouterLink to="/">{{ t('nav.myTournaments') }}</RouterLink>
+          <RouterLink to="/ediciones">{{ t('nav.myTournaments') }}</RouterLink>
           <span>/</span>
           <RouterLink :to="`/campeonatos/${tournamentId}`">{{ tournament?.name }}</RouterLink>
           <span>/</span>

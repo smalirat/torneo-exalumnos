@@ -14,6 +14,9 @@ watch(isLoggedIn, refreshUnread, { immediate: true })
     <aside class="sidebar">
       <p class="section">{{ t('nav.organize') }}</p>
       <RouterLink to="/" class="item" exact-active-class="active">
+        <AppIcon name="home" /> {{ t('nav.leagueHome') }}
+      </RouterLink>
+      <RouterLink v-if="isLoggedIn" to="/ediciones" class="item" active-class="active">
         <AppIcon name="trophy" /> {{ t('nav.myTournaments') }}
       </RouterLink>
       <RouterLink v-if="isLoggedIn" to="/equipos" class="item" active-class="active">

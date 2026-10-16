@@ -54,6 +54,6 @@ async function toggle() {
 .follow.navy { border: 1px solid var(--navy); background: #fff; color: var(--navy); }
 .follow.navy.on { background: var(--navy); color: #fff; }
 .follow.light { border: 1px solid rgba(255, 255, 255, 0.7); background: transparent; color: #fff; }
-.follow.light.on { background: #fff; color: var(--public-accent, var(--navy)); }
+.follow.light.on { background: #fff; color: var(--navy); }
 .count { font-weight: 400; opacity: 0.85; }
 </style>

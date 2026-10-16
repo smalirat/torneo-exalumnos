@@ -3,12 +3,13 @@ import { createRouter, createWebHistory } from 'vue-router'
 export const router = createRouter({
   history: createWebHistory(),
   routes: [
-    { path: '/', component: () => import('./views/TournamentsView.vue') },
+    { path: '/', component: () => import('./views/LeagueHomeView.vue') },
+    { path: '/ediciones', component: () => import('./views/TournamentsView.vue') },
     { path: '/equipos', component: () => import('./views/TeamsView.vue') },
     { path: '/planilla', component: () => import('./views/ExcelView.vue') },
     { path: '/historia', component: () => import('./views/HistoryView.vue') },
-    { path: '/ver', component: () => import('./views/PublicTournamentsView.vue') },
-    { path: '/ver/:id', component: () => import('./views/PublicTournamentView.vue') },
+    { path: '/ver', redirect: '/' },
+    { path: '/ver/:id', component: () => import('./views/LeagueHomeView.vue') },
     { path: '/siguiendo', component: () => import('./views/FollowingView.vue') },
     { path: '/notificaciones', component: () => import('./views/NotificationsView.vue') },
     { path: '/temporadas/:id', component: () => import('./views/SeasonView.vue') },

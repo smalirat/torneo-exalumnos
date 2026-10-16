@@ -12,9 +12,8 @@
   --danger: #c0392b;
   --radius: 12px;
   --shadow: 0 1px 3px rgba(20, 39, 90, 0.08);
-  /* Public pages: maroon + condensed titles (visual inspiration only, see design/NOTES.md) */
-  --public: #8b0f08;
-  --public-dark: #5e0a05;
+  --navy-dark: #0c1a3f;
+  /* Public pages: condensed titles (layout inspired by the rugby reference, see design/NOTES.md) */
   --condensed: 'Roboto Condensed', 'Roboto', system-ui, sans-serif;
 
   font-family: 'Roboto', system-ui, sans-serif;

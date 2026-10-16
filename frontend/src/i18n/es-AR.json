@@ -4,7 +4,7 @@
   },
   "nav": {
     "organize": "Organizar campeonatos",
-    "myTournaments": "Mis campeonatos",
+    "myTournaments": "Ediciones",
     "user": "Usuario",
     "home": "Inicio",
     "standings": "Clasificación",
@@ -21,7 +21,8 @@
     "userSection": "Usuario",
     "following": "Campeonatos que sigo",
     "notifications": "Notificaciones",
-    "publicPage": "Página pública"
+    "publicPage": "Página pública",
+    "leagueHome": "Inicio del torneo"
   },
   "auth": {
     "loginTitle": "Iniciar sesión",
@@ -35,9 +36,9 @@
     "doLogin": "Hacer login"
   },
   "tournaments": {
-    "emptyTitle": "Aún no hay campeonatos",
-    "emptyText": "Los campeonatos que crees como organizador aparecerán aquí.",
-    "new": "Nuevo campeonato",
+    "emptyTitle": "Todavía no hay ediciones",
+    "emptyText": "Las ediciones del torneo (Apertura, Clausura…) aparecen acá.",
+    "new": "Nueva edición",
     "name": "Nombre",
     "location": "Sede",
     "registrationStart": "Inicio de inscripción",
@@ -321,10 +322,10 @@
   "notifications": {
     "title": "Notificaciones",
     "empty": "No hay novedades. Acá vas a ver los fixtures y resultados de los campeonatos que seguís.",
-    "findTournaments": "Ver campeonatos"
+    "findTournaments": "Ir al inicio"
   },
   "publicSite": {
-    "brand": "Campeonatos",
+    "brand": "Torneo",
     "panel": "Mi panel",
     "title": "Campeonatos",
     "empty": "Todavía no hay campeonatos publicados.",
@@ -348,5 +349,27 @@
       "PROMOTION": "Promociones",
       "FINAL": "Finales"
     }
+  },
+  "league": {
+    "edition": "Edición",
+    "tabs": {
+      "inicio": "Inicio",
+      "fixture": "Fixture",
+      "goleadores": "Goleadores",
+      "definiciones": "Definiciones"
+    },
+    "lastRound": "Última fecha",
+    "table": "Tabla de posiciones",
+    "nextRound": "Próxima fecha",
+    "seeFixture": "Ver fixture",
+    "category": "Categoría {name}",
+    "played": "PJ",
+    "playedHint": "Partidos jugados",
+    "noEditionTitle": "Torneo",
+    "emptyTitle": "Todavía no hay ninguna edición cargada",
+    "emptyText": "Cuando el organizador cargue la primera edición, acá vas a ver la tabla, los resultados y los próximos partidos.",
+    "emptyAdmin": "Creá la primera edición (por ejemplo \"Apertura 2027\") o importá la planilla Excel de la liga.",
+    "createEdition": "Crear edición",
+    "importExcel": "Importar planilla"
   }
 }

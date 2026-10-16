@@ -102,6 +102,8 @@ public class ResponseDtos {
         }
     }
 
+    public record LeagueRes(String title) {}
+
     /** Followers of a tournament and whether the current user (if logged in) is one of them. */
     public record FollowStatusRes(long followers, boolean following) {}
 

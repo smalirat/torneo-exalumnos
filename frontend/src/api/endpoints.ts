@@ -5,6 +5,10 @@ import type {
   TeamSummary, TokenRes, Tournament, TournamentStatus, YellowTally, Zone,
 } from './types'
 
+export const leagueApi = {
+  info: () => get<{ title: string }>('/api/public/league'),
+}
+
 export const authApi = {
   login: (username: string, password: string) => post<TokenRes>('/api/auth/login', { username, password }),
   register: (username: string, password: string) => post<TokenRes>('/api/auth/register', { username, password }),

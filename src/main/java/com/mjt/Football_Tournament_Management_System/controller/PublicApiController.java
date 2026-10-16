@@ -13,6 +13,7 @@ import com.mjt.Football_Tournament_Management_System.service.TournamentService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
@@ -31,6 +32,15 @@ public class PublicApiController {
     private final TeamService teamService;
     private final PlayoffService pService;
     private final FollowService followService;
+
+    @Value("${app.league.title:TORNEO DE EXALUMNOS - COLEGIO MARIANISTA}")
+    private String leagueTitle;
+
+    @GetMapping("/league")
+    @Operation(summary = "League name shown on the public site (property app.league.title)")
+    public ResponseDtos.LeagueRes league() {
+        return new ResponseDtos.LeagueRes(leagueTitle);
+    }
 
     @GetMapping("/seasons")
     @Operation(summary = "Seasons (years), newest first, with their tournaments")
