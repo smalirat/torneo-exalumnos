@@ -59,6 +59,10 @@ public class MatchGame {
     private Integer awayYellowCards = 0;
     private Integer awayRedCards = 0;
 
+    // Penalty shoot-out of a drawn promotion/final; null when there was none
+    private Integer homePenalties;
+    private Integer awayPenalties;
+
     public enum Status { SCHEDULED, FINISHED }
 
     /** REGULAR counts for its zone table; PROMOTION and FINAL are played apart. */
@@ -67,6 +71,16 @@ public class MatchGame {
     public Type typeOrRegular() { return type == null ? Type.REGULAR : type; }
 
     public boolean isSpecial() { return typeOrRegular() != Type.REGULAR; }
+
+    /** Winner of a finished match (goals, then penalties); null if not played, drawn or nobody showed up. */
+    public Team winner() {
+        if (!isFinished() || (!present(true) && !present(false))) return null;
+        int h = goalsFor(true), a = goalsFor(false);
+        if (h == a && homePenalties != null && awayPenalties != null) {
+            h = homePenalties; a = awayPenalties;
+        }
+        return h > a ? homeTeam : a > h ? awayTeam : null;
+    }
 
     // --- scoring rules (football), shared by standings and team dashboard ---
 

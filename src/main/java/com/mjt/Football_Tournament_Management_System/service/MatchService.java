@@ -56,8 +56,27 @@ public class MatchService {
         m.setHomeRedCards(count(events, m, true, MatchEvent.Type.RED_CARD));
         m.setAwayYellowCards(count(events, m, false, MatchEvent.Type.YELLOW_CARD));
         m.setAwayRedCards(count(events, m, false, MatchEvent.Type.RED_CARD));
+        applyPenalties(m, req, home && away);
         m.setStatus(MatchGame.Status.FINISHED);
         return ResponseDtos.MatchRes.from(matchRepo.save(m));
+    }
+
+    /** A drawn promotion/final must be decided on penalties; any other match cannot have them. */
+    private static void applyPenalties(MatchGame m, AdminDtos.ScoreUpdateReq req, boolean bothPresent) {
+        boolean given = req.getHomePenalties() != null || req.getAwayPenalties() != null;
+        boolean needed = m.isSpecial() && bothPresent && m.getHomeGoals().equals(m.getAwayGoals());
+        if (!needed) {
+            if (given) throw new BadRequestException("Solo una promoción o final empatada se define por penales");
+            m.setHomePenalties(null); m.setAwayPenalties(null);
+            return;
+        }
+        if (req.getHomePenalties() == null || req.getAwayPenalties() == null) {
+            throw new BadRequestException("El partido terminó empatado: hay que cargar los penales");
+        }
+        if (req.getHomePenalties().equals(req.getAwayPenalties())) {
+            throw new BadRequestException("Los penales no pueden terminar empatados");
+        }
+        m.setHomePenalties(req.getHomePenalties()); m.setAwayPenalties(req.getAwayPenalties());
     }
 
     public List<ResponseDtos.MatchEventRes> events(Long matchId) {

@@ -473,6 +473,46 @@ class AuthAndTeamApiTests {
     }
 
     @Test
+    void drawnFinalIsDecidedOnPenalties() throws Exception {
+        String admin = login("admin", "admin123");
+        long zone = newZone(admin);
+        long a = newTeam(admin), b = newTeam(admin);
+        long pa = newPlayer(admin, a, "Jugador A"), pb = newPlayer(admin, b, "Jugador B");
+        assignToZone(admin, zone, a, b);
+        long fin = read(post("/api/admin/tournaments/" + zoneTournaments.get(zone) + "/special-matches",
+                specialMatch("FINAL", "{\"teamId\":" + a + "}", "{\"teamId\":" + b + "}"), admin)).get("id").asLong();
+        String draw = "\"events\":[" + event(pa, "GOAL") + "," + event(pb, "GOAL") + "]";
+
+        score(admin, fin, "{" + draw + "}").andExpect(status().isBadRequest()); // penalties missing
+        score(admin, fin, "{" + draw + ",\"homePenalties\":4,\"awayPenalties\":4}").andExpect(status().isBadRequest());
+        score(admin, fin, "{" + draw + ",\"homePenalties\":3,\"awayPenalties\":4}")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.homeGoals").value(1))
+                .andExpect(jsonPath("$.awayPenalties").value(4))
+                .andExpect(jsonPath("$.winner.id").value(b));
+
+        // A final won in regular time cannot carry penalties
+        score(admin, fin, "{\"events\":[" + event(pa, "GOAL") + "],\"homePenalties\":1,\"awayPenalties\":0}")
+                .andExpect(status().isBadRequest());
+        score(admin, fin, "{\"events\":[" + event(pa, "GOAL") + "]}")
+                .andExpect(jsonPath("$.winner.id").value(a))
+                .andExpect(jsonPath("$.homePenalties").doesNotExist());
+    }
+
+    @Test
+    void regularMatchCannotHavePenalties() throws Exception {
+        String admin = login("admin", "admin123");
+        long zone = newZone(admin);
+        long a = newTeam(admin), b = newTeam(admin);
+        assignToZone(admin, zone, a, b);
+        long match = scheduleMatch(admin, zone, a, b);
+        score(admin, match, "{\"homePenalties\":5,\"awayPenalties\":4}").andExpect(status().isBadRequest());
+        score(admin, match, "{}")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.winner").doesNotExist()); // 0-0 draw stands in a regular match
+    }
+
+    @Test
     void specialMatchValidation() throws Exception {
         String admin = login("admin", "admin123");
         long zone = newZone(admin);

@@ -80,6 +80,7 @@ public class ResponseDtos {
     public record MatchRes(Long id, Long tournamentId, Long zoneId, String type, TeamRef homeTeam, TeamRef awayTeam,
                            SlotRes homeSource, SlotRes awaySource,
                            LocalDateTime scheduledAt, String status, Integer homeGoals, Integer awayGoals,
+                           Integer homePenalties, Integer awayPenalties, TeamRef winner,
                            boolean homePresent, boolean awayPresent) {
         public static MatchRes from(MatchGame m) {
             return new MatchRes(m.getId(), m.getTournament().getId(), m.getZone() == null ? null : m.getZone().getId(),
@@ -87,6 +88,8 @@ public class ResponseDtos {
                     SlotRes.of(m.getHomeSourceZone(), m.getHomeSourcePosition()),
                     SlotRes.of(m.getAwaySourceZone(), m.getAwaySourcePosition()),
                     m.getScheduledAt(), m.getStatus().name(), m.getHomeGoals(), m.getAwayGoals(),
+                    m.getHomePenalties(), m.getAwayPenalties(),
+                    m.winner() == null ? null : TeamRef.from(m.winner()),
                     m.present(true), m.present(false));
         }
     }
