@@ -5,6 +5,7 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import lombok.Getter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -19,11 +20,14 @@ import java.util.stream.Collectors;
 public class JwtService {
     private final Key key;
     private final long expirationMillis;
+    @Getter
+    private final long expirationMinutes;
 
     public JwtService(@Value("${app.jwt.secret}") String secret,
                       @Value("${app.jwt.expiration-minutes}") long expMinutes) {
         byte[] bytes = secret.length() >= 32 ? secret.getBytes() : Decoders.BASE64.decode(secret);
         this.key = Keys.hmacShaKeyFor(bytes);
+        this.expirationMinutes = expMinutes;
         this.expirationMillis = expMinutes * 60 * 1000;
     }
 

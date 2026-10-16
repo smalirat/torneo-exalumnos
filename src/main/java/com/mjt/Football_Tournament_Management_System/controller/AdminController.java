@@ -7,6 +7,7 @@ import com.mjt.Football_Tournament_Management_System.entire.Tournament;
 import com.mjt.Football_Tournament_Management_System.service.MatchService;
 import com.mjt.Football_Tournament_Management_System.service.TournamentService;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.*;
@@ -23,7 +24,7 @@ public class AdminController {
     private final MatchService mService;
 
     @PostMapping("/tournaments")
-    public Tournament create(@RequestBody AdminDtos.CreateTournamentReq req) {
+    public Tournament create(@Valid @RequestBody AdminDtos.CreateTournamentReq req) {
         return tService.create(req);
     }
 
@@ -35,12 +36,12 @@ public class AdminController {
     }
 
     @PostMapping("/fixtures/manual")
-    public List<MatchGame> manual(@RequestBody AdminDtos.ManualFixtureReq req) {
+    public List<MatchGame> manual(@Valid @RequestBody AdminDtos.ManualFixtureReq req) {
         return tService.createManualFixtures(req);
     }
 
     @PatchMapping("/matches/{id}/score")
-    public MatchGame score(@PathVariable Long id, @RequestBody AdminDtos.ScoreUpdateReq req) {
+    public MatchGame score(@PathVariable Long id, @Valid @RequestBody AdminDtos.ScoreUpdateReq req) {
         return mService.updateScore(id, req);
     }
 }

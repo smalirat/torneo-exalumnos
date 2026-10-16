@@ -1,6 +1,8 @@
 package com.mjt.Football_Tournament_Management_System.dto;
 
 
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.*;
 import lombok.Data;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -9,20 +11,23 @@ import java.util.List;
 public class AdminDtos {
     @Data
     public static class CreateTournamentReq {
-        private String name, location;
-        private LocalDate registrationStart, registrationEnd, matchStart, matchEnd;
+        @NotBlank private String name;
+        private String location;
+        @NotNull private LocalDate registrationStart, registrationEnd;
+        private LocalDate matchStart, matchEnd;
     }
     @Data
     public static class ManualFixtureReq {
-        private Long tournamentId; private List<FixtureItem> fixtures;
+        @NotNull private Long tournamentId;
+        @NotEmpty private List<@Valid FixtureItem> fixtures;
     }
     @Data
     public static class FixtureItem {
-        private Long homeTeamId, awayTeamId;
+        @NotNull private Long homeTeamId, awayTeamId;
         private LocalDateTime scheduledAt;
     }
     @Data
     public static class ScoreUpdateReq {
-        private Integer homeGoals, awayGoals;
+        @NotNull @Min(0) private Integer homeGoals, awayGoals;
     }
 }

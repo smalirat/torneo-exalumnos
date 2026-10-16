@@ -8,7 +8,9 @@ import com.mjt.Football_Tournament_Management_System.entire.Registration;
 import com.mjt.Football_Tournament_Management_System.entire.Team;
 import com.mjt.Football_Tournament_Management_System.service.TeamService;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -21,18 +23,19 @@ public class TeamController {
     private final TeamService teamService;
 
     @PostMapping("/register")
-    public Team register(@RequestBody TeamDtos.RegisterTeamReq req) {
-        return teamService.createTeam(req);
+    public Team register(@Valid @RequestBody TeamDtos.RegisterTeamReq req, Authentication auth) {
+        return teamService.createTeam(req, auth);
     }
 
     @PostMapping("/{teamId}/players")
-    public List<Player> addPlayers(@PathVariable Long teamId, @RequestBody TeamDtos.AddPlayersReq req) {
-        return teamService.addPlayers(teamId, req);
+    public List<Player> addPlayers(@PathVariable Long teamId, @Valid @RequestBody TeamDtos.AddPlayersReq req,
+                                   Authentication auth) {
+        return teamService.addPlayers(teamId, req, auth);
     }
 
     @PostMapping("/{teamId}/tournaments/{tournamentId}/register")
-    public Registration regTeam(@PathVariable Long teamId, @PathVariable Long tournamentId) {
-        return teamService.registerTeamForTournament(teamId, tournamentId);
+    public Registration regTeam(@PathVariable Long teamId, @PathVariable Long tournamentId, Authentication auth) {
+        return teamService.registerTeamForTournament(teamId, tournamentId, auth);
     }
 
     @GetMapping("/{teamId}/tournaments/{tournamentId}/dashboard")

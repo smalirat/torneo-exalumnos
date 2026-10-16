@@ -58,7 +58,6 @@ src/main/java/com/mjt/Football_Tournament_Management_System
 ├─ service/       # Business Logic
 └─ resources/
    ├─ application.properties
-   └─ data.sql
 ```
 
 ---
@@ -110,16 +109,19 @@ GRANT ALL PRIVILEGES ON football_tournament.* TO 'username'@'%';
 FLUSH PRIVILEGES;
 ```
 
-### 2️⃣ Configure `application.properties`
+### 2️⃣ Configure environment variables
 
-```properties
-spring.datasource.url=jdbc:mysql://localhost:3306/football_tournament
-spring.datasource.username=root
-spring.datasource.password=password
+Secrets are read from the environment (never commit them):
 
-app.jwt.secret=your-32-character-secret-key-here
-app.jwt.expiration-minutes=180
-```
+| Variable | Required | Default |
+| -------- | -------- | ------- |
+| `APP_JWT_SECRET` | yes (min. 32 chars) | - |
+| `APP_ADMIN_PASSWORD` | to create the first admin on startup | empty (no admin created) |
+| `APP_ADMIN_USERNAME` | no | `admin` |
+| `DB_URL` / `DB_USERNAME` / `DB_PASSWORD` | no | local MySQL, `root`/`root` |
+| `APP_CORS_ALLOWED_ORIGINS` | no | `http://localhost:5173` |
+
+Tests run on an in-memory H2 database (profile `test`), no MySQL needed: `./mvnw test`.
 
 ### 3️⃣ Build & Run
 
@@ -159,12 +161,13 @@ mvn spring-boot:run
 
 ---
 
-## 🤖 Default Test Users
+## 🤖 Users
 
-| Username | Password | Role  |
-| -------- | -------- | ----- |
-| admin    | admin123 | ADMIN |
-| team     | team123  | USER  |
+Users are stored in the DB with BCrypt-hashed passwords.
+
+- **ADMIN**: created on startup from `APP_ADMIN_USERNAME` / `APP_ADMIN_PASSWORD`.
+- **CAPTAIN**: self sign-up via `POST /api/auth/register`. A captain owns the teams they create and can only modify those.
+- `GET /api/auth/me` returns the current user, role and owned team ids.
 
 ---
 

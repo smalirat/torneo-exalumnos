@@ -8,6 +8,7 @@ import com.mjt.Football_Tournament_Management_System.repo.MatchRepository;
 import com.mjt.Football_Tournament_Management_System.repo.RegistrationRepository;
 import com.mjt.Football_Tournament_Management_System.repo.TournamentRepository;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import com.mjt.Football_Tournament_Management_System.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -28,13 +29,13 @@ public class PublicApiController {
 
     @GetMapping("/tournaments/{id}/registrations")
     public List<Registration> regs(@PathVariable Long id) {
-        var t = tRepo.findById(id).orElseThrow();
+        var t = tRepo.findById(id).orElseThrow(() -> NotFoundException.of("Campeonato", id));
         return rRepo.findByTournament(t);
     }
 
     @GetMapping("/tournaments/{id}/fixtures")
     public List<MatchGame> fixtures(@PathVariable Long id) {
-        var t = tRepo.findById(id).orElseThrow();
+        var t = tRepo.findById(id).orElseThrow(() -> NotFoundException.of("Campeonato", id));
         return mRepo.findByTournament(t);
     }
 }

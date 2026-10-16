@@ -1,5 +1,6 @@
 package com.mjt.Football_Tournament_Management_System.entire;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -15,4 +16,9 @@ public class Team {
     private String managerName;
     private String phone;
     private String email;
+
+    // Owner of the team; not serialized (would expose the user)
+    @JsonIgnore
+    @ManyToOne(fetch = FetchType.LAZY)
+    private AppUser captain;
 }

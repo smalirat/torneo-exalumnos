@@ -4,6 +4,7 @@ package com.mjt.Football_Tournament_Management_System.service;
 import com.mjt.Football_Tournament_Management_System.dto.AdminDtos;
 import com.mjt.Football_Tournament_Management_System.entire.*;
 import com.mjt.Football_Tournament_Management_System.repo.*;
+import com.mjt.Football_Tournament_Management_System.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,27 +29,27 @@ public class TournamentService {
     }
 
     public List<Registration> registrations(Long tournamentId) {
-        var t = tournamentRepo.findById(tournamentId).orElseThrow();
+        var t = tournamentRepo.findById(tournamentId).orElseThrow(() -> NotFoundException.of("Campeonato", tournamentId));
         return regRepo.findByTournament(t);
     }
 
     @Transactional
     public List<MatchGame> createRoundRobinFixtures(Long tournamentId, LocalDateTime start, int minutesBetween) {
-        var t = tournamentRepo.findById(tournamentId).orElseThrow();
+        var t = tournamentRepo.findById(tournamentId).orElseThrow(() -> NotFoundException.of("Campeonato", tournamentId));
         var regs = regRepo.findByTournament(t);
         var teams = regs.stream().map(Registration::getTeam).toList();
         List<MatchGame> out = new ArrayList<>();
         if (teams.size() < 2) return out;
 
         var list = new ArrayList<>(teams);
-        if (list.size() % 2 == 1) list.add(dummy());
+        if (list.size() % 2 == 1) list.add(null); // null slot = BYE (team rests that round)
         int n = list.size(), rounds = n - 1;
         var cursor = start;
 
         for (int r = 0; r < rounds; r++) {
             for (int i = 0; i < n/2; i++) {
                 var home = list.get(i); var away = list.get(n-1-i);
-                if (isDummy(home) || isDummy(away)) continue;
+                if (home == null || away == null) continue;
                 var m = new MatchGame();
                 m.setTournament(t); m.setHomeTeam(home); m.setAwayTeam(away); m.setScheduledAt(cursor);
                 out.add(m); cursor = cursor.plusMinutes(minutesBetween);
@@ -66,13 +67,14 @@ public class TournamentService {
 
     @Transactional
     public List<MatchGame> createManualFixtures(AdminDtos.ManualFixtureReq req) {
-        var t = tournamentRepo.findById(req.getTournamentId()).orElseThrow();
+        var t = tournamentRepo.findById(req.getTournamentId())
+                .orElseThrow(() -> NotFoundException.of("Campeonato", req.getTournamentId()));
         List<MatchGame> ms = new ArrayList<>();
         for (var f : req.getFixtures()) {
             var m = new MatchGame();
             m.setTournament(t);
-            m.setHomeTeam(teamRepo.findById(f.getHomeTeamId()).orElseThrow());
-            m.setAwayTeam(teamRepo.findById(f.getAwayTeamId()).orElseThrow());
+            m.setHomeTeam(teamRepo.findById(f.getHomeTeamId()).orElseThrow(() -> NotFoundException.of("Equipo", f.getHomeTeamId())));
+            m.setAwayTeam(teamRepo.findById(f.getAwayTeamId()).orElseThrow(() -> NotFoundException.of("Equipo", f.getAwayTeamId())));
             m.setScheduledAt(f.getScheduledAt());
             ms.add(m);
         }
@@ -82,6 +84,4 @@ public class TournamentService {
         return saved;
     }
 
-    private Team dummy() { return new Team(-1L, "__BYE__", null, null, null); }
-    private boolean isDummy(Team t) { return t.getId()!=null && t.getId()==-1L; }
 }
