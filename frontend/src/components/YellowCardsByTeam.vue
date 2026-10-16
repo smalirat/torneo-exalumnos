@@ -27,7 +27,7 @@ const teams = computed(() => {
   <div v-else class="grid">
     <article v-for="g in teams" :key="g.team.id" class="team-card">
       <header>
-        <TeamBadge :name="g.team.name" :size="26" />
+        <TeamBadge :team="g.team" :size="26" />
         <h3>{{ g.team.name }}</h3>
       </header>
       <table>

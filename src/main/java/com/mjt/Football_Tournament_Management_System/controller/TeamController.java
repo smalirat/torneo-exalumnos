@@ -10,6 +10,8 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
@@ -46,6 +48,18 @@ public class TeamController {
     @Operation(summary = "Remove a player from the roster (409 if they have goals or cards)")
     public void deletePlayer(@PathVariable Long teamId, @PathVariable Long playerId, Authentication auth) {
         teamService.deletePlayer(teamId, playerId, auth);
+    }
+
+    @PutMapping(value = "/{teamId}/crest", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Operation(summary = "Upload the team's crest (PNG/JPG, up to 2 MB); admin or the team's captain")
+    public ResponseDtos.TeamRef setCrest(@PathVariable Long teamId, @RequestParam("file") MultipartFile file, Authentication auth) {
+        return teamService.setCrest(teamId, file, auth);
+    }
+
+    @DeleteMapping("/{teamId}/crest")
+    @Operation(summary = "Remove the team's crest (the UI then shows no badge)")
+    public ResponseDtos.TeamRef removeCrest(@PathVariable Long teamId, Authentication auth) {
+        return teamService.removeCrest(teamId, auth);
     }
 
     @PostMapping("/register")

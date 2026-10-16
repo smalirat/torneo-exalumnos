@@ -9,6 +9,8 @@ import com.mjt.Football_Tournament_Management_System.entire.MatchGame;
 import com.mjt.Football_Tournament_Management_System.entire.Player;
 import com.mjt.Football_Tournament_Management_System.entire.Registration;
 import com.mjt.Football_Tournament_Management_System.entire.Team;
+import com.mjt.Football_Tournament_Management_System.entire.TeamCrest;
+import com.mjt.Football_Tournament_Management_System.exception.BadRequestException;
 import com.mjt.Football_Tournament_Management_System.entire.Tournament;
 import com.mjt.Football_Tournament_Management_System.exception.ConflictException;
 import com.mjt.Football_Tournament_Management_System.exception.NotFoundException;
@@ -18,6 +20,11 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
+
+import javax.imageio.ImageIO;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.util.*;
 
 @Service
@@ -34,6 +41,10 @@ public class TeamService {
     private final SanctionRepository sanctionRepo;
     private final YellowCardTallyRepository yellowRepo;
     private final ChampionRepository championRepo;
+    private final TeamCrestRepository crestRepo;
+
+    private static final Set<String> CREST_TYPES = Set.of("image/png", "image/jpeg");
+    private static final long CREST_MAX_BYTES = 2 * 1024 * 1024;
 
     /**
      * A captain creating a team becomes its owner (one team per captain). A team created by an admin gets a
@@ -89,6 +100,38 @@ public class TeamService {
             teamRepo.flush();
             userRepo.delete(captain);
         }
+    }
+
+    /** Sets (or replaces) the team's crest: PNG or JPG up to 2 MB. Admin or the team's own captain. */
+    @Transactional
+    public ResponseDtos.TeamRef setCrest(Long teamId, MultipartFile file, Authentication auth) {
+        var t = ownedTeam(teamId, auth);
+        if (file == null || file.isEmpty()) throw new BadRequestException("Elegí una imagen");
+        if (!CREST_TYPES.contains(file.getContentType())) throw new BadRequestException("El escudo tiene que ser PNG o JPG");
+        if (file.getSize() > CREST_MAX_BYTES) throw new BadRequestException("El escudo pesa más de 2 MB");
+        byte[] data;
+        try {
+            data = file.getBytes();
+            if (ImageIO.read(new ByteArrayInputStream(data)) == null) throw new IOException("not an image");
+        } catch (IOException e) {
+            throw new BadRequestException("No se pudo leer la imagen");
+        }
+        crestRepo.save(new TeamCrest(t.getId(), file.getContentType(), data));
+        // Seconds since epoch: a new value on every upload (also after removing one), so cached URLs never go stale
+        t.setCrestVersion((int) (System.currentTimeMillis() / 1000));
+        return ResponseDtos.TeamRef.from(t);
+    }
+
+    @Transactional
+    public ResponseDtos.TeamRef removeCrest(Long teamId, Authentication auth) {
+        var t = ownedTeam(teamId, auth);
+        crestRepo.deleteById(t.getId());
+        t.setCrestVersion(null);
+        return ResponseDtos.TeamRef.from(t);
+    }
+
+    public TeamCrest crest(Long teamId) {
+        return crestRepo.findById(teamId).orElseThrow(() -> new NotFoundException("El equipo no tiene escudo"));
     }
 
     /** Removes a player from the roster; not allowed once they have goals or cards. */

@@ -19,7 +19,7 @@ const when = computed(() => {
 <template>
   <article class="score-card">
     <div v-for="home in [true, false]" :key="String(home)" :class="['row', { win: played && winner(home) }]">
-      <TeamBadge :name="home ? match.homeTeam.name : match.awayTeam.name" :size="20" />
+      <TeamBadge :team="home ? match.homeTeam : match.awayTeam" :size="20" />
       <span class="team">{{ home ? match.homeTeam.name : match.awayTeam.name }}</span>
       <span v-if="played" class="goals">
         <small v-if="match.homePenalties !== null" class="pens">({{ home ? match.homePenalties : match.awayPenalties }})</small>

@@ -46,9 +46,9 @@ export async function api<T>(method: string, path: string, body?: unknown): Prom
 }
 
 /** Multipart upload (FormData); same auth and error handling as `api`. */
-export async function upload<T>(path: string, form: FormData): Promise<T> {
+export async function upload<T>(path: string, form: FormData, method: 'POST' | 'PUT' = 'POST'): Promise<T> {
   const token = getToken()
-  const res = await fetch(path, { method: 'POST', headers: token ? { Authorization: `Bearer ${token}` } : {}, body: form })
+  const res = await fetch(path, { method, headers: token ? { Authorization: `Bearer ${token}` } : {}, body: form })
   const data = await res.json().catch(() => null)
   if (!res.ok) throw new ApiError(res.status, data?.detail ?? t('common.genericError'), data?.errors ?? {})
   return data as T

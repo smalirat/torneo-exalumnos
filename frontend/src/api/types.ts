@@ -41,6 +41,8 @@ export interface Category {
 export interface TeamRef {
   id: number
   name: string
+  /** URL of the crest image; null/absent when the team has none (then no badge is shown) */
+  crest?: string | null
 }
 
 export interface StandingRow {
@@ -101,6 +103,7 @@ export interface Match {
 export interface TeamSummary {
   id: number
   name: string
+  crest?: string | null
   captainId: number
   /** null while the captain is pending (nobody claimed the team yet) */
   captainUsername: string | null

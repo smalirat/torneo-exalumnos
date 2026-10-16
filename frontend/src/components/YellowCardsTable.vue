@@ -22,7 +22,7 @@ defineProps<{ rows: YellowTally[] }>()
       <tbody>
         <tr v-for="y in rows" :key="y.player.id">
           <td class="left">{{ y.player.fullName }}</td>
-          <td class="left"><span class="team"><TeamBadge :name="y.team.name" :size="22" /> {{ y.team.name }}</span></td>
+          <td class="left"><span class="team"><TeamBadge :team="y.team" :size="22" /> {{ y.team.name }}</span></td>
           <td>{{ y.yellowCards }}</td>
           <td :class="{ strong: y.suspensions > 0 }">{{ y.suspensions }}</td>
         </tr>

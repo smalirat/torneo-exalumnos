@@ -1,4 +1,4 @@
-import { del, download, get, patch, post, put, upload } from './client'
+import { api, del, download, get, patch, post, put, upload } from './client'
 import type {
   CardRow, Category, CategoryHistory, CollageItem, CollagePhoto, InviteRes, ImportHistory, ImportPreview, Match, MatchDetails, MatchEvent, Me, Player,
   Registration, Sanction, ScoreReq, ScorerRow, Season, SeasonStatRow, SlotReq, StandingRow, TeamRef, TeamRegistration,
@@ -68,6 +68,12 @@ export const teamApi = {
   addPlayer: (teamId: number, fullName: string, jerseyNo: number) =>
     post<Player[]>(`/api/teams/${teamId}/players`, { players: [{ fullName, jerseyNo }] }),
   deletePlayer: (teamId: number, playerId: number) => del(`/api/teams/${teamId}/players/${playerId}`),
+  setCrest: (teamId: number, image: Blob) => {
+    const form = new FormData()
+    form.append('file', image, 'escudo.png')
+    return upload<TeamRef>(`/api/teams/${teamId}/crest`, form, 'PUT')
+  },
+  removeCrest: (teamId: number) => api<TeamRef>('DELETE', `/api/teams/${teamId}/crest`),
   registerIn: (teamId: number, tournamentId: number) =>
     post<Registration>(`/api/teams/${teamId}/tournaments/${tournamentId}/register`),
 }

@@ -5,7 +5,9 @@ import GlobalLayout from '../layouts/GlobalLayout.vue'
 import AppIcon from '../components/AppIcon.vue'
 import MatchCard from '../components/MatchCard.vue'
 import StandingsTable from '../components/StandingsTable.vue'
+import CrestPicker from '../components/CrestPicker.vue'
 import TeamBadge from '../components/TeamBadge.vue'
+import { currentUser, isAdmin } from '../auth'
 import { teamApi, zoneApi } from '../api/endpoints'
 import type { Match, StandingRow, TeamRef, TeamRegistration } from '../api/types'
 import { t } from '../i18n'
@@ -29,6 +31,9 @@ watch(teamId, async (id) => {
   }))
 }, { immediate: true })
 
+/** Admin or the team's own captain can change the crest */
+const canEdit = computed(() => isAdmin.value || (currentUser.value?.teamIds.includes(teamId.value) ?? false))
+
 const placeLabel = (r: TeamRegistration) =>
   r.zoneCount > 1 ? `${r.categoryName} · ${r.zoneName}` : r.categoryName
 const position = (s: Season) => s.rows.find((r) => r.team.id === teamId.value)?.position
@@ -40,7 +45,8 @@ const results = (s: Season) => s.matches.filter((m) => m.status === 'FINISHED').
   <GlobalLayout>
     <RouterLink to="/equipos" class="back"><AppIcon name="chevron" class="flip" :size="18" /> {{ t('teams.title') }}</RouterLink>
     <header v-if="team" class="header">
-      <TeamBadge :name="team.name" :size="64" />
+      <CrestPicker v-if="canEdit" :team="team" :size="64" @change="(crest) => team && (team.crest = crest)" />
+      <TeamBadge v-else :team="team" :size="64" />
       <h1>{{ team.name }}</h1>
     </header>
 

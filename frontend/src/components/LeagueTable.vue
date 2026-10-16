@@ -32,7 +32,7 @@ defineProps<{ rows: StandingRow[] }>()
           <td class="pin pos">{{ r.position }}</td>
           <td class="pin team left">
             <RouterLink :to="`/equipos/${r.team.id}`" class="name">
-              <TeamBadge :name="r.team.name" :size="24" /> <span>{{ r.team.name }}</span>
+              <TeamBadge :team="r.team" :size="24" /> <span>{{ r.team.name }}</span>
             </RouterLink>
           </td>
           <td>{{ r.played }}</td>

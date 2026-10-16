@@ -17,6 +17,9 @@ public class Team {
     private String phone;
     private String email;
 
+    /** Changes on every crest upload (goes in the image URL); null = no crest */
+    private Integer crestVersion;
+
     // Owner of the team (required, one team per captain; may be a pending captain); not serialized
     @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY, optional = false)

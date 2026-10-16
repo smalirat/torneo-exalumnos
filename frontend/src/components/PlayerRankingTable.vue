@@ -23,7 +23,7 @@ defineProps<{ rows: SeasonStatRow[]; valueLabel: string }>()
         <tr v-for="r in rows" :key="r.player.id">
           <td><span class="pos">{{ r.position }}</span></td>
           <td class="left">{{ r.player.fullName }}</td>
-          <td class="left"><span class="team"><TeamBadge :name="r.team.name" :size="22" /> {{ r.team.name }}</span></td>
+          <td class="left"><span class="team"><TeamBadge :team="r.team" :size="22" /> {{ r.team.name }}</span></td>
           <td class="strong">{{ r.value }}</td>
         </tr>
       </tbody>

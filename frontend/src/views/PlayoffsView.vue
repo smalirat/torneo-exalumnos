@@ -108,7 +108,7 @@ async function onSaved() {
         </header>
         <div class="line">
           <div class="side">
-            <span class="team"><TeamBadge :name="m.homeTeam.name" :size="34" /> {{ m.homeTeam.name }}</span>
+            <span class="team"><TeamBadge :team="m.homeTeam" :size="34" /> {{ m.homeTeam.name }}</span>
             <span class="source">{{ sourceLabel(m.homeSource) }}</span>
           </div>
           <div class="result">
@@ -119,7 +119,7 @@ async function onSaved() {
             <span v-else class="muted">vs</span>
           </div>
           <div class="side right">
-            <span class="team">{{ m.awayTeam.name }} <TeamBadge :name="m.awayTeam.name" :size="34" /></span>
+            <span class="team">{{ m.awayTeam.name }} <TeamBadge :team="m.awayTeam" :size="34" /></span>
             <span class="source">{{ sourceLabel(m.awaySource) }}</span>
           </div>
         </div>

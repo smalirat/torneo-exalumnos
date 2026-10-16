@@ -2,7 +2,7 @@
 import { computed, onMounted, ref } from 'vue'
 import GlobalLayout from '../layouts/GlobalLayout.vue'
 import AppIcon from '../components/AppIcon.vue'
-import TeamBadge from '../components/TeamBadge.vue'
+import CrestPicker from '../components/CrestPicker.vue'
 import ConfirmButton from '../components/ConfirmButton.vue'
 import InlineEdit from '../components/InlineEdit.vue'
 import { authApi, teamApi, tournamentApi } from '../api/endpoints'
@@ -126,7 +126,7 @@ const countLabel = (n: number) => (n === 1 ? t('teams.onePlayer') : t('teams.pla
         <p v-if="teams.length === 0" class="muted">{{ t('teams.empty') }}</p>
         <div v-for="team in teams" :key="team.id" class="team">
           <div class="row">
-            <TeamBadge :name="team.name" :size="54" />
+            <CrestPicker :team="team" :size="54" @change="(crest) => (team.crest = crest)" />
             <div class="info">
               <span class="name">
                 <InlineEdit :value="team.name" :save="(name) => renameTeam(team, name)">

@@ -28,7 +28,7 @@ defineProps<{ rows: Sanction[]; served?: boolean }>()
       <tbody>
         <tr v-for="s in rows" :key="s.id">
           <td class="left">{{ s.player.fullName }}</td>
-          <td class="left"><span class="team"><TeamBadge :name="s.team.name" :size="22" /> {{ s.team.name }}</span></td>
+          <td class="left"><span class="team"><TeamBadge :team="s.team" :size="22" /> {{ s.team.name }}</span></td>
           <td class="left">{{ t(`season.types.${s.type}`) }}</td>
           <td>{{ s.matchesSuspended }}</td>
           <td>{{ s.matchesServed }}</td>

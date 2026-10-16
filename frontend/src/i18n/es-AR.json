@@ -145,6 +145,11 @@
     "whatsapp": "Enviar por WhatsApp",
     "whatsappText": "Hola! Con este link activás tu usuario de capitán de {name} en el torneo: {url}"
   },
+  "crest": {
+    "add": "Agregar escudo",
+    "change": "Cambiar escudo",
+    "remove": "Quitar escudo"
+  },
   "invite": {
     "title": "Capitán de {name}",
     "text": "Te invitaron a ser el capitán de {name}. Elegí tu usuario y contraseña para administrar el equipo.",

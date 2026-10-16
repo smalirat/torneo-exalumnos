@@ -104,7 +104,7 @@ const addZone = (categoryId: number) => run(async () => {
       <p v-if="registrations.length === 0" class="muted">{{ t('tournamentTeams.noRegistrations') }}</p>
       <p v-else-if="unassigned.length === 0" class="muted">{{ t('tournamentTeams.noneUnassigned') }}</p>
       <div v-for="r in unassigned" :key="r.id" class="team">
-        <TeamBadge :name="r.team.name" :size="34" />
+        <TeamBadge :team="r.team" :size="34" />
         <span class="name">{{ r.team.name }}</span>
         <select v-if="zoneOptions.length" class="select" :aria-label="t('tournamentTeams.assignTo')" @change="assign(r, $event)">
           <option value="" selected disabled>{{ t('tournamentTeams.assignTo') }}</option>
@@ -138,7 +138,7 @@ const addZone = (categoryId: number) => run(async () => {
         </h3>
         <p v-if="inZone(z.id).length === 0" class="muted">{{ t('tournamentTeams.noTeamsInZone') }}</p>
         <div v-for="r in inZone(z.id)" :key="r.id" class="team">
-          <TeamBadge :name="r.team.name" :size="34" />
+          <TeamBadge :team="r.team" :size="34" />
           <span class="name">{{ r.team.name }}</span>
           <select class="select" :value="r.zoneId" :aria-label="t('tournamentTeams.assignTo')" @change="assign(r, $event)">
             <option v-for="o in zoneOptions" :key="o.id" :value="o.id">{{ o.label }}</option>
@@ -155,7 +155,7 @@ const addZone = (categoryId: number) => run(async () => {
       </div>
       <label v-for="r in unassigned" :key="r.id" class="pick">
         <input v-model="drawIds" type="checkbox" :value="r.id" />
-        <TeamBadge :name="r.team.name" :size="24" /> {{ r.team.name }}
+        <TeamBadge :team="r.team" :size="24" /> {{ r.team.name }}
       </label>
       <template #footer>
         <button class="btn secondary" @click="drawFor = null">{{ t('tournaments.cancel') }}</button>

@@ -29,7 +29,7 @@ defineProps<{ rows: StandingRow[]; highlightTeamId?: number }>()
       <tbody>
         <tr v-for="r in rows" :key="r.team.id" :class="{ highlight: r.team.id === highlightTeamId }">
           <td><span class="pos">{{ r.position }}</span></td>
-          <td class="left"><span class="team"><TeamBadge :name="r.team.name" /> {{ r.team.name }}</span></td>
+          <td class="left"><span class="team"><TeamBadge :team="r.team" /> {{ r.team.name }}</span></td>
           <td class="pts">{{ r.points }}</td>
           <td>{{ r.played }}</td>
           <td>{{ r.won }}</td>

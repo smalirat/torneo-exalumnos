@@ -18,7 +18,7 @@ defineProps<{ history: CategoryHistory[] }>()
         <tbody>
           <tr v-for="ch in c.champions" :key="ch.id">
             <td class="year">{{ ch.year }}</td>
-            <td class="left"><span class="team"><TeamBadge :name="ch.team.name" :size="22" /> {{ ch.team.name }}</span></td>
+            <td class="left"><span class="team"><TeamBadge :team="ch.team" :size="22" /> {{ ch.team.name }}</span></td>
           </tr>
         </tbody>
       </table>
@@ -28,7 +28,7 @@ defineProps<{ history: CategoryHistory[] }>()
           <thead><tr><th class="left">{{ t('rankings.team') }}</th><th>{{ t('historyPage.titles') }}</th></tr></thead>
           <tbody>
             <tr v-for="top in c.topChampions" :key="top.team.id">
-              <td class="left"><span class="team"><TeamBadge :name="top.team.name" :size="22" /> {{ top.team.name }}</span></td>
+              <td class="left"><span class="team"><TeamBadge :team="top.team" :size="22" /> {{ top.team.name }}</span></td>
               <td class="strong">{{ top.titles }}</td>
             </tr>
           </tbody>

@@ -39,7 +39,7 @@ watch(tournamentId, async (id) => {
             <tr v-for="(r, i) in scorers" :key="r.player.id">
               <td><span class="pos">{{ i + 1 }}</span></td>
               <td class="left">{{ r.player.fullName }}</td>
-              <td class="left"><span class="team"><TeamBadge :name="r.team.name" :size="22" /> {{ r.team.name }}</span></td>
+              <td class="left"><span class="team"><TeamBadge :team="r.team" :size="22" /> {{ r.team.name }}</span></td>
               <td class="strong">{{ r.goals }}</td>
             </tr>
           </tbody>
@@ -61,7 +61,7 @@ watch(tournamentId, async (id) => {
           <tbody>
             <tr v-for="r in cards" :key="r.player.id">
               <td class="left">{{ r.player.fullName }}</td>
-              <td class="left"><span class="team"><TeamBadge :name="r.team.name" :size="22" /> {{ r.team.name }}</span></td>
+              <td class="left"><span class="team"><TeamBadge :team="r.team" :size="22" /> {{ r.team.name }}</span></td>
               <td>{{ r.yellowCards }}</td>
               <td>{{ r.redCards }}</td>
             </tr>

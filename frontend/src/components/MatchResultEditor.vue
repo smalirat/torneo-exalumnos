@@ -135,9 +135,9 @@ async function save() {
     <form @submit.prevent="save">
 
       <div class="scoreboard">
-        <span class="team"><TeamBadge :name="teams.home.name" :size="40" /> {{ teams.home.name }}</span>
+        <span class="team"><TeamBadge :team="teams.home" :size="40" /> {{ teams.home.name }}</span>
         <strong class="score">{{ score.home }} - {{ score.away }}</strong>
-        <span class="team right">{{ teams.away.name }} <TeamBadge :name="teams.away.name" :size="40" /></span>
+        <span class="team right">{{ teams.away.name }} <TeamBadge :team="teams.away" :size="40" /></span>
       </div>
       <p v-if="walkover" class="hint">{{ t('results.walkoverHint') }}</p>
       <div v-else class="typed">

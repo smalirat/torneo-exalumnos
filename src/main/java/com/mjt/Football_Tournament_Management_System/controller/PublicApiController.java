@@ -1,6 +1,10 @@
 package com.mjt.Football_Tournament_Management_System.controller;
 
 
+import org.springframework.http.CacheControl;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import java.time.Duration;
 import com.mjt.Football_Tournament_Management_System.dto.ResponseDtos;
 import com.mjt.Football_Tournament_Management_System.service.CategoryService;
 import com.mjt.Football_Tournament_Management_System.service.MatchService;
@@ -89,6 +93,16 @@ public class PublicApiController {
     @GetMapping("/teams/{id}")
     public ResponseDtos.TeamRef team(@PathVariable Long id) {
         return teamService.team(id);
+    }
+
+    @GetMapping("/teams/{id}/crest")
+    @Operation(summary = "Crest image of a team (its URL carries the version: cached for a year); 404 if it has none")
+    public ResponseEntity<byte[]> crest(@PathVariable Long id) {
+        var c = teamService.crest(id);
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(c.getContentType()))
+                .cacheControl(CacheControl.maxAge(Duration.ofDays(365)).cachePublic().immutable())
+                .body(c.getImageData());
     }
 
     @GetMapping("/teams/{id}/registrations")

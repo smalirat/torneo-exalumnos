@@ -78,3 +78,9 @@ Campeonato (Tournament)   etapa APERTURA / CLAUSURA
 - Un capitán que se registra solo (`/registro`) puede crear **un** equipo. Nadie puede elegir un usuario que empiece con `pendiente-`.
 - Un equipo que se da de baja conserva su capitán (por si vuelve). Al **borrar** un equipo se borra su capitán solo si seguía pendiente.
 
+## Escudos
+
+- Cada equipo puede tener un escudo (PNG/JPG hasta 2 MB; el navegador lo achica a 256 px PNG antes de subirlo). La imagen va en `team_crests` y `teams.crest_version` cambia en cada subida.
+- Toda referencia a un equipo en la API (`TeamRef`, `TeamRes`, `TeamSummaryRes`) trae `crest`: la URL `/api/public/teams/{id}/crest?v=…` (cacheada un año, la versión la invalida) o `null`.
+- **Sin escudo no se muestra nada** (no hay más círculos de colores). En Registro de equipos y en la página del equipo, el admin o el capitán dueño ven un círculo punteado "+" para subirlo, y una × para quitarlo (`PUT|DELETE /api/teams/{id}/crest`).
+

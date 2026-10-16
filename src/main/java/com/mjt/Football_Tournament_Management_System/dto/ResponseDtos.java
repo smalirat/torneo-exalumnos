@@ -12,15 +12,21 @@ import java.util.Set;
 public class ResponseDtos {
 
     /** Minimal team reference, safe for public endpoints (no contact data). */
-    public record TeamRef(Long id, String name) {
+    /** crest: URL of the team's crest image, null when it has none (the UI then shows no badge). */
+    public record TeamRef(Long id, String name, String crest) {
         public static TeamRef from(Team t) {
-            return new TeamRef(t.getId(), t.getName());
+            return new TeamRef(t.getId(), t.getName(), crestUrl(t));
         }
     }
 
-    public record TeamRes(Long id, String name, String managerName, String phone, String email, Long captainId) {
+    static String crestUrl(Team t) {
+        return t.getCrestVersion() == null ? null : "/api/public/teams/" + t.getId() + "/crest?v=" + t.getCrestVersion();
+    }
+
+    public record TeamRes(Long id, String name, String managerName, String phone, String email, Long captainId, String crest) {
         public static TeamRes from(Team t) {
-            return new TeamRes(t.getId(), t.getName(), t.getManagerName(), t.getPhone(), t.getEmail(), t.getCaptain().getId());
+            return new TeamRes(t.getId(), t.getName(), t.getManagerName(), t.getPhone(), t.getEmail(), t.getCaptain().getId(),
+                    crestUrl(t));
         }
     }
 
@@ -28,11 +34,11 @@ public class ResponseDtos {
      * Team list item for the team registry screen. captainUsername is null while the captain is pending
      * (nobody claimed the team yet: the admin can send an invitation link).
      */
-    public record TeamSummaryRes(Long id, String name, Long captainId, String captainUsername, boolean captainPending,
-                                 int playerCount) {
+    public record TeamSummaryRes(Long id, String name, String crest, Long captainId, String captainUsername,
+                                 boolean captainPending, int playerCount) {
         public static TeamSummaryRes of(Team t, int playerCount) {
             var c = t.getCaptain();
-            return new TeamSummaryRes(t.getId(), t.getName(), c.getId(), c.isPending() ? null : c.getUsername(),
+            return new TeamSummaryRes(t.getId(), t.getName(), crestUrl(t), c.getId(), c.isPending() ? null : c.getUsername(),
                     c.isPending(), playerCount);
         }
     }

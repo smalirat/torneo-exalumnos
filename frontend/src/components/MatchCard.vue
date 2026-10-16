@@ -35,7 +35,7 @@ const place = computed(() => [
     <span v-if="date || place" class="date muted">{{ [date, place].filter(Boolean).join(' · ') }}</span>
     <div class="line">
       <span :class="['side', { win: isWinner(match.homeTeam.id) }]">
-        <TeamBadge :name="match.homeTeam.name" :size="22" /> {{ match.homeTeam.name }}
+        <TeamBadge :team="match.homeTeam" :size="22" /> {{ match.homeTeam.name }}
       </span>
       <span v-if="match.status === 'FINISHED'" class="score">
         <strong>{{ match.homeGoals }} - {{ match.awayGoals }}</strong>
@@ -43,7 +43,7 @@ const place = computed(() => [
       </span>
       <span v-else class="score muted">vs</span>
       <span :class="['side', 'right', { win: isWinner(match.awayTeam.id) }]">
-        {{ match.awayTeam.name }} <TeamBadge :name="match.awayTeam.name" :size="22" />
+        {{ match.awayTeam.name }} <TeamBadge :team="match.awayTeam" :size="22" />
       </span>
     </div>
     <span v-if="walkover && match.status === 'FINISHED'" class="wo">
