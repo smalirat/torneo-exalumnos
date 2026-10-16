@@ -31,3 +31,14 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Local / personal (not versioned) ###
+CLAUDE.md
+TODO.txt
+design/
+desgin/
+.claude/
+
+### Secrets ###
+.env
+.env.*
