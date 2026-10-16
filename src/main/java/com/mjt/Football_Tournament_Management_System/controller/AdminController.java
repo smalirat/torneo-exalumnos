@@ -100,6 +100,13 @@ public class AdminController {
         return cService.assignZone(id, req.getZoneId());
     }
 
+    @PostMapping("/categories/{id}/zone-draw")
+    @Operation(summary = "Draw unassigned teams into the category's zones at random, keeping zone sizes balanced")
+    public List<ResponseDtos.RegistrationRes> zoneDraw(@PathVariable Long id,
+                                                       @Valid @RequestBody AdminDtos.ZoneDrawReq req) {
+        return cService.drawZones(id, req.getRegistrationIds());
+    }
+
     @PostMapping("/zones/{id}/fixtures/round-robin")
     public List<ResponseDtos.MatchRes> rr(@PathVariable Long id,
                                           @RequestParam @DateTimeFormat(iso= DateTimeFormat.ISO.DATE_TIME) LocalDateTime start,

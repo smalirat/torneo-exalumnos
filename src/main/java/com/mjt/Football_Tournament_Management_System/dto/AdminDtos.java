@@ -118,6 +118,12 @@ public class AdminDtos {
         @NotNull private Long zoneId;
     }
 
+    @Data
+    public static class ZoneDrawReq {
+        /** Unassigned registrations of the tournament to draw into the category's zones. */
+        @NotEmpty private List<@NotNull Long> registrationIds;
+    }
+
     /**
      * Match result as per-player events; the score is derived from them (0-0 = no goal events).
      * If a team did not show up (present=false) no events are allowed and the other team wins 3-0.

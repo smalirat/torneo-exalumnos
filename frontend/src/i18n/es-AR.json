@@ -144,7 +144,14 @@
     "noTeamsInZone": "Sin equipos.",
     "needCategory": "Creá al menos una categoría en Inicio para poder asignar equipos.",
     "deleteZone": "Eliminar zona",
-    "deleteZoneConfirm": "Se eliminará \"{name}\". Solo es posible si no tiene equipos ni partidos."
+    "deleteZoneConfirm": "Se eliminará \"{name}\". Solo es posible si no tiene equipos ni partidos.",
+    "draw": "Sortear zonas",
+    "drawTitle": "Sortear zonas de {name}",
+    "drawHelp": "Los equipos elegidos se reparten al azar entre las zonas de la categoría, siempre a la que tenga menos equipos. Los que ya tienen zona no se mueven.",
+    "drawAll": "Todos",
+    "drawNone": "Ninguno",
+    "drawSubmit": "Sortear {n} equipos",
+    "drawDone": "Sorteo hecho: {n} equipos asignados."
   },
   "results": {
     "title": "Resultado del partido",

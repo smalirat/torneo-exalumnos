@@ -42,6 +42,8 @@ export const tournamentApi = {
   assignZone: (registrationId: number, zoneId: number) =>
     patch<Registration>(`/api/admin/registrations/${registrationId}/zone`, { zoneId }),
   createZone: (categoryId: number, name: string) => post<Zone>(`/api/admin/categories/${categoryId}/zones`, { name }),
+  drawZones: (categoryId: number, registrationIds: number[]) =>
+    post<Registration[]>(`/api/admin/categories/${categoryId}/zone-draw`, { registrationIds }),
 }
 
 export const teamApi = {

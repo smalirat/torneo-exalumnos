@@ -3,6 +3,7 @@ package com.mjt.Football_Tournament_Management_System.service;
 import com.mjt.Football_Tournament_Management_System.dto.ResponseDtos;
 import com.mjt.Football_Tournament_Management_System.entire.Category;
 import com.mjt.Football_Tournament_Management_System.entire.MatchGame;
+import com.mjt.Football_Tournament_Management_System.entire.Registration;
 import com.mjt.Football_Tournament_Management_System.entire.Tournament;
 import com.mjt.Football_Tournament_Management_System.entire.Zone;
 import com.mjt.Football_Tournament_Management_System.exception.ConflictException;
@@ -12,7 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /** Categories and zones of a tournament. */
@@ -26,6 +27,7 @@ public class CategoryService {
     private final ZoneRepository zoneRepo;
     private final RegistrationRepository regRepo;
     private final MatchRepository matchRepo;
+    private final Random random = new Random();
 
     public List<ResponseDtos.CategoryRes> listByTournament(Long tournamentId) {
         return categoryRepo.findByTournamentOrderByDisplayOrderAscIdAsc(findTournament(tournamentId)).stream()
@@ -97,6 +99,37 @@ public class CategoryService {
         }
         r.setZone(target);
         return ResponseDtos.RegistrationRes.from(r);
+    }
+
+    /**
+     * Random draw of unassigned teams into the category's zones: each team (in shuffled order) goes to the
+     * zone with fewest teams, ties broken by zone order. Teams already placed are not moved.
+     */
+    @Transactional
+    public List<ResponseDtos.RegistrationRes> drawZones(Long categoryId, List<Long> registrationIds) {
+        var category = findCategory(categoryId);
+        var zones = zoneRepo.findByCategoryOrderByDisplayOrderAscIdAsc(category);
+        if (zones.isEmpty()) throw new ConflictException("La categoría no tiene zonas");
+        var regs = new ArrayList<Registration>();
+        for (var id : new LinkedHashSet<>(registrationIds)) {
+            var r = regRepo.findById(id).orElseThrow(() -> NotFoundException.of("Inscripción", id));
+            if (!r.getTournament().getId().equals(category.getTournament().getId())) {
+                throw new ConflictException("La inscripción de " + r.getTeam().getName() + " es de otro campeonato");
+            }
+            if (r.getZone() != null) {
+                throw new ConflictException(r.getTeam().getName() + " ya tiene zona asignada");
+            }
+            regs.add(r);
+        }
+        var sizes = new LinkedHashMap<Zone, Integer>();
+        zones.forEach(z -> sizes.put(z, regRepo.findByZone(z).size()));
+        Collections.shuffle(regs, random);
+        for (var r : regs) {
+            var smallest = sizes.entrySet().stream().min(Map.Entry.comparingByValue()).orElseThrow().getKey();
+            r.setZone(smallest);
+            sizes.merge(smallest, 1, Integer::sum);
+        }
+        return regs.stream().map(ResponseDtos.RegistrationRes::from).toList();
     }
 
     public List<ResponseDtos.RegistrationRes> zoneRegistrations(Long zoneId) {
