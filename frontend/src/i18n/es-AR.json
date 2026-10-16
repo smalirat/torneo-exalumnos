@@ -310,7 +310,8 @@
     "following": "Siguiendo",
     "followers": "{n} seguidores",
     "title": "Campeonatos que sigo",
-    "empty": "Todavía no seguís ningún campeonato. Entrá a uno y tocá \"Seguir\" para recibir sus novedades."
+    "empty": "Todavía no seguís ningún campeonato. Entrá a uno y tocá \"Seguir\" para recibir sus novedades.",
+    "followerOne": "1 seguidor"
   },
   "share": {
     "share": "Compartir",
@@ -321,5 +322,31 @@
     "title": "Notificaciones",
     "empty": "No hay novedades. Acá vas a ver los fixtures y resultados de los campeonatos que seguís.",
     "findTournaments": "Ver campeonatos"
+  },
+  "publicSite": {
+    "brand": "Campeonatos",
+    "panel": "Mi panel",
+    "title": "Campeonatos",
+    "empty": "Todavía no hay campeonatos publicados.",
+    "otherTournaments": "Otros campeonatos",
+    "notFound": "No encontramos ese campeonato.",
+    "noCategories": "Este campeonato todavía no tiene categorías.",
+    "noResults": "Todavía no hay resultados.",
+    "noUpcoming": "No hay partidos por jugar.",
+    "standingsHelp": "PTS: 3 por ganar, 1 por empatar y 1 de presencia por cada partido al que el equipo se presentó.",
+    "scorers": "Goleadores",
+    "figures": "Figuras",
+    "annualHelp": "Rankings acumulados de la temporada {year} (Apertura y Clausura).",
+    "tabs": {
+      "resultados": "Resultados",
+      "posiciones": "Posiciones",
+      "proximos": "Próximos partidos",
+      "goleadores": "Goleadores",
+      "definiciones": "Definiciones"
+    },
+    "special": {
+      "PROMOTION": "Promociones",
+      "FINAL": "Finales"
+    }
   }
 }

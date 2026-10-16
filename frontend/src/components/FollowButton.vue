@@ -42,7 +42,7 @@ async function toggle() {
   >
     <AppIcon :name="following ? 'check' : 'bell'" :size="18" />
     {{ following ? t('follow.following') : t('follow.follow') }}
-    <span class="count">· {{ t('follow.followers', { n: followers }) }}</span>
+    <span class="count">· {{ followers === 1 ? t('follow.followerOne') : t('follow.followers', { n: followers }) }}</span>
   </button>
 </template>
 

@@ -28,7 +28,8 @@ This system allows **administrators** to create tournaments and manage fixtures,
 * 🧮 Auto-generate **round-robin fixtures**
 * 📅 Schedule matches manually
 * 📝 Enter match scores / update results
-* 🔔 Notifications support (Pluggable)
+* 🎲 Random zone draw per category (balanced zone sizes)
+* 🔔 Notifications for followers (fixture, results, Excel imports)
 
 ### 🏟️ Teams
 
@@ -42,6 +43,8 @@ This system allows **administrators** to create tournaments and manage fixtures,
 * 📃 View list of tournaments
 * 📅 View tournament fixtures
 * 📌 See registered teams
+* 👀 Public site (`/ver`): results by round, standings, upcoming matches, scorers; share links
+* ⭐ Follow tournaments and get their news (`/api/me/follows`, `/api/me/notifications`)
 
 ---
 

@@ -12,6 +12,10 @@
   --danger: #c0392b;
   --radius: 12px;
   --shadow: 0 1px 3px rgba(20, 39, 90, 0.08);
+  /* Public pages: maroon + condensed titles (visual inspiration only, see design/NOTES.md) */
+  --public: #8b0f08;
+  --public-dark: #5e0a05;
+  --condensed: 'Roboto Condensed', 'Roboto', system-ui, sans-serif;
 
   font-family: 'Roboto', system-ui, sans-serif;
   font-size: 15px;

@@ -29,6 +29,10 @@ npm run build      # chequeo de tipos (vue-tsc) + build
 
 | Ruta | Quién | Qué |
 | ---- | ----- | --- |
+| `/ver` | todos | Vista pública: campeonatos por temporada |
+| `/ver/:id` | todos | Vista pública del campeonato: resultados por fecha, posiciones, próximos partidos, goleadores, definiciones; compartir y seguir |
+| `/siguiendo` | logueado | Campeonatos que sigo |
+| `/notificaciones` | logueado | Novedades de los campeonatos seguidos (badge de no leídas en el menú) |
 | `/` | todos | Mis campeonatos; el admin crea campeonatos (FAB +) |
 | `/login`, `/registro` | todos | Login y alta de capitán |
 | `/equipos` | logueado | Registro de equipos: plantel, inscripción, renombrar/eliminar |
@@ -41,4 +45,4 @@ npm run build      # chequeo de tipos (vue-tsc) + build
 | `/campeonatos/:id/fixture` | todos | Fixture por fecha (‹ Fecha N ›); admin carga resultados |
 | `/campeonatos/:id/rankings` | todos | Goleadores y amonestados |
 | `/campeonatos/:id/definiciones` | todos | Promociones y finales; admin las crea, recalcula y carga resultados |
-| `/campeonatos/:id/equipos` | admin | Asignar equipos a zonas, crear zonas |
+| `/campeonatos/:id/equipos` | admin | Asignar equipos a zonas (a mano o por sorteo), crear zonas |

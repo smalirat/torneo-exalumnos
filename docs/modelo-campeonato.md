@@ -17,7 +17,7 @@ Campeonato (Tournament)   etapa APERTURA / CLAUSURA
 - Un equipo juega en **una sola zona por campeonato** (unique `tournament_id, team_id`).
 - El capitán inscribe su equipo en el **campeonato**; queda sin asignar (`zoneId = null`).
 - El admin le asigna categoría y zona (`PATCH /api/admin/registrations/{id}/zone`). Puede reasignarlo a cualquier zona del mismo campeonato mientras no tenga partidos.
-- Futuro: asignación automática para equipos que ya jugaron (p. ej. según categoría del torneo anterior).
+- **Sorteo de zonas** (`POST /api/admin/categories/{id}/zone-draw` con `registrationIds`): el admin elige qué equipos sin zona van a una categoría y el sistema los reparte al azar entre sus zonas, siempre a la que tenga menos equipos (desempata el orden de las zonas). No mueve a los que ya tienen zona. Con una sola categoría la UI preselecciona a todos los sin asignar.
 - La tabla de posiciones es por zona. Incluye los **partidos interzonales**: partidos regulares sin zona entre equipos de distintas zonas del mismo campeonato (`POST /api/admin/fixtures/manual` con `tournamentId`), que suman en la tabla de la zona de cada equipo.
 - Cada partido puede tener número de fecha (`round`), etiqueta de fecha especial (`roundLabel`: "Interzonal", "Repetición en zonas"), campo (`venue`), cancha (`pitch`) y una nota libre (`notes`). Se editan con `PATCH /api/admin/matches/{id}`. El todos contra todos numera las fechas solo.
 - **Frontend:** si una categoría tiene una sola zona, no mostrar "Zona 1" (la API devuelve `zoneCount` en cada categoría).
@@ -50,3 +50,16 @@ Campeonato (Tournament)   etapa APERTURA / CLAUSURA
 - **Penales:** si una promoción/final termina empatada (y se presentaron los dos), hay que cargar `homePenalties`/`awayPenalties` junto con el resultado; no pueden empatar. En cualquier otro caso los penales se rechazan (400).
 - Cada partido devuelve `winner` (goles, y si hubo empate, penales); en un partido regular empatado es `null`.
 - Ejemplos: 7º de la A vs 3º de la B (promoción); 1º del Apertura vs 1º del Clausura (final).
+
+## Seguir campeonatos y notificaciones
+
+- Cualquier usuario logueado puede seguir un campeonato (`PUT`/`DELETE /api/me/follows/{id}`, idempotentes). La cantidad de seguidores es pública (`GET /api/public/tournaments/{id}/followers`, que además dice si el que pregunta lo sigue cuando manda token).
+- Las novedades son por campeonato (`notifications.tournament_id`) y las ve quien lo sigue (`GET /api/me/notifications`). Se generan al publicar fixture o un partido nuevo, al cargar un resultado y al aplicar la planilla Excel.
+- Leído / no leído: el usuario guarda `notifications_seen_at`; todo lo más nuevo cuenta como no leído. Abrir la pantalla de notificaciones llama a `POST /api/me/notifications/seen`.
+- Por ahora solo dentro de la app (badge en el menú). Mail o push quedan para más adelante.
+
+## Vista pública
+
+- `/ver` (todos los campeonatos por temporada) y `/ver/:id` (Resultados, Posiciones, Próximos partidos, Goleadores y Definiciones), sin login y pensada para celular. Categoría, zona y pestaña quedan en la URL: el link compartido abre exactamente lo mismo.
+- Goleadores y figuras: si el campeonato pertenece a una temporada se muestran los totales anuales (los del Excel); si no, los goles cargados por partido.
+- Estética inspirada en la referencia de rugby (bordó, títulos condensados); sin marcas ni lógica de ese deporte.
