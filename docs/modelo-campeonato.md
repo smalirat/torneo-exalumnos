@@ -84,3 +84,13 @@ Campeonato (Tournament)   etapa APERTURA / CLAUSURA
 - Toda referencia a un equipo en la API (`TeamRef`, `TeamRes`, `TeamSummaryRes`) trae `crest`: la URL `/api/public/teams/{id}/crest?v=…` (cacheada un año, la versión la invalida) o `null`.
 - **Sin escudo no se muestra nada** (no hay más círculos de colores). En Registro de equipos y en la página del equipo, el admin o el capitán dueño ven un círculo punteado "+" para subirlo, y una × para quitarlo (`PUT|DELETE /api/teams/{id}/crest`).
 
+## Estado de las ediciones (manual, una sola activa)
+
+- El admin mueve cada edición a mano desde su Inicio (`PATCH /api/admin/tournaments/{id}/status`):
+  **En preparación** (`DRAFT`) → **Inscripción abierta** (`OPEN`) → **En juego** (`LIVE`) → **Finalizado** (`COMPLETE`), y también hacia atrás (un torneo finalizado se puede reabrir).
+- **Solo una edición activa** (`OPEN` o `LIVE`). Activar otra devuelve 409 con el nombre de la activa; con `finishActive: true` la activa pasa a Finalizado en el mismo paso (la web lo pregunta con "Finalizarla y continuar").
+- Los **capitanes** solo inscriben su equipo con la edición en `OPEN`; empezar el torneo cierra la inscripción. El admin inscribe y corrige en cualquier estado.
+- Las **fechas de inscripción son opcionales e informativas**: se muestran ("Inscripción hasta el …") pero no abren ni cierran nada.
+- Una edición nueva nace En preparación. La **importación del Excel** deja sus ediciones nuevas Finalizadas y, si no hay ninguna activa, pone En juego la más nueva (Clausura antes que Apertura).
+- El inicio público muestra la edición activa; si no hay, la más nueva.
+

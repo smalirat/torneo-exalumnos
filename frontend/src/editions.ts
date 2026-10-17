@@ -1,4 +1,5 @@
 import type { Tournament } from './api/types'
+import { t } from './i18n'
 
 const STAGE_ORDER: Record<string, number> = { CLAUSURA: 2, APERTURA: 1 }
 
@@ -10,8 +11,16 @@ export function sortEditions(list: Tournament[]): Tournament[] {
     || b.id - a.id)
 }
 
-/** The edition the home page shows: the newest one being played, otherwise the newest one. */
+/** Registration period label: "1/3/2026 – 20/3/2026", "Hasta el 20/3/2026" or "Desde el 1/3/2026" */
+export function registrationLabel(start: string | null, end: string | null): string {
+  const fmt = (d: string) => new Date(`${d}T00:00`).toLocaleDateString('es-AR')
+  if (start && end) return `${fmt(start)} – ${fmt(end)}`
+  if (end) return t('tournaments.until', { date: fmt(end) })
+  return start ? t('tournaments.since', { date: fmt(start) }) : ''
+}
+
+/** The edition the home page shows: the active one (registration open or being played), otherwise the newest. */
 export function currentEdition(list: Tournament[]): Tournament | null {
   const sorted = sortEditions(list)
-  return sorted.find((x) => x.status === 'LIVE') ?? sorted[0] ?? null
+  return sorted.find((x) => x.status === 'OPEN' || x.status === 'LIVE') ?? sorted[0] ?? null
 }

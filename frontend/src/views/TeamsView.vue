@@ -23,7 +23,7 @@ const jerseyNo = ref<number | null>(null)
 const registerTournamentId = ref<number | null>(null)
 const notice = ref('')
 
-const openTournaments = computed(() => tournaments.value.filter((x) => x.status === 'OPEN' || x.status === 'DRAFT'))
+const openTournaments = computed(() => tournaments.value.filter((x) => x.status === 'OPEN' || (isAdmin.value && x.status !== 'COMPLETE')))
 
 onMounted(async () => {
   ;[teams.value, tournaments.value] = await Promise.all([teamApi.list(), tournamentApi.list()])

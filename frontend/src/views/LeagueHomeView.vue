@@ -152,6 +152,9 @@ function changeEdition(event: Event) {
             <h1>{{ tournament?.name ?? t('league.noEditionTitle') }}</h1>
             <div v-if="tournament" class="hero-actions">
               <span class="status">{{ t(`tournaments.statuses.${tournament.status}`) }}</span>
+              <span v-if="tournament.status === 'OPEN' && tournament.registrationEnd" class="until">
+                {{ t('league.registrationUntil', { date: new Date(`${tournament.registrationEnd}T00:00`).toLocaleDateString('es-AR') }) }}
+              </span>
               <ShareButton :url="publicUrl" :title="tournament.name" tone="light" />
             </div>
           </div>
@@ -298,6 +301,7 @@ function changeEdition(event: Event) {
 .hero h1 { font-family: var(--condensed); text-transform: uppercase; font-size: clamp(30px, 7vw, 48px); line-height: 1.05; }
 .hero-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
 .status { font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 999px; background: rgba(255, 255, 255, 0.18); }
+.until { font-size: 13px; opacity: 0.85; }
 .edition { display: flex; flex-direction: column; gap: 4px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; opacity: 0.95; }
 .edition select {
   font: inherit; font-size: 15px; text-transform: none; letter-spacing: 0; color: #fff; background: rgba(255, 255, 255, 0.12);

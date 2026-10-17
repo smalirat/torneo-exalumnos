@@ -1,14 +1,13 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import type { Tournament, TournamentStatus } from '../api/types'
+import type { Tournament } from '../api/types'
 import type { TournamentInput } from '../api/endpoints'
 import { t } from '../i18n'
 
-// Create/edit form for a tournament. The status selector only shows when editing.
+// Create/edit form for a tournament. The status is changed apart (EditionStatus); dates are informative.
 const props = defineProps<{ initial?: Tournament; submitLabel: string }>()
 const emit = defineEmits<{ submit: [value: TournamentInput]; cancel: [] }>()
 
-const STATUSES: TournamentStatus[] = ['DRAFT', 'OPEN', 'CLOSED', 'LIVE', 'COMPLETE']
 const form = ref<TournamentInput>({
   name: props.initial?.name ?? '',
   location: props.initial?.location ?? '',
@@ -16,7 +15,6 @@ const form = ref<TournamentInput>({
   registrationEnd: props.initial?.registrationEnd ?? '',
   matchStart: props.initial?.matchStart ?? '',
   matchEnd: props.initial?.matchEnd ?? '',
-  status: props.initial?.status ?? 'OPEN',
   seasonYear: props.initial?.seasonYear ?? null,
   stage: props.initial?.stage ?? null,
 })
@@ -26,6 +24,8 @@ function submit() {
   emit('submit', {
     ...v,
     location: v.location || null,
+    registrationStart: v.registrationStart || null,
+    registrationEnd: v.registrationEnd || null,
     matchStart: v.matchStart || null,
     matchEnd: v.matchEnd || null,
     seasonYear: v.seasonYear || null,
@@ -61,11 +61,11 @@ function submit() {
     <div class="row">
       <div class="field">
         <label for="t-start">{{ t('tournaments.registrationStart') }}</label>
-        <input id="t-start" v-model="form.registrationStart" class="input" type="date" required />
+        <input id="t-start" v-model="form.registrationStart" class="input" type="date" />
       </div>
       <div class="field">
         <label for="t-end">{{ t('tournaments.registrationEnd') }}</label>
-        <input id="t-end" v-model="form.registrationEnd" class="input" type="date" required />
+        <input id="t-end" v-model="form.registrationEnd" class="input" type="date" />
       </div>
     </div>
     <div class="row">
@@ -78,12 +78,7 @@ function submit() {
         <input id="t-mend" v-model="form.matchEnd" class="input" type="date" />
       </div>
     </div>
-    <div v-if="initial" class="field">
-      <label for="t-status">{{ t('tournaments.status') }}</label>
-      <select id="t-status" v-model="form.status" class="select">
-        <option v-for="s in STATUSES" :key="s" :value="s">{{ t(`tournaments.statuses.${s}`) }}</option>
-      </select>
-    </div>
+    <p class="muted small">{{ t('tournaments.datesHelp') }}</p>
     <slot name="error" />
     <div class="actions">
       <button type="button" class="btn secondary" @click="emit('cancel')">{{ t('tournaments.cancel') }}</button>
@@ -96,4 +91,5 @@ function submit() {
 .row { display: flex; gap: 12px; }
 .row .field { flex: 1; }
 .actions { display: flex; gap: 10px; justify-content: flex-end; }
+.small { font-size: 13px; margin: 0 0 12px; }
 </style>

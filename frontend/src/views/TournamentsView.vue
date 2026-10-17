@@ -6,6 +6,7 @@ import TournamentForm from '../components/TournamentForm.vue'
 import { tournamentApi, type TournamentInput } from '../api/endpoints'
 import type { Tournament } from '../api/types'
 import { isAdmin, isLoggedIn } from '../auth'
+import { registrationLabel } from '../editions'
 import { t } from '../i18n'
 
 const tournaments = ref<Tournament[] | null>(null)
@@ -27,7 +28,6 @@ async function create(input: TournamentInput) {
   }
 }
 
-const formatDate = (d: string | null) => (d ? new Date(`${d}T00:00`).toLocaleDateString('es-AR') : '—')
 
 /** Tournaments grouped by season (newest first); tournaments without season go last. */
 const groups = computed(() => {
@@ -67,8 +67,8 @@ const groups = computed(() => {
         <div>
           <h2>{{ tour.name }}</h2>
           <p class="muted">{{ t(`tournaments.statuses.${tour.status}`) }}<template v-if="tour.location"> · {{ tour.location }}</template></p>
-          <p class="muted small">
-            {{ t('tournaments.registration') }}: {{ formatDate(tour.registrationStart) }} – {{ formatDate(tour.registrationEnd) }}
+          <p v-if="tour.registrationStart || tour.registrationEnd" class="muted small">
+            {{ t('tournaments.registration') }}: {{ registrationLabel(tour.registrationStart, tour.registrationEnd) }}
           </p>
         </div>
       </RouterLink>

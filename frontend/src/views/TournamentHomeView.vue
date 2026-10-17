@@ -5,11 +5,13 @@ import TournamentLayout from '../layouts/TournamentLayout.vue'
 import AppIcon from '../components/AppIcon.vue'
 import BaseModal from '../components/BaseModal.vue'
 import ConfirmButton from '../components/ConfirmButton.vue'
+import EditionStatus from '../components/EditionStatus.vue'
 import InlineEdit from '../components/InlineEdit.vue'
 import TournamentForm from '../components/TournamentForm.vue'
 import { tournamentApi, type TournamentInput } from '../api/endpoints'
 import type { Category, Tournament } from '../api/types'
 import { isAdmin } from '../auth'
+import { registrationLabel } from '../editions'
 import { t } from '../i18n'
 
 const route = useRoute()
@@ -35,7 +37,6 @@ async function addCategory() {
   }
 }
 
-const formatDate = (d: string | null) => (d ? new Date(`${d}T00:00`).toLocaleDateString('es-AR') : '—')
 
 // --- admin: edit / delete ---
 const editing = ref(false)
@@ -95,16 +96,12 @@ const asTournament = (x: unknown) => x as Tournament
 
     <div v-if="tournament" class="facts">
       <div class="card fact">
-        <span class="dot" />
-        <div>
-          <p class="label">{{ t('tournaments.status') }}</p>
-          <p class="value">{{ t(`tournaments.statuses.${tournament.status}`) }}</p>
-        </div>
+        <EditionStatus :tournament="asTournament(tournament)" @changed="layoutKey++" />
       </div>
-      <div class="card fact">
+      <div v-if="tournament.registrationStart || tournament.registrationEnd" class="card fact">
         <div>
           <p class="label">{{ t('tournaments.registration') }}</p>
-          <p class="value plain">{{ formatDate(tournament.registrationStart) }} – {{ formatDate(tournament.registrationEnd) }}</p>
+          <p class="value plain">{{ registrationLabel(tournament.registrationStart, tournament.registrationEnd) }}</p>
         </div>
       </div>
     </div>

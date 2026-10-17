@@ -25,11 +25,11 @@ export const authApi = {
 export interface TournamentInput {
   name: string
   location: string | null
-  registrationStart: string
-  registrationEnd: string
+  /** Informative only: shown to the public, they do not open or close registration */
+  registrationStart: string | null
+  registrationEnd: string | null
   matchStart: string | null
   matchEnd: string | null
-  status: TournamentStatus
   seasonYear: number | null
   stage: 'APERTURA' | 'CLAUSURA' | null
 }
@@ -39,6 +39,8 @@ export const tournamentApi = {
   fixtures: (id: number) => get<Match[]>(`/api/public/tournaments/${id}/fixtures`),
   create: (body: TournamentInput) => post<Tournament>('/api/admin/tournaments', body),
   update: (id: number, body: TournamentInput) => put<Tournament>(`/api/admin/tournaments/${id}`, body),
+  changeStatus: (id: number, status: TournamentStatus, finishActive = false) =>
+    patch<Tournament>(`/api/admin/tournaments/${id}/status`, { status, finishActive }),
   remove: (id: number) => del(`/api/admin/tournaments/${id}`),
   renameCategory: (categoryId: number, name: string) => put<Category>(`/api/admin/categories/${categoryId}`, { name }),
   removeCategory: (categoryId: number) => del(`/api/admin/categories/${categoryId}`),

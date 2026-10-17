@@ -180,10 +180,8 @@ public class TeamService {
     public ResponseDtos.RegistrationRes registerTeamForTournament(Long teamId, Long tournamentId, Authentication auth) {
         var team = ownedTeam(teamId, auth);
         var t = findTournament(tournamentId);
-        var today = java.time.LocalDate.now();
-        // The registration window applies to captains; the organizer can register teams at any time
-        if (!isAdmin(auth) && (t.getRegistrationStart() == null || t.getRegistrationEnd() == null
-                || today.isBefore(t.getRegistrationStart()) || today.isAfter(t.getRegistrationEnd()))) {
+        // Captains register only while the admin keeps registration open; the organizer can register at any time
+        if (!isAdmin(auth) && t.getStatus() != Tournament.Status.OPEN) {
             throw new ConflictException("La inscripción al campeonato no está abierta");
         }
         if (regRepo.existsByTournamentAndTeam(t, team)) {

@@ -11,5 +11,6 @@ public interface TournamentRepository extends JpaRepository<Tournament, Long> {
     List<Tournament> findBySeasonOrderByStageAscIdAsc(Season season);
     boolean existsBySeasonAndStage(Season season, Tournament.Stage stage);
     java.util.Optional<Tournament> findBySeasonAndStage(Season season, Tournament.Stage stage);
+    List<Tournament> findByStatusIn(java.util.Collection<Tournament.Status> statuses);
 }
 

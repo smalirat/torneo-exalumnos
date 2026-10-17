@@ -38,6 +38,13 @@ public class AdminController {
         return tService.update(id, req);
     }
 
+    @PatchMapping("/tournaments/{id}/status")
+    @Operation(summary = "Change the edition's status (DRAFT/OPEN/LIVE/COMPLETE); only one active (OPEN or LIVE): "
+            + "409 if another is, unless finishActive=true finishes it in the same step")
+    public ResponseDtos.TournamentRes changeStatus(@PathVariable Long id, @Valid @RequestBody AdminDtos.TournamentStatusReq req) {
+        return tService.changeStatus(id, req);
+    }
+
     @DeleteMapping("/tournaments/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @Operation(summary = "Delete an empty tournament (409 if it has registrations or matches)")

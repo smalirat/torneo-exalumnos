@@ -13,6 +13,7 @@ public class Tournament {
     private String name;
     private String location;
 
+    /** Registration period: informative only (shown to the public); the status decides who can register. */
     private LocalDate registrationStart;
     private LocalDate registrationEnd;
 
@@ -20,7 +21,8 @@ public class Tournament {
     private LocalDate matchEnd;
 
     @Enumerated(EnumType.STRING)
-    private Status status = Status.OPEN;
+    @Column(nullable = false)
+    private Status status = Status.DRAFT;
 
     // Year it belongs to and whether it is the Apertura or the Clausura (both optional)
     @ManyToOne
@@ -29,7 +31,15 @@ public class Tournament {
     @Enumerated(EnumType.STRING)
     private Stage stage;
 
-    public enum Status { DRAFT, OPEN, CLOSED, LIVE, COMPLETE }
+    /**
+     * Moved by hand by the admin: DRAFT -> OPEN (captains can register) -> LIVE (being played; registration
+     * closed) -> COMPLETE (can be reopened). Only one edition can be active (OPEN or LIVE) at a time.
+     */
+    public enum Status {
+        DRAFT, OPEN, LIVE, COMPLETE;
+
+        public boolean isActive() { return this == OPEN || this == LIVE; }
+    }
 
     public enum Stage { APERTURA, CLAUSURA }
 }

@@ -40,8 +40,23 @@ public class TournamentService {
         t.setName(req.getName()); t.setLocation(req.getLocation());
         t.setRegistrationStart(req.getRegistrationStart()); t.setRegistrationEnd(req.getRegistrationEnd());
         t.setMatchStart(req.getMatchStart()); t.setMatchEnd(req.getMatchEnd());
-        t.setStatus(req.getStatus());
         setSeason(t, req.getSeasonYear(), req.getStage());
+        return ResponseDtos.TournamentRes.from(t);
+    }
+
+    /** Moves an edition to any status (also back, e.g. reopening a finished one); only one can be active. */
+    @Transactional
+    public ResponseDtos.TournamentRes changeStatus(Long id, AdminDtos.TournamentStatusReq req) {
+        var t = findTournament(id);
+        if (req.getStatus().isActive()) {
+            var others = tournamentRepo.findByStatusIn(List.of(Tournament.Status.OPEN, Tournament.Status.LIVE)).stream()
+                    .filter(o -> !o.getId().equals(t.getId())).toList();
+            if (!others.isEmpty() && !req.isFinishActive()) {
+                throw new ConflictException("Ya hay una edición activa: " + others.get(0).getName());
+            }
+            others.forEach(o -> o.setStatus(Tournament.Status.COMPLETE));
+        }
+        t.setStatus(req.getStatus());
         return ResponseDtos.TournamentRes.from(t);
     }
 

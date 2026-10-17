@@ -44,10 +44,12 @@
     "cancel": "Cancelar",
     "status": "Estado",
     "registration": "Inscripción",
+    "until": "Hasta el {date}",
+    "since": "Desde el {date}",
+    "datesHelp": "Las fechas son informativas (se muestran en la página pública). La inscripción se abre y se cierra con el estado de la edición.",
     "statuses": {
       "DRAFT": "En preparación",
       "OPEN": "Inscripción abierta",
-      "CLOSED": "Inscripción cerrada",
       "LIVE": "En juego",
       "COMPLETE": "Finalizado"
     },
@@ -149,6 +151,23 @@
     "add": "Agregar escudo",
     "change": "Cambiar escudo",
     "remove": "Quitar escudo"
+  },
+  "editionStatus": {
+    "to": {
+      "DRAFT": { "OPEN": "Abrir inscripción", "LIVE": "Empezar torneo" },
+      "OPEN": { "LIVE": "Empezar torneo", "DRAFT": "Volver a preparación" },
+      "LIVE": { "COMPLETE": "Finalizar", "OPEN": "Reabrir inscripción" },
+      "COMPLETE": { "LIVE": "Reabrir torneo" }
+    },
+    "hint": {
+      "DRAFT": "Nadie la ve todavía como edición actual. Los capitanes no pueden inscribirse.",
+      "OPEN": "Los capitanes pueden inscribir su equipo. Es la edición que muestra el inicio.",
+      "LIVE": "Se está jugando: la inscripción está cerrada. Es la edición que muestra el inicio.",
+      "COMPLETE": "Terminada. Queda en el historial y se puede reabrir."
+    },
+    "conflictTitle": "Ya hay una edición activa",
+    "conflictText": "Solo puede haber una edición activa. Si seguís, la otra queda Finalizada y {name} pasa a ser la activa.",
+    "finishAndContinue": "Finalizarla y continuar"
   },
   "invite": {
     "title": "Capitán de {name}",
@@ -397,6 +416,7 @@
       "historia": "Historia"
     },
     "lastRound": "Última fecha",
+    "registrationUntil": "Inscripción hasta el {date}",
     "table": "Tabla de posiciones",
     "nextRound": "Próxima fecha",
     "seeFixture": "Ver fixture",

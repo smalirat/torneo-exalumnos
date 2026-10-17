@@ -1,6 +1,7 @@
 // Mirrors backend ResponseDtos / AuthDtos (dto/ResponseDtos.java)
 
-export type TournamentStatus = 'DRAFT' | 'OPEN' | 'CLOSED' | 'LIVE' | 'COMPLETE'
+/** Moved by hand by the admin; only one edition can be OPEN or LIVE at a time */
+export type TournamentStatus = 'DRAFT' | 'OPEN' | 'LIVE' | 'COMPLETE'
 
 export interface Tournament {
   id: number

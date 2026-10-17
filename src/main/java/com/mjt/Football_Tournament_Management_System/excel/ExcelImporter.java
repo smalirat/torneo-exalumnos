@@ -80,10 +80,19 @@ public class ExcelImporter {
             importSanctions();
             importYellows();
             importChampions();
+            keepOneActive();
             report.notices.addAll(wb.notices);
         }
 
         // ---------------------------------------------------------------- tournaments, groups, registrations
+
+        /** If no edition is active, the newest one of this workbook (Clausura over Apertura) becomes "being played". */
+        void keepOneActive() {
+            if (!tournamentRepo.findByStatusIn(List.of(Tournament.Status.OPEN, Tournament.Status.LIVE)).isEmpty()) return;
+            var newest = tournaments.containsKey(Tournament.Stage.CLAUSURA) ? tournaments.get(Tournament.Stage.CLAUSURA)
+                    : tournaments.get(Tournament.Stage.APERTURA);
+            if (newest != null) newest.setStatus(Tournament.Status.LIVE);
+        }
 
         Tournament tournament(Tournament.Stage stage) {
             return tournaments.computeIfAbsent(stage, s -> tournamentRepo.findBySeasonAndStage(season, s).orElseGet(() -> {
@@ -91,7 +100,8 @@ public class ExcelImporter {
                 t.setName((s == Tournament.Stage.APERTURA ? "Apertura " : "Clausura ") + wb.year);
                 t.setSeason(season);
                 t.setStage(s);
-                t.setStatus(Tournament.Status.LIVE);
+                // Imported editions are history; keepOneActive() leaves the newest active if none is
+                t.setStatus(Tournament.Status.COMPLETE);
                 report.created(TOURNAMENTS, t.getName());
                 return tournamentRepo.save(t);
             }));

@@ -273,17 +273,44 @@ class AuthAndTeamApiTests {
         String admin = login("admin", "admin123");
         long empty = newTournament(admin);
         newCategory(admin, empty, "A");
-        String body = "{\"name\":\"Renombrado\",\"registrationStart\":\"2026-01-01\","
-                + "\"registrationEnd\":\"2026-12-31\",\"status\":\"LIVE\"}";
-        put("/api/admin/tournaments/" + empty, body, admin)
+        // Registration dates are optional (informative); the status is changed apart
+        put("/api/admin/tournaments/" + empty, "{\"name\":\"Renombrado\"}", admin)
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.name").value("Renombrado"))
-                .andExpect(jsonPath("$.status").value("LIVE"));
+                .andExpect(jsonPath("$.status").value("DRAFT"));
         delete("/api/admin/tournaments/" + empty, admin).andExpect(status().isNoContent());
 
         long used = newTournament(admin);
         enroll(newTeam(admin), used, admin).andExpect(status().isOk());
         delete("/api/admin/tournaments/" + used, admin).andExpect(status().isConflict());
+    }
+
+    @Test
+    void editionsMoveByHandAndOnlyOneIsActive() throws Exception {
+        String admin = login("admin", "admin123");
+        String captain = register(uniqueUser());
+        long team = newTeam(captain);
+        long apertura = newTournament(admin), clausura = newTournament(admin);
+
+        // Captains register only while registration is open
+        post("/api/teams/" + team + "/tournaments/" + clausura + "/register", "", captain).andExpect(status().isConflict());
+
+        String url = "/api/admin/tournaments/";
+        patch(url + apertura + "/status", "{\"status\":\"LIVE\",\"finishActive\":true}", admin).andExpect(status().isOk());
+        patch(url + clausura + "/status", "{\"status\":\"OPEN\"}", admin).andExpect(status().isConflict());
+        patch(url + clausura + "/status", "{\"status\":\"OPEN\",\"finishActive\":true}", admin)
+                .andExpect(status().isOk()).andExpect(jsonPath("$.status").value("OPEN"));
+        mvc.perform(get("/api/public/tournaments"))
+                .andExpect(jsonPath("$[?(@.id == " + apertura + ")].status").value("COMPLETE"));
+        post("/api/teams/" + team + "/tournaments/" + clausura + "/register", "", captain).andExpect(status().isOk());
+
+        // Starting it closes registration; a finished edition can be reopened
+        patch(url + clausura + "/status", "{\"status\":\"LIVE\"}", admin).andExpect(status().isOk());
+        String other = register(uniqueUser());
+        post("/api/teams/" + newTeam(other) + "/tournaments/" + clausura + "/register", "", other).andExpect(status().isConflict());
+        patch(url + clausura + "/status", "{\"status\":\"COMPLETE\"}", admin).andExpect(status().isOk());
+        patch(url + apertura + "/status", "{\"status\":\"LIVE\"}", admin)
+                .andExpect(status().isOk()).andExpect(jsonPath("$.status").value("LIVE"));
     }
 
     @Test
@@ -945,8 +972,15 @@ class AuthAndTeamApiTests {
                 .andExpect(status().isOk())).get("id").asLong();
     }
 
+    /** Captains can only register while registration is open: the admin opens it (finishing any other active edition). */
     private ResultActions enroll(long teamId, long tournamentId, String token) throws Exception {
+        openRegistration(tournamentId);
         return post("/api/teams/" + teamId + "/tournaments/" + tournamentId + "/register", "", token);
+    }
+
+    private void openRegistration(long tournamentId) throws Exception {
+        patch("/api/admin/tournaments/" + tournamentId + "/status", "{\"status\":\"OPEN\",\"finishActive\":true}",
+                login("admin", "admin123")).andExpect(status().isOk());
     }
 
     /** Registers the team in the category's tournament and assigns it to the category's first zone. */

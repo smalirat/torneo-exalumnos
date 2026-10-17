@@ -18,7 +18,8 @@ public class AdminDtos {
     public static class CreateTournamentReq {
         @NotBlank private String name;
         private String location;
-        @NotNull private LocalDate registrationStart, registrationEnd;
+        /** Informative only: shown to the public, they do not open or close registration */
+        private LocalDate registrationStart, registrationEnd;
         private LocalDate matchStart, matchEnd;
         /** Season year (created if missing) and stage; both optional. */
         @Min(1900) @Max(2100) private Integer seasonYear;
@@ -28,9 +29,8 @@ public class AdminDtos {
     public static class UpdateTournamentReq {
         @NotBlank private String name;
         private String location;
-        @NotNull private LocalDate registrationStart, registrationEnd;
+        private LocalDate registrationStart, registrationEnd;
         private LocalDate matchStart, matchEnd;
-        @NotNull private Tournament.Status status;
         @Min(1900) @Max(2100) private Integer seasonYear;
         private Tournament.Stage stage;
     }
@@ -99,6 +99,16 @@ public class AdminDtos {
         @NotNull @Min(1900) @Max(2100) private Integer year;
         @NotBlank @Size(max = 20) private String categoryName;
         @NotNull private Long teamId;
+    }
+
+    /**
+     * Change an edition's status by hand. Activating one (OPEN/LIVE) while another is active is refused,
+     * unless finishActive is true: then the active one is set to COMPLETE in the same step.
+     */
+    @Data
+    public static class TournamentStatusReq {
+        @NotNull private Tournament.Status status;
+        private boolean finishActive;
     }
 
     @Data
