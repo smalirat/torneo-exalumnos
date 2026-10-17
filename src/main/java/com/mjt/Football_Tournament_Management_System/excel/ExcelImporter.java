@@ -74,6 +74,7 @@ public class ExcelImporter {
             });
             importTables();
             importMatches();
+            markWithdrawals();
             checkPresencePoints();
             checkTablePoints();
             importPlayerStats();
@@ -279,6 +280,8 @@ public class ExcelImporter {
             m.setVenue(pm.venue());
             m.setPitch(pm.pitch());
             m.setNotes(pm.notes());
+            // "X se dio de baja": walkover because the team left the edition (not a one-off absence)
+            m.setWithdrawal((!pm.homePresent() || !pm.awayPresent()) && Sheet.norm(pm.notes()).contains("SE DIO DE BAJA"));
             m.setHomePresent(pm.homePresent());
             m.setAwayPresent(pm.awayPresent());
             if (pm.played()) {
@@ -295,6 +298,21 @@ public class ExcelImporter {
                 m.setAwayGoals(0);
             }
             return m;
+        }
+
+        /** Teams with withdrawal walkovers ("se dio de baja") are marked as withdrawn from that edition. */
+        void markWithdrawals() {
+            for (var t : tournaments.values()) {
+                var regs = regRepo.findByTournament(t);
+                for (var m : matchRepo.findByTournament(t)) {
+                    if (!m.isWithdrawal()) continue;
+                    var gone = m.present(true) ? m.getAwayTeam() : m.getHomeTeam();
+                    regs.stream().filter(r -> r.getTeam().getId().equals(gone.getId()) && !r.isWithdrawn()).forEach(r -> {
+                        r.setWithdrawn(true);
+                        report.updated(REGISTRATIONS, t.getName() + " · " + gone.getName() + " se dio de baja");
+                    });
+                }
+            }
         }
 
         /** Same tournament, type, teams and round (or same position rules for definitions). */
@@ -337,6 +355,7 @@ public class ExcelImporter {
             to.setVenue(from.getVenue());
             to.setPitch(from.getPitch());
             to.setNotes(from.getNotes());
+            to.setWithdrawal(from.isWithdrawal());
             to.setStatus(from.getStatus());
             to.setHomeGoals(from.getHomeGoals());
             to.setAwayGoals(from.getAwayGoals());

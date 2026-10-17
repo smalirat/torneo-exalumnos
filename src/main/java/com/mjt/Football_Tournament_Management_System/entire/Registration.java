@@ -22,4 +22,9 @@ public class Registration {
     private Zone zone;
 
     private boolean approved = true;
+
+    /** The team withdrew from this edition ("se dio de baja"); it stays in the table and can come back. */
+    private boolean withdrawn;
+    /** Day it withdrew (informative) */
+    private java.time.LocalDate withdrawnAt;
 }

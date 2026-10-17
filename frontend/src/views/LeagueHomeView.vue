@@ -96,13 +96,15 @@ watch(zoneId, async (z) => {
   }
   ;[matches.value, standings.value] = await Promise.all([zoneApi.fixtures(z), zoneApi.standings(z)])
   // Fixture opens on the first round that still has matches to play; otherwise the last one
-  const pending = allRounds.value.findIndex((r) => r.matches.some((m) => !isDone(m)))
+  const pending = allRounds.value.findIndex((r) => r.matches.some((m) => !isDone(m) && !m.withdrawal))
   fixtureIndex.value = pending >= 0 ? pending : Math.max(allRounds.value.length - 1, 0)
 })
 
 const allRounds = computed(() => groupRounds(matches.value))
-const lastRound = computed(() => groupRounds(matches.value.filter(isDone)).at(-1) ?? null)
-const nextRound = computed(() => groupRounds(matches.value.filter((m) => !isDone(m)))[0] ?? null)
+// Walkovers of a team that left the edition are not shown as "last / next round" (they stay in the fixture)
+const highlighted = computed(() => matches.value.filter((m) => !m.withdrawal))
+const lastRound = computed(() => groupRounds(highlighted.value.filter(isDone)).at(-1) ?? null)
+const nextRound = computed(() => groupRounds(highlighted.value.filter((m) => !isDone(m)))[0] ?? null)
 
 /** "Categoría A · Zona 2" (zone only when the category has several) */
 const groupLabel = computed(() => {

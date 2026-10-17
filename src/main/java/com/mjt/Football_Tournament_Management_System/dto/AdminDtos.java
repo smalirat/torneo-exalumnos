@@ -111,6 +111,12 @@ public class AdminDtos {
         private boolean finishActive;
     }
 
+    /** Withdraw a team from the edition; date is informative (today if missing). */
+    @Data
+    public static class WithdrawReq {
+        private LocalDate date;
+    }
+
     @Data
     public static class CollageLayoutReq {
         @NotEmpty private List<@Valid CollageItem> items;

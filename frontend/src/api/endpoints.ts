@@ -52,6 +52,9 @@ export const tournamentApi = {
   scorers: (id: number) => get<ScorerRow[]>(`/api/public/tournaments/${id}/scorers`),
   yellowCards: (id: number) => get<YellowTally[]>(`/api/public/tournaments/${id}/yellow-cards`),
   cards: (id: number) => get<CardRow[]>(`/api/public/tournaments/${id}/cards`),
+  withdraw: (registrationId: number, date: string | null) =>
+    post<Registration>(`/api/admin/registrations/${registrationId}/withdraw`, { date }),
+  undoWithdraw: (registrationId: number) => api<Registration>('DELETE', `/api/admin/registrations/${registrationId}/withdraw`),
   assignZone: (registrationId: number, zoneId: number) =>
     patch<Registration>(`/api/admin/registrations/${registrationId}/zone`, { zoneId }),
   createZone: (categoryId: number, name: string) => post<Zone>(`/api/admin/categories/${categoryId}/zones`, { name }),

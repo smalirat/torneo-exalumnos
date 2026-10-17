@@ -197,7 +197,14 @@
     "drawAll": "Todos",
     "drawNone": "Ninguno",
     "drawSubmit": "Sortear {n} equipos",
-    "drawDone": "Sorteo hecho: {n} equipos asignados."
+    "drawDone": "Sorteo hecho: {n} equipos asignados.",
+    "withdraw": "Dar de baja",
+    "undoWithdraw": "Revertir baja",
+    "withdrawTitle": "Dar de baja a {name}",
+    "withdrawText": "{name} deja la edición: todos los partidos que le quedan pasan a 3-0 para el rival. Los que ya jugó no cambian. El equipo sigue en la tabla y puede volver.",
+    "withdrawDate": "Fecha de la baja",
+    "undoWithdrawTitle": "{name} vuelve a la edición",
+    "undoWithdrawText": "Los partidos por la baja de fechas que todavía no se jugaron vuelven a quedar pendientes. Los de fechas ya jugadas quedan como están."
   },
   "results": {
     "title": "Resultado del partido",

@@ -100,6 +100,18 @@ public class AdminController {
         cService.deleteZone(id);
     }
 
+    @PostMapping("/registrations/{id}/withdraw")
+    @Operation(summary = "The team withdraws from the edition: its unplayed matches become 3-0 walkovers flagged as withdrawal")
+    public ResponseDtos.RegistrationRes withdraw(@PathVariable Long id, @RequestBody(required = false) AdminDtos.WithdrawReq req) {
+        return cService.withdraw(id, req == null ? null : req.getDate());
+    }
+
+    @DeleteMapping("/registrations/{id}/withdraw")
+    @Operation(summary = "Undo a withdrawal: withdrawal walkovers of rounds not played yet go back to pending")
+    public ResponseDtos.RegistrationRes undoWithdraw(@PathVariable Long id) {
+        return cService.undoWithdraw(id);
+    }
+
     @PatchMapping("/registrations/{id}/zone")
     @Operation(summary = "Assign a registered team to a category zone (or move it, if it has no matches yet)")
     public ResponseDtos.RegistrationRes assignZone(@PathVariable Long id,

@@ -82,6 +82,9 @@ public class MatchGame {
     private Integer awayYellowCards = 0;
     private Integer awayRedCards = 0;
 
+    /** Walkover because a team withdrew from the edition (not a one-off absence): hidden from last/next round */
+    private boolean withdrawal;
+
     // Penalty shoot-out of a drawn promotion/final; null when there was none
     private Integer homePenalties;
     private Integer awayPenalties;

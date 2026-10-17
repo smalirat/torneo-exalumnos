@@ -66,6 +66,22 @@ const deleteZone = (z: Zone) => run(async () => {
   await reloadCategories()
 })
 
+// Team withdrawal ("se dio de baja"): its remaining matches become 3-0 walkovers; it can be undone
+const withdrawFor = ref<Registration | null>(null)
+const withdrawDate = ref('')
+function openWithdraw(reg: Registration) {
+  withdrawFor.value = reg
+  withdrawDate.value = new Date().toISOString().slice(0, 10)
+}
+const confirmWithdraw = () => run(async () => {
+  const reg = withdrawFor.value
+  if (!reg) return
+  Object.assign(reg, reg.withdrawn
+    ? await tournamentApi.undoWithdraw(reg.id)
+    : await tournamentApi.withdraw(reg.id, withdrawDate.value || null))
+  withdrawFor.value = null
+})
+
 // Random draw of unassigned teams into one category's zones
 const drawFor = ref<Category | null>(null)
 const drawIds = ref<number[]>([])
@@ -143,9 +159,34 @@ const addZone = (categoryId: number) => run(async () => {
           <select class="select" :value="r.zoneId" :aria-label="t('tournamentTeams.assignTo')" @change="assign(r, $event)">
             <option v-for="o in zoneOptions" :key="o.id" :value="o.id">{{ o.label }}</option>
           </select>
+          <button type="button" class="btn secondary small-btn" @click="openWithdraw(r)">
+            {{ r.withdrawn ? t('tournamentTeams.undoWithdraw') : t('tournamentTeams.withdraw') }}
+          </button>
         </div>
       </div>
     </section>
+
+    <BaseModal
+      v-if="withdrawFor" width="460px" @close="withdrawFor = null"
+      :title="withdrawFor.withdrawn ? t('tournamentTeams.undoWithdrawTitle', { name: withdrawFor.team.name }) : t('tournamentTeams.withdrawTitle', { name: withdrawFor.team.name })"
+    >
+      <template v-if="withdrawFor.withdrawn">
+        <p>{{ t('tournamentTeams.undoWithdrawText') }}</p>
+      </template>
+      <template v-else>
+        <p>{{ t('tournamentTeams.withdrawText', { name: withdrawFor.team.name }) }}</p>
+        <div class="field">
+          <label for="withdraw-date">{{ t('tournamentTeams.withdrawDate') }}</label>
+          <input id="withdraw-date" v-model="withdrawDate" class="input" type="date" />
+        </div>
+      </template>
+      <template #footer>
+        <button type="button" class="btn secondary" @click="withdrawFor = null">{{ t('tournaments.cancel') }}</button>
+        <button type="button" class="btn" @click="confirmWithdraw">
+          {{ withdrawFor.withdrawn ? t('tournamentTeams.undoWithdraw') : t('tournamentTeams.withdraw') }}
+        </button>
+      </template>
+    </BaseModal>
 
     <BaseModal v-if="drawFor" :title="t('tournamentTeams.drawTitle', { name: drawFor.name })" @close="drawFor = null">
       <p class="muted small">{{ t('tournamentTeams.drawHelp') }}</p>
@@ -185,4 +226,5 @@ h3 { font-size: 14px; color: var(--muted); margin: 12px 0 4px; text-transform: u
 .team:last-child { border-bottom: 0; }
 .name { flex: 1; }
 .select { width: auto; min-width: 200px; }
+.small-btn { padding: 6px 12px; font-size: 13px; white-space: nowrap; }
 </style>

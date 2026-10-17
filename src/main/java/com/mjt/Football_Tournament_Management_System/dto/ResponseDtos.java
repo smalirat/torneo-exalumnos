@@ -152,12 +152,12 @@ public class ResponseDtos {
     public record SeasonRes(Long id, int year, List<TournamentRes> tournaments) {}
 
     public record RegistrationRes(Long id, Long tournamentId, Long categoryId, Long zoneId, TeamRef team,
-                                  boolean approved) {
+                                  boolean approved, boolean withdrawn, LocalDate withdrawnAt) {
         public static RegistrationRes from(Registration r) {
             var z = r.getZone();
             return new RegistrationRes(r.getId(), r.getTournament().getId(),
                     z == null ? null : z.getCategory().getId(), z == null ? null : z.getId(),
-                    TeamRef.from(r.getTeam()), r.isApproved());
+                    TeamRef.from(r.getTeam()), r.isApproved(), r.isWithdrawn(), r.getWithdrawnAt());
         }
     }
 
@@ -189,7 +189,7 @@ public class ResponseDtos {
                            LocalDateTime scheduledAt, Integer round, String roundLabel, String venue, String pitch,
                            String notes, String status, Integer homeGoals, Integer awayGoals,
                            Integer homePenalties, Integer awayPenalties, TeamRef winner,
-                           boolean homePresent, boolean awayPresent, boolean advanceWalkover) {
+                           boolean homePresent, boolean awayPresent, boolean advanceWalkover, boolean withdrawal) {
         /** For a match that is not a walkover waiting for its round (new, unplayed or special). */
         public static MatchRes from(MatchGame m) { return from(m, Set.of()); }
 
@@ -203,7 +203,7 @@ public class ResponseDtos {
                     m.getStatus().name(), m.getHomeGoals(), m.getAwayGoals(),
                     m.getHomePenalties(), m.getAwayPenalties(),
                     m.winner() == null ? null : TeamRef.from(m.winner()),
-                    m.present(true), m.present(false), pendingWalkovers.contains(m.getId()));
+                    m.present(true), m.present(false), pendingWalkovers.contains(m.getId()), m.isWithdrawal());
         }
     }
 

@@ -2,6 +2,7 @@ package com.mjt.Football_Tournament_Management_System.service;
 
 import com.mjt.Football_Tournament_Management_System.dto.ResponseDtos;
 import com.mjt.Football_Tournament_Management_System.entire.Category;
+import com.mjt.Football_Tournament_Management_System.entire.DataSource;
 import com.mjt.Football_Tournament_Management_System.entire.MatchGame;
 import com.mjt.Football_Tournament_Management_System.entire.Registration;
 import com.mjt.Football_Tournament_Management_System.entire.Tournament;
@@ -13,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -98,6 +100,59 @@ public class CategoryService {
             throw new ConflictException("El equipo ya tiene partidos en su zona actual");
         }
         r.setZone(target);
+        return ResponseDtos.RegistrationRes.from(r);
+    }
+
+    /**
+     * The team withdraws from the edition: every match it has not played yet becomes a 3-0 walkover for the rival,
+     * flagged as withdrawal. Played matches are not touched.
+     */
+    @Transactional
+    public ResponseDtos.RegistrationRes withdraw(Long registrationId, LocalDate date) {
+        var r = regRepo.findById(registrationId).orElseThrow(() -> NotFoundException.of("Inscripción", registrationId));
+        if (r.isWithdrawn()) throw new ConflictException(r.getTeam().getName() + " ya se dio de baja");
+        r.setWithdrawn(true);
+        r.setWithdrawnAt(date != null ? date : LocalDate.now(MatchGame.LEAGUE_ZONE));
+        var team = r.getTeam();
+        for (var m : matchRepo.findByTournamentAndTeam(r.getTournament(), team)) {
+            if (m.isFinished()) continue;
+            boolean home = m.isHome(team);
+            m.setHomePresent(!home);
+            m.setAwayPresent(home);
+            m.setHomeGoals(home ? 0 : MatchGame.WALKOVER_GOALS);
+            m.setAwayGoals(home ? MatchGame.WALKOVER_GOALS : 0);
+            m.setHomePenalties(null);
+            m.setAwayPenalties(null);
+            m.setStatus(MatchGame.Status.FINISHED);
+            m.setWithdrawal(true);
+            m.setNotes(team.getName() + " se dio de baja");
+            m.setSource(DataSource.WEB);
+        }
+        return ResponseDtos.RegistrationRes.from(r);
+    }
+
+    /**
+     * The team comes back: withdrawal walkovers of rounds not played yet go back to pending matches;
+     * the ones of rounds already played stay as they are.
+     */
+    @Transactional
+    public ResponseDtos.RegistrationRes undoWithdraw(Long registrationId) {
+        var r = regRepo.findById(registrationId).orElseThrow(() -> NotFoundException.of("Inscripción", registrationId));
+        if (!r.isWithdrawn()) throw new ConflictException(r.getTeam().getName() + " no está dado de baja");
+        r.setWithdrawn(false);
+        r.setWithdrawnAt(null);
+        var pending = MatchGame.pendingWalkovers(matchRepo.findByTournament(r.getTournament()));
+        for (var m : matchRepo.findByTournamentAndTeam(r.getTournament(), r.getTeam())) {
+            if (!m.isWithdrawal() || !pending.contains(m.getId())) continue;
+            m.setStatus(MatchGame.Status.SCHEDULED);
+            m.setHomeGoals(0);
+            m.setAwayGoals(0);
+            m.setHomePresent(true);
+            m.setAwayPresent(true);
+            m.setWithdrawal(false);
+            m.setNotes(null);
+            m.setSource(DataSource.WEB);
+        }
         return ResponseDtos.RegistrationRes.from(r);
     }
 

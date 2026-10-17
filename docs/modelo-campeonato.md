@@ -94,3 +94,12 @@ Campeonato (Tournament)   etapa APERTURA / CLAUSURA
 - Una edición nueva nace En preparación. La **importación del Excel** deja sus ediciones nuevas Finalizadas y, si no hay ninguna activa, pone En juego la más nueva (Clausura antes que Apertura).
 - El inicio público muestra la edición activa; si no hay, la más nueva.
 
+## Baja de un equipo (abandono)
+
+- Un equipo puede **darse de baja** de una edición (`registrations.withdrawn` + `withdrawn_at`, informativa). No se borra: sigue en la tabla y en el historial, y puede volver.
+- **Dar de baja** (pantalla Equipos de la edición, `POST /api/admin/registrations/{id}/withdraw`): todos los partidos que le quedan pasan a 3-0 para el rival, marcados `matches.withdrawal = true`. Los ya jugados no cambian.
+- **Revertir baja** (`DELETE …/withdraw`): los W.O. por baja de fechas que todavía no se jugaron vuelven a quedar pendientes; los de fechas jugadas quedan.
+- **Excel**: un W.O. con la nota "X se dio de baja" se marca como baja y el equipo queda dado de baja; "no se presentó" sigue siendo un W.O. común.
+- Un W.O. por baja **cuenta en la tabla** como cualquier W.O. y se ve en el Fixture, pero **no aparece en "Última fecha" ni "Próxima fecha"** del inicio ni cuenta para elegir cuál es la última fecha. El W.O. común (faltó a un partido) sí se muestra.
+- Por ahora sin etiquetas ni distintivos para el equipo que abandonó (pendiente de definir).
+

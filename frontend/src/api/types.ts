@@ -99,6 +99,8 @@ export interface Match {
   awayPresent: boolean
   /** Walkover already decided whose date has not arrived: not counted in the table yet */
   advanceWalkover: boolean
+  /** Walkover because a team withdrew from the edition (not a one-off absence) */
+  withdrawal: boolean
 }
 
 export interface TeamSummary {
@@ -138,6 +140,9 @@ export interface Registration {
   zoneId: number | null
   team: TeamRef
   approved: boolean
+  /** The team withdrew from this edition; its remaining matches are 3-0 walkovers */
+  withdrawn: boolean
+  withdrawnAt: string | null
 }
 
 export type EventType = 'GOAL' | 'OWN_GOAL' | 'YELLOW_CARD' | 'RED_CARD'
