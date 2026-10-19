@@ -138,8 +138,9 @@ const publicUrl = computed(() => tournament.value
   ? `${window.location.origin}/ver/${tournament.value.id}${route.fullPath.includes('?') ? route.fullPath.slice(route.fullPath.indexOf('?')) : ''}`
   : window.location.href)
 
+/** Another edition, same tab (category/zone are not kept: they belong to the edition you leave) */
 function changeEdition(event: Event) {
-  router.push(`/ver/${(event.target as HTMLSelectElement).value}`)
+  router.push({ path: `/ver/${(event.target as HTMLSelectElement).value}`, query: tab.value === 'inicio' ? {} : { tab: tab.value } })
 }
 </script>
 
