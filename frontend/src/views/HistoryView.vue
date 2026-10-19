@@ -15,7 +15,7 @@ onMounted(async () => { [history.value, photos.value] = await Promise.all([champ
 <template>
   <GlobalLayout>
     <h1 class="title">{{ t('historyPage.title') }}</h1>
-    <ChampionsCollage v-model:photos="photos" />
+    <ChampionsCollage v-model:photos="photos" editable />
     <ChampionsHistory v-if="history" :history="history" />
   </GlobalLayout>
 </template>

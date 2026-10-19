@@ -8,9 +8,12 @@ import { isAdmin } from '../auth'
 import { t } from '../i18n'
 
 // Champions' collage: photos spread by hand over a board that scales with the screen (like the Excel sheet).
-// Everyone: featured photo + collage, tap to open big. Admin: floating "+" to add, drag to move, corner to resize,
+// Everyone: featured photo + collage, tap to open big. Editable (admin panel only): floating "+" to add, drag to move, corner to resize,
 // tap a photo for its options (front / back / featured / delete). Photos are not tied to a champion.
 const photos = defineModel<CollagePhoto[]>('photos', { required: true })
+/** Only the admin panel's History page edits; the public tab is view-only for everyone (admins included) */
+const props = defineProps<{ editable?: boolean }>()
+const canEdit = computed(() => !!props.editable && isAdmin.value)
 
 const board = ref<HTMLElement | null>(null)
 const selected = ref<number | null>(null)
@@ -22,7 +25,7 @@ const heightOf = (p: CollagePhoto) => p.w * (p.height / p.width)
 /** Board height in board widths: down to the lowest photo (plus room to drag further when editing) */
 const boardHeight = computed(() => {
   const bottom = Math.max(0.2, ...photos.value.map((p) => p.y + heightOf(p)))
-  return bottom + (isAdmin.value ? 0.12 : 0.01)
+  return bottom + (canEdit.value ? 0.12 : 0.01)
 })
 const featured = computed(() => photos.value.find((p) => p.featured) ?? null)
 /** Reading order (top to bottom, left to right) for the big view and the entrance animation */
@@ -47,7 +50,7 @@ const open = (p: CollagePhoto) => { viewing.value = orderOf.value.get(p.id) ?? 0
 let drag: { id: number; mode: 'move' | 'resize'; startX: number; startY: number; orig: CollagePhoto; moved: boolean } | null = null
 
 function onDown(e: PointerEvent, p: CollagePhoto, mode: 'move' | 'resize') {
-  if (!isAdmin.value || e.button !== 0) return
+  if (!canEdit.value || e.button !== 0) return
   e.preventDefault()
   ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
   drag = { id: p.id, mode, startX: e.clientX, startY: e.clientY, orig: { ...p }, moved: false }
@@ -158,25 +161,25 @@ async function toJpeg(file: File): Promise<Blob> {
 </script>
 
 <template>
-  <section v-if="photos.length || isAdmin" class="collage">
+  <section v-if="photos.length || canEdit" class="collage">
     <button v-if="featured" type="button" class="featured" @click="open(featured)">
       <img :src="featured.url" :alt="t('collage.featured')">
     </button>
 
-    <p v-if="isAdmin" class="hint muted">{{ photos.length ? t('collage.editHint') : t('collage.empty') }}</p>
+    <p v-if="canEdit" class="hint muted">{{ photos.length ? t('collage.editHint') : t('collage.empty') }}</p>
     <p v-if="error" class="error">{{ error }}</p>
 
     <div
-      v-if="photos.length" ref="board" :class="['board', { editing: isAdmin }]"
+      v-if="photos.length" ref="board" :class="['board', { editing: canEdit }]"
       :style="{ aspectRatio: `1 / ${boardHeight}` }" @click.self="selected = null"
     >
       <figure
         v-for="p in photos" :key="p.id" :class="['photo', { selected: selected === p.id }]" :style="style(p)"
         @pointerdown="onDown($event, p, 'move')" @pointermove="onMove" @pointerup="onUp(p)"
-        @click="!isAdmin && open(p)" @dblclick="isAdmin && open(p)"
+        @click="!canEdit && open(p)" @dblclick="canEdit && open(p)"
       >
         <img :src="p.url" :alt="t('collage.photo', { n: (orderOf.get(p.id) ?? 0) + 1 })" loading="lazy" draggable="false">
-        <template v-if="isAdmin">
+        <template v-if="canEdit">
           <span
             class="resize" :title="t('collage.resize')"
             @pointerdown.stop="onDown($event, p, 'resize')" @pointermove="onMove" @pointerup.stop="onUp(p)"
@@ -193,7 +196,7 @@ async function toJpeg(file: File): Promise<Blob> {
       </figure>
     </div>
 
-    <template v-if="isAdmin">
+    <template v-if="canEdit">
       <input ref="fileInput" type="file" accept="image/*" multiple hidden @change="onFiles">
       <p v-if="uploading" class="uploading">{{ t('collage.uploading', uploading) }}</p>
       <button type="button" class="fab" :title="t('collage.add')" :aria-label="t('collage.add')" :disabled="!!uploading" @click="fileInput?.click()">

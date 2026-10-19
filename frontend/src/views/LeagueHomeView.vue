@@ -54,7 +54,7 @@ type Tab = (typeof TABS)[number]
 const tabs = computed(() => TABS.filter((k) =>
   (k !== 'definiciones' || specials.value.length > 0)
   && (k !== 'sancionados' || tournament.value?.seasonId != null || yellows.value.length > 0)
-  && (k !== 'historia' || history.value.length > 0 || photos.value.length > 0 || isAdmin.value)))
+  && (k !== 'historia' || history.value.length > 0 || photos.value.length > 0)))
 const tab = computed<Tab>({
   get: () => (TABS as readonly string[]).includes(route.query.tab as string) ? route.query.tab as Tab : 'inicio',
   set: (value) => router.replace({ query: { ...route.query, tab: value === 'inicio' ? undefined : value } }),
