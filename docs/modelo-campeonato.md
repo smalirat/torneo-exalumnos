@@ -67,7 +67,9 @@ Campeonato (Tournament)   etapa APERTURA / CLAUSURA
 
 - Fotos sueltas, **no asociadas a un campeón** (`collage_photos`, imagen en `bytea`). Layout libre: `x`, `y` y `w` son fracciones del ancho del tablero, así el collage conserva su forma en cualquier pantalla; `z` es la capa (más alto = encima). Una sola foto puede ser la **destacada** (banner arriba del collage).
 - Público: `GET /api/public/collage` (layout) y `/collage/{id}/image` (cacheada un año: una foto nunca cambia). Admin: `POST /api/admin/collage` (JPG/PNG hasta 5 MB; el navegador la achica a 1600 px antes), `PUT /layout`, `PUT /{id}/featured`, `DELETE /{id}`.
-- En la web, el admin ve un botón flotante "+" (elige varias fotos a la vez), arrastra para mover, usa la esquina para agrandar y toca una foto para traerla al frente / atrás, destacarla o borrarla. Las nuevas entran en una grilla suelta de 4 columnas.
+- Se edita **solo desde Historia del panel de admin** (`/historia`); la pestaña pública es de solo lectura para todos.
+- El admin trabaja sobre un **borrador**: botón flotante "+" (varias fotos a la vez, quedan en memoria), arrastrar, esquina para agrandar, al frente / atrás, destacar y borrar. **Nada se publica hasta "Guardar cambios"** (borra, sube, guarda posiciones y destacada, en ese orden); "Descartar" vuelve a lo guardado y salir con cambios pendientes pide confirmación.
+- **"Ordenar automáticamente"** acomoda todo en la grilla por defecto (4 columnas sueltas, en orden de subida): la misma regla que usa el backend para ubicar una foto nueva.
 
 ## Capitanes
 
