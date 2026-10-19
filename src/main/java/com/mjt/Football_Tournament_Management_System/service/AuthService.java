@@ -7,12 +7,15 @@ import com.mjt.Football_Tournament_Management_System.entire.Team;
 import com.mjt.Football_Tournament_Management_System.exception.BadRequestException;
 import com.mjt.Football_Tournament_Management_System.exception.ConflictException;
 import com.mjt.Football_Tournament_Management_System.exception.NotFoundException;
+import com.mjt.Football_Tournament_Management_System.exception.TooManyRequestsException;
 import com.mjt.Football_Tournament_Management_System.repo.AppUserRepository;
 import com.mjt.Football_Tournament_Management_System.repo.TeamRepository;
 import com.mjt.Football_Tournament_Management_System.security.JwtService;
+import com.mjt.Football_Tournament_Management_System.security.LoginAttempts;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -30,9 +33,19 @@ public class AuthService {
     private final TeamRepository teamRepo;
     private final PasswordEncoder encoder;
     private final TeamService teamService;
+    private final LoginAttempts attempts;
 
     public AuthDtos.TokenRes login(AuthDtos.LoginReq req) {
-        am.authenticate(new UsernamePasswordAuthenticationToken(req.getUsername(), req.getPassword()));
+        long locked = attempts.secondsLocked(req.getUsername());
+        if (locked > 0) throw new TooManyRequestsException(
+                "Demasiados intentos fallidos. Probá de nuevo en " + Math.max(1, (locked + 59) / 60) + " min.", locked);
+        try {
+            am.authenticate(new UsernamePasswordAuthenticationToken(req.getUsername(), req.getPassword()));
+        } catch (AuthenticationException e) {
+            attempts.failed(req.getUsername());
+            throw e;
+        }
+        attempts.succeeded(req.getUsername());
         return token(req.getUsername());
     }
 

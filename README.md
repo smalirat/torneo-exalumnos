@@ -43,7 +43,7 @@ This system allows **administrators** to create tournaments and manage fixtures,
 * 📃 View list of tournaments
 * 📅 View tournament fixtures
 * 📌 See registered teams
-* 👀 Public site (`/ver`): results by round, standings, upcoming matches, scorers; share links
+* 👀 Public site at `/` (`/fixture`, `/posiciones`, `/goleadores`, …): results by round, standings, upcoming matches, scorers
 * ⭐ Follow tournaments and get their news (`/api/me/follows`, `/api/me/notifications`)
 
 ---
@@ -97,7 +97,7 @@ Authorization: Bearer <TOKEN>
 
 Once the application is running, open:
 
-🔗 **[http://localhost:8081/swagger-ui.html](http://localhost:8081/swagger-ui.html)**
+🔗 **[http://localhost:8081/swagger-ui.html](http://localhost:8081/swagger-ui.html)** (only with the `dev` profile or `APP_SWAGGER_ENABLED=true`)
 
 ---
 
@@ -126,6 +126,7 @@ Secrets are read from the environment (never commit them):
 | `DB_URL` / `DB_USERNAME` / `DB_PASSWORD` | yes in production | `jdbc:postgresql://localhost:5432/football_tournament`, `postgres`/`postgres` |
 | `DB_POOL_SIZE` | no | `5` |
 | `APP_CORS_ALLOWED_ORIGINS` | no | `http://localhost:5173` |
+| `APP_SWAGGER_ENABLED` | no | `false` (Swagger UI; always on with the `dev` profile) |
 
 Tests run on an in-memory H2 database (profile `test`), in PostgreSQL mode with the same Flyway migrations, no database needed: `./mvnw test`.
 

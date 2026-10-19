@@ -41,6 +41,29 @@ class AuthAndTeamApiTests {
     }
 
     @Test
+    void repeatedWrongPasswordsLockTheUsername() throws Exception {
+        String user = uniqueUser();
+        String body = "{\"username\":\"" + user + "\",\"password\":\"nope\"}";
+        for (int i = 0; i < 5; i++) post("/api/auth/login", body, null).andExpect(status().isUnauthorized());
+        post("/api/auth/login", body, null)
+                .andExpect(status().isTooManyRequests())
+                .andExpect(header().exists("Retry-After"));
+        // Other usernames are not affected
+        post("/api/auth/login", "{\"username\":\"" + uniqueUser() + "\",\"password\":\"nope\"}", null)
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void responsesCarrySecurityHeaders() throws Exception {
+        mvc.perform(get("/api/public/tournaments"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("X-Frame-Options", "DENY"))
+                .andExpect(header().string("X-Content-Type-Options", "nosniff"))
+                .andExpect(header().string("Referrer-Policy", "strict-origin-when-cross-origin"))
+                .andExpect(header().exists("Content-Security-Policy"));
+    }
+
+    @Test
     void registerValidatesAndRejectsDuplicates() throws Exception {
         post("/api/auth/register", "{\"username\":\"x\",\"password\":\"short\"}", null)
                 .andExpect(status().isBadRequest())

@@ -1,8 +1,10 @@
 package com.mjt.Football_Tournament_Management_System.exception;
 
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
+import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.AuthenticationException;
@@ -58,6 +60,13 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(AuthenticationException.class)
     public ProblemDetail unauthorized(AuthenticationException e) {
         return problem(HttpStatus.UNAUTHORIZED, "Usuario o contraseña incorrectos");
+    }
+
+    @ExceptionHandler(TooManyRequestsException.class)
+    public ResponseEntity<ProblemDetail> tooManyRequests(TooManyRequestsException e) {
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                .header(HttpHeaders.RETRY_AFTER, String.valueOf(e.getRetryAfterSeconds()))
+                .body(problem(HttpStatus.TOO_MANY_REQUESTS, e.getMessage()));
     }
 
     @ExceptionHandler(AccessDeniedException.class)
