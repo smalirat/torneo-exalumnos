@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import GlobalLayout from '../layouts/GlobalLayout.vue'
 import AppIcon from '../components/AppIcon.vue'
 import MatchCard from '../components/MatchCard.vue'
@@ -11,11 +11,16 @@ import { currentUser, isAdmin } from '../auth'
 import { teamApi, zoneApi } from '../api/endpoints'
 import type { Match, StandingRow, TeamRef, TeamRegistration } from '../api/types'
 import { groupName } from '../groups'
+import { isLoggedIn } from '../auth'
+import { PANEL, publicPath, teamPath } from '../paths'
+import { teamIdFromSlug } from '../slugs'
 import { t } from '../i18n'
 
 // A team's season: every tournament it is registered in, its zone table, next match and results
 const route = useRoute()
-const teamId = computed(() => Number(route.params.teamId))
+const router = useRouter()
+/** /equipos/41-gulp (an old /equipos/41 also works and is turned into the full one) */
+const teamId = computed(() => teamIdFromSlug(String(route.params.equipo)) ?? 0)
 
 interface Season { reg: TeamRegistration; rows: StandingRow[]; matches: Match[] }
 
@@ -25,6 +30,7 @@ const seasons = ref<Season[] | null>(null)
 watch(teamId, async (id) => {
   const [info, regs] = await Promise.all([teamApi.get(id), teamApi.registrations(id)])
   team.value = info
+  if (route.path !== teamPath(info)) router.replace(teamPath(info))
   seasons.value = await Promise.all(regs.map(async (reg) => {
     if (!reg.zoneId) return { reg, rows: [], matches: [] }
     const [rows, fixtures] = await Promise.all([zoneApi.standings(reg.zoneId), zoneApi.fixtures(reg.zoneId)])
@@ -44,7 +50,7 @@ const results = (s: Season) => s.matches.filter((m) => m.status === 'FINISHED').
 
 <template>
   <GlobalLayout>
-    <RouterLink to="/equipos" class="back"><AppIcon name="chevron" class="flip" :size="18" /> {{ t('teams.title') }}</RouterLink>
+    <RouterLink v-if="isLoggedIn" :to="PANEL.teams" class="back"><AppIcon name="chevron" class="flip" :size="18" /> {{ t('teams.title') }}</RouterLink>
     <header v-if="team" class="header">
       <CrestPicker v-if="canEdit" :team="team" :size="64" @change="(crest) => team && (team.crest = crest)" />
       <TeamBadge v-else :team="team" :size="64" />
@@ -56,7 +62,7 @@ const results = (s: Season) => s.matches.filter((m) => m.status === 'FINISHED').
 
     <section v-for="s in seasons ?? []" :key="s.reg.registrationId" class="card season">
       <header class="season-head">
-        <RouterLink :to="`/campeonatos/${s.reg.tournament.id}`" class="tour">
+        <RouterLink :to="publicPath('fixture', s.reg.tournament)" class="tour">
           <AppIcon name="trophy" /> {{ s.reg.tournament.name }}
         </RouterLink>
         <span v-if="s.reg.zoneId" class="chip">

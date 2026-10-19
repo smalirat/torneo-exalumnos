@@ -12,11 +12,14 @@ import { tournamentApi, type TournamentInput } from '../api/endpoints'
 import type { Category, Tournament } from '../api/types'
 import { isAdmin } from '../auth'
 import { registrationLabel } from '../editions'
+import { editionBySlug, loadEditions } from '../editions'
+import { PANEL, panelEditionPath } from '../paths'
+import { groupSegments } from '../slugs'
 import { t } from '../i18n'
 
 const route = useRoute()
 const router = useRouter()
-const tournamentId = computed(() => Number(route.params.id))
+const tournamentId = computed(() => editionBySlug(route.params.edicion)?.id ?? 0)
 const categories = ref<Category[]>([])
 const newName = ref('')
 const adding = ref(false)
@@ -52,14 +55,18 @@ async function run(action: () => Promise<unknown>) {
 }
 
 const saveTournament = (input: TournamentInput) => run(async () => {
-  await tournamentApi.update(tournamentId.value, input)
+  const saved = await tournamentApi.update(tournamentId.value, input)
   editing.value = false
+  // Year / Apertura-Clausura are part of the URL: go to the new one if they changed
+  await loadEditions(true)
+  router.replace(panelEditionPath(saved))
   layoutKey.value++
 })
 
 const deleteTournament = () => run(async () => {
   await tournamentApi.remove(tournamentId.value)
-  router.push('/ediciones')
+  await loadEditions(true)
+  router.push(PANEL.editions)
 })
 
 const renameCategory = async (c: Category, name: string) => {
@@ -72,6 +79,13 @@ const deleteCategory = (c: Category) => run(async () => {
 })
 
 const asTournament = (x: unknown) => x as Tournament
+
+/** Standings of a category in the panel: /panel/ediciones/2026-clausura/clasificacion?grupo=categoria-a */
+function standingsOf(c: Category) {
+  const edition = editionBySlug(route.params.edicion)
+  const grupo = groupSegments(categories.value, c.zones[0]?.id ?? null).join('/')
+  return edition ? { path: panelEditionPath(edition, 'clasificacion'), query: grupo ? { grupo } : {} } : PANEL.editions
+}
 </script>
 
 <template>
@@ -122,7 +136,7 @@ const asTournament = (x: unknown) => x as Tournament
         <span class="cat-icon"><AppIcon name="trophy" /></span>
         <span class="cat-name">
           <InlineEdit :value="c.name" :editable="isAdmin" :save="(name) => renameCategory(c, name)">
-            <RouterLink :to="{ path: `/campeonatos/${tournamentId}/clasificacion`, query: { categoria: c.id } }">{{ c.name }}</RouterLink>
+            <RouterLink :to="standingsOf(c)">{{ c.name }}</RouterLink>
           </InlineEdit>
         </span>
         <!-- Zones only shown when there is more than one -->
@@ -131,7 +145,7 @@ const asTournament = (x: unknown) => x as Tournament
           v-if="isAdmin" icon :label="t('categories.delete')"
           :message="t('categories.deleteConfirm', { name: c.name })" @confirm="deleteCategory(c)"
         />
-        <RouterLink :to="{ path: `/campeonatos/${tournamentId}/clasificacion`, query: { categoria: c.id } }" class="icon-btn">
+        <RouterLink :to="standingsOf(c)" class="icon-btn">
           <AppIcon name="chevron" />
         </RouterLink>
       </div>

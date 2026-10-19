@@ -1,5 +1,27 @@
+import { ref } from 'vue'
+import { tournamentApi } from './api/endpoints'
 import type { Tournament } from './api/types'
 import { t } from './i18n'
+import { editionSlug } from './slugs'
+
+/** Every edition, loaded once and refreshed when a slug is not found (URLs name editions by slug) */
+export const editionsCache = ref<Tournament[] | null>(null)
+
+export async function loadEditions(force = false): Promise<Tournament[]> {
+  if (!editionsCache.value || force) editionsCache.value = await tournamentApi.list()
+  return editionsCache.value
+}
+
+/** The edition named by a URL slug ("2026-clausura"), reloading the list once if it is not there */
+export async function findEdition(slug: string): Promise<Tournament | null> {
+  const find = (list: Tournament[]) => list.find((e) => editionSlug(e) === slug) ?? null
+  return find(await loadEditions()) ?? find(await loadEditions(true))
+}
+
+/** Synchronous lookup once the router guard loaded the list */
+export function editionBySlug(slug: unknown): Tournament | null {
+  return typeof slug === 'string' ? editionsCache.value?.find((e) => editionSlug(e) === slug) ?? null : null
+}
 
 const STAGE_ORDER: Record<string, number> = { CLAUSURA: 2, APERTURA: 1 }
 

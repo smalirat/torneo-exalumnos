@@ -2,6 +2,7 @@
 import { watch } from 'vue'
 import AppIcon from '../components/AppIcon.vue'
 import UserFooter from './UserFooter.vue'
+import { PANEL } from '../paths'
 import { t } from '../i18n'
 import { isAdmin, isLoggedIn } from '../auth'
 import { pendingRequests, refreshPendingRequests } from '../requests'
@@ -16,20 +17,20 @@ watch(isAdmin, (admin) => { if (admin) refreshPendingRequests() }, { immediate: 
       <RouterLink to="/" class="item" exact-active-class="active">
         <AppIcon name="home" /> {{ t('nav.leagueHome') }}
       </RouterLink>
-      <RouterLink v-if="isLoggedIn" to="/ediciones" class="item" active-class="active">
+      <RouterLink v-if="isLoggedIn" :to="PANEL.editions" class="item" active-class="active">
         <AppIcon name="trophy" /> {{ t('nav.myTournaments') }}
       </RouterLink>
-      <RouterLink v-if="isLoggedIn" to="/equipos" class="item" active-class="active">
+      <RouterLink v-if="isLoggedIn" :to="PANEL.teams" class="item" active-class="active">
         <AppIcon name="shield" /> {{ t('nav.teams') }}
       </RouterLink>
-      <RouterLink v-if="isAdmin" to="/planilla" class="item" active-class="active">
+      <RouterLink v-if="isAdmin" :to="PANEL.excel" class="item" active-class="active">
         <AppIcon name="table" /> {{ t('nav.excel') }}
       </RouterLink>
-      <RouterLink v-if="isAdmin" to="/solicitudes" class="item" active-class="active">
+      <RouterLink v-if="isAdmin" :to="PANEL.requests" class="item" active-class="active">
         <AppIcon name="check" /> {{ t('nav.requests') }}
         <span v-if="pendingRequests" class="badge" :aria-label="t('requests.pendingCount', { n: pendingRequests })">{{ pendingRequests }}</span>
       </RouterLink>
-      <RouterLink to="/historia" class="item" active-class="active">
+      <RouterLink :to="PANEL.history" class="item" active-class="active">
         <AppIcon name="star" /> {{ t('nav.history') }}
       </RouterLink>
       <UserFooter />

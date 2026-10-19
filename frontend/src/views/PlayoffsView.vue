@@ -9,11 +9,12 @@ import { playoffApi } from '../api/endpoints'
 import type { Match, SlotReq, SlotRes } from '../api/types'
 import { isAdmin } from '../auth'
 import { groupName } from '../groups'
+import { editionBySlug } from '../editions'
 import { t } from '../i18n'
 
 // Promotions and finals of a tournament
 const route = useRoute()
-const tournamentId = computed(() => Number(route.params.id))
+const tournamentId = computed(() => editionBySlug(route.params.edicion)?.id ?? 0)
 const matches = ref<Match[] | null>(null)
 const error = ref('')
 const editing = ref<Match | null>(null)

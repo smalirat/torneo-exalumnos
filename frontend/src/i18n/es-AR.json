@@ -480,5 +480,10 @@
     "emptyAdmin": "Creá la primera edición (por ejemplo \"Apertura 2027\") o importá la planilla Excel de la liga.",
     "createEdition": "Crear edición",
     "importExcel": "Importar planilla"
+  },
+  "notFound": {
+    "title": "Página no encontrada",
+    "text": "El link puede estar mal escrito o la página ya no existe.",
+    "home": "Ir al inicio"
   }
 }

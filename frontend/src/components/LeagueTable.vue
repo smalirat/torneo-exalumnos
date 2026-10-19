@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import TeamBadge from './TeamBadge.vue'
 import type { StandingRow } from '../api/types'
+import { teamPath } from '../paths'
 import { t } from '../i18n'
 
 // Public standings table (league style): solid header, plain rows, points last. Scrolls sideways on phones
@@ -31,7 +32,7 @@ defineProps<{ rows: StandingRow[] }>()
         <tr v-for="r in rows" :key="r.team.id">
           <td class="pin pos">{{ r.position }}</td>
           <td class="pin team left">
-            <RouterLink :to="`/equipos/${r.team.id}`" class="name">
+            <RouterLink :to="teamPath(r.team)" class="name">
               <TeamBadge :team="r.team" :size="24" /> <span>{{ r.team.name }}</span>
             </RouterLink>
           </td>

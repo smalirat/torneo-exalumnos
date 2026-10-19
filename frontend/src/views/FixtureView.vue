@@ -9,12 +9,13 @@ import ZonePicker from '../components/ZonePicker.vue'
 import { tournamentApi, zoneApi } from '../api/endpoints'
 import type { Category, Match } from '../api/types'
 import { isAdmin } from '../auth'
+import { editionBySlug } from '../editions'
 import { t } from '../i18n'
 import { groupRounds } from '../rounds'
 
 // Zone fixture by "fecha" (match day): ‹ Fecha N › navigation, results and upcoming matches
 const route = useRoute()
-const tournamentId = computed(() => Number(route.params.id))
+const tournamentId = computed(() => editionBySlug(route.params.edicion)?.id ?? 0)
 const categories = ref<Category[] | null>(null)
 const zoneId = ref<number | null>(null)
 const matches = ref<Match[]>([])

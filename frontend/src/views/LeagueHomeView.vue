@@ -17,15 +17,18 @@ import YellowCardsByTeam from '../components/YellowCardsByTeam.vue'
 import { championApi, collageApi, playoffApi, seasonApi, tournamentApi, zoneApi } from '../api/endpoints'
 import type { Category, CategoryHistory, CollagePhoto, Match, Sanction, ScorerRow, SeasonStatRow, StandingRow, Tournament, YellowTally } from '../api/types'
 import { isAdmin, isLoggedIn } from '../auth'
-import { currentEdition, sortEditions } from '../editions'
+import { currentEdition, editionBySlug, loadEditions, sortEditions } from '../editions'
+import { AUTH, PANEL, publicPath, type PublicSection } from '../paths'
+import { zoneFromSegments } from '../slugs'
 import { dayLabel, groupRounds, isDone } from '../rounds'
 import { zoneOptions } from '../groups'
 import { splitSanctions } from '../sanctions'
 import { t } from '../i18n'
 
-// Home of the league (no login needed). "/" shows the current edition; "/ver/:id" a given one.
-// Inicio = Última fecha + Tabla de posiciones + Próximos partidos (league-site style, navy/white).
-// Category, zone and tab live in the URL so a shared link opens exactly the same view.
+// Public site of the league (no login needed). The section comes from the route (/, /fixture, /posiciones,
+// /goleadores, /sancionados, /definiciones, /historia), the edition from its slug (/fixture/2026-clausura; none →
+// the current one) and the group from the next segments (…/categoria-a/zona-2); on Inicio the group is a
+// filter (?grupo=categoria-b). See paths.ts. A shared link opens exactly the same view.
 const route = useRoute()
 const router = useRouter()
 const editions = ref<Tournament[] | null>(null)
@@ -61,23 +64,35 @@ const TABS = ['inicio', 'fixture', 'goleadores', 'sancionados', 'definiciones', 
 /** Tabs that do not depend on the chosen edition: no edition band nor picker */
 const EDITION_FREE_TABS: readonly string[] = ['inicio', 'historia']
 type Tab = (typeof TABS)[number]
+const section = computed(() => (route.meta.section as PublicSection | undefined) ?? 'inicio')
 // Sanctions are kept per season and yellow cards per edition (Excel): the tab shows when there is any of them
 const tabs = computed(() => TABS.filter((k) =>
   (k !== 'definiciones' || specials.value.length > 0)
   && (k !== 'sancionados' || tournament.value?.seasonId != null || yellows.value.length > 0)
   && (k !== 'historia' || history.value.length > 0 || photos.value.length > 0)))
-const tab = computed<Tab>({
-  get: () => (TABS as readonly string[]).includes(route.query.tab as string) ? route.query.tab as Tab : 'inicio',
-  set: (value) => router.replace({ query: { ...route.query, tab: value === 'inicio' ? undefined : value } }),
-})
+/** Top-bar tab: the fixture's two views (results / standings) are the same tab */
+const tab = computed<Tab>(() => (section.value === 'posiciones' ? 'fixture' : section.value))
 
-const requestedId = computed(() => (route.params.id ? Number(route.params.id) : null))
+/** Edition named in the URL (slug), if any */
+const requestedSlug = computed(() => (typeof route.params.edicion === 'string' && route.params.edicion ? route.params.edicion : null))
 const sortedEditions = computed(() => sortEditions(editions.value ?? []))
+/** Group named in the URL: path segments on the fixture / standings, the ?grupo filter on Inicio */
+const groupFromUrl = () => (section.value === 'fixture' || section.value === 'posiciones'
+  ? ([] as string[]).concat(route.params.grupo ?? [])
+  : typeof route.query.grupo === 'string' ? route.query.grupo.split('/') : [])
 
-watch(requestedId, async (id) => {
-  editions.value ??= await tournamentApi.list()
-  tournament.value = id === null ? currentEdition(editions.value) : editions.value.find((x) => x.id === id) ?? null
-  notFound.value = id !== null && tournament.value === null
+/** Link of a tab: the edition is kept when one was chosen in the URL */
+function tabPath(key: Tab) {
+  const edition = requestedSlug.value ? tournament.value : null
+  return publicPath(key, edition)
+}
+/** Fixture (results) of the shown group */
+const fixtureLink = computed(() => publicPath('fixture', tournament.value, { categories: categories.value ?? [], zoneId: zoneId.value }))
+
+watch(requestedSlug, async (slug) => {
+  editions.value = await loadEditions()
+  tournament.value = slug === null ? currentEdition(editions.value) : editionBySlug(slug)
+  notFound.value = slug !== null && tournament.value === null
   categories.value = null
   zoneId.value = null
   if (!tournament.value) return
@@ -92,9 +107,12 @@ watch(requestedId, async (id) => {
     tournamentApi.yellowCards(tid),
   ])
   categories.value = cats
-  const zones = cats.flatMap((c) => c.zones.map((z) => ({ zone: z.id, category: c.id })))
-  zoneId.value = (zones.find((x) => x.zone === Number(route.query.zona))
-    ?? zones.find((x) => x.category === Number(route.query.categoria)) ?? zones[0])?.zone ?? null
+  zoneId.value = zoneFromSegments(cats, groupFromUrl()) ?? cats.flatMap((c) => c.zones)[0]?.id ?? null
+  // The fixture / standings URL always names its edition and group, so it can be shared as is
+  if ((section.value === 'fixture' || section.value === 'posiciones') && tournament.value) {
+    const canonical = publicPath(section.value, tournament.value, { categories: cats, zoneId: zoneId.value })
+    if (canonical !== route.path) router.replace({ path: canonical, query: route.query })
+  }
   specials.value = special
   scorers.value = goals
   figures.value = figs
@@ -147,10 +165,10 @@ const specialGroups = computed(() => (['PROMOTION', 'FINAL'] as const)
 // ---- Fixture tab: Resultados (played + to play) / Posiciones, editions of the year on the left, year picker on top
 const VIEWS = ['resultados', 'posiciones'] as const
 type View = (typeof VIEWS)[number]
-const view = computed<View>({
-  get: () => (route.query.vista === 'posiciones' ? 'posiciones' : 'resultados'),
-  set: (value) => router.replace({ query: { ...route.query, vista: value === 'resultados' ? undefined : value } }),
-})
+/** Resultados = /fixture/…, Posiciones = /posiciones/… (same edition and group) */
+const view = computed<View>(() => (section.value === 'posiciones' ? 'posiciones' : 'resultados'))
+const viewPath = (v: View) => publicPath(v === 'posiciones' ? 'posiciones' : 'fixture', tournament.value,
+  { categories: categories.value ?? [], zoneId: zoneId.value })
 const years = computed(() => [...new Set(sortedEditions.value.map((e) => e.seasonYear).filter((y): y is number => y != null))])
 /** Editions of the shown year in calendar order (Apertura, then Clausura); without a year, just this one */
 const yearEditions = computed(() => {
@@ -163,13 +181,16 @@ const roundDate = (day: string | null) => (day
   ? new Date(`${day}T00:00`).toLocaleDateString('es-AR', { day: 'numeric', month: 'long', year: 'numeric' })
   : '')
 
-function selectGroup(tournamentId: number, categoryId: number, zone: number) {
-  const query = { tab: 'fixture', vista: route.query.vista, categoria: String(categoryId), zona: String(zone) }
+async function selectGroup(tournamentId: number, _categoryId: number, zone: number) {
+  const edition = editions.value?.find((e) => e.id === tournamentId)
+  if (!edition) return
+  const cats = tournamentId === tournament.value?.id ? categories.value ?? [] : await tournamentApi.categories(tournamentId)
+  const target = publicPath(section.value === 'posiciones' ? 'posiciones' : 'fixture', edition, { categories: cats, zoneId: zone })
   if (tournamentId === tournament.value?.id) {
     zoneId.value = zone
-    router.replace({ query })
+    router.replace(target)
   } else {
-    router.push({ path: `/ver/${tournamentId}`, query })
+    router.push(target)
   }
 }
 
@@ -178,12 +199,13 @@ function changeYear(event: Event) {
   const year = Number((event.target as HTMLSelectElement).value)
   const ofYear = sortedEditions.value.filter((e) => e.seasonYear === year)
   const target = ofYear.find((e) => e.status === 'OPEN' || e.status === 'LIVE') ?? ofYear[0]
-  if (target) router.push({ path: `/ver/${target.id}`, query: { tab: tab.value, vista: route.query.vista } })
+  if (target) router.push(publicPath(section.value, target))
 }
 
-/** Another edition, same tab (category/zone are not kept: they belong to the edition you leave) */
+/** Another edition, same section (category/zone are not kept: they belong to the edition you leave) */
 function changeEdition(event: Event) {
-  router.push({ path: `/ver/${(event.target as HTMLSelectElement).value}`, query: tab.value === 'inicio' ? {} : { tab: tab.value } })
+  const target = editions.value?.find((e) => e.id === Number((event.target as HTMLSelectElement).value))
+  if (target) router.push(publicPath(section.value, target))
 }
 </script>
 
@@ -192,10 +214,10 @@ function changeEdition(event: Event) {
     <!-- Tabs live in the top bar, next to the logo -->
     <template #nav>
       <nav v-if="tournament" class="tabs" role="tablist">
-        <button
-          v-for="key in tabs" :key="key" type="button" role="tab" :aria-selected="tab === key"
-          :class="['tab', { active: tab === key }]" @click="tab = key"
-        >{{ t(`league.tabs.${key}`) }}</button>
+        <RouterLink
+          v-for="key in tabs" :key="key" :to="tabPath(key)" role="tab" :aria-selected="tab === key"
+          :class="['tab', { active: tab === key }]"
+        >{{ t(`league.tabs.${key}`) }}</RouterLink>
       </nav>
     </template>
     <!-- Edition band (name, status, edition / year picker): not on Inicio (always the current edition) nor on
@@ -235,10 +257,10 @@ function changeEdition(event: Event) {
       <h2>{{ t('league.emptyTitle') }}</h2>
       <p class="muted">{{ isAdmin ? t('league.emptyAdmin') : t('league.emptyText') }}</p>
       <div v-if="isAdmin" class="empty-actions">
-        <RouterLink to="/ediciones" class="btn"><AppIcon name="plus" :size="18" /> {{ t('league.createEdition') }}</RouterLink>
-        <RouterLink to="/planilla" class="btn secondary"><AppIcon name="table" :size="18" /> {{ t('league.importExcel') }}</RouterLink>
+        <RouterLink :to="PANEL.editions" class="btn"><AppIcon name="plus" :size="18" /> {{ t('league.createEdition') }}</RouterLink>
+        <RouterLink :to="PANEL.excel" class="btn secondary"><AppIcon name="table" :size="18" /> {{ t('league.importExcel') }}</RouterLink>
       </div>
-      <RouterLink v-else-if="!isLoggedIn" :to="{ path: '/login', query: { redirect: '/' } }" class="btn secondary">
+      <RouterLink v-else-if="!isLoggedIn" :to="{ path: AUTH.login, query: { redirect: '/' } }" class="btn secondary">
         <AppIcon name="login" :size="18" /> {{ t('nav.login') }}
       </RouterLink>
     </div>
@@ -256,7 +278,7 @@ function changeEdition(event: Event) {
               <h2>{{ t('league.lastRound') }}</h2>
               <p v-if="lastRound" class="sub">{{ subtitle(lastRound) }}</p>
             </div>
-            <button v-if="lastRound" type="button" class="more" @click="tab = 'fixture'">{{ t('league.seeFixture') }} ›</button>
+            <RouterLink v-if="lastRound" :to="fixtureLink" class="more">{{ t('league.seeFixture') }} ›</RouterLink>
           </header>
           <MatchCarousel v-if="lastRound" :matches="lastRound.matches" />
           <p v-else class="muted">{{ t('publicSite.noResults') }}</p>
@@ -276,7 +298,7 @@ function changeEdition(event: Event) {
               <h2>{{ t('league.nextRound') }}</h2>
               <p v-if="nextRound" class="sub">{{ subtitle(nextRound) }}</p>
             </div>
-            <button v-if="nextRound" type="button" class="more" @click="tab = 'fixture'">{{ t('league.seeFixture') }} ›</button>
+            <RouterLink v-if="nextRound" :to="fixtureLink" class="more">{{ t('league.seeFixture') }} ›</RouterLink>
           </header>
           <MatchCarousel v-if="nextRound" :matches="nextRound.matches" />
           <p v-else class="muted">{{ t('publicSite.noUpcoming') }}</p>
@@ -290,10 +312,10 @@ function changeEdition(event: Event) {
           <header class="fixture-head">
             <h2>{{ fixtureTitle }}</h2>
             <div class="views" role="tablist">
-              <button
-                v-for="v in VIEWS" :key="v" type="button" role="tab" :aria-selected="view === v"
-                :class="['view', { active: view === v }]" @click="view = v"
-              >{{ t(`league.views.${v}`) }}</button>
+              <RouterLink
+                v-for="v in VIEWS" :key="v" :to="viewPath(v)" role="tab" :aria-selected="view === v"
+                :class="['view', { active: view === v }]"
+              >{{ t(`league.views.${v}`) }}</RouterLink>
             </div>
           </header>
 

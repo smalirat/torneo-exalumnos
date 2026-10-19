@@ -10,11 +10,12 @@ import BaseModal from '../components/BaseModal.vue'
 import { tournamentApi } from '../api/endpoints'
 import type { Category, Registration, Zone } from '../api/types'
 import { zoneOptions } from '../groups'
+import { editionBySlug } from '../editions'
 import { t } from '../i18n'
 
 // Admin: place registered teams into category zones and manage zones
 const route = useRoute()
-const tournamentId = computed(() => Number(route.params.id))
+const tournamentId = computed(() => editionBySlug(route.params.edicion)?.id ?? 0)
 const categories = ref<Category[]>([])
 const registrations = ref<Registration[]>([])
 const error = ref('')

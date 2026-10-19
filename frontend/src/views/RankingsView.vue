@@ -6,10 +6,11 @@ import TeamBadge from '../components/TeamBadge.vue'
 import YellowCardsTable from '../components/YellowCardsTable.vue'
 import { tournamentApi } from '../api/endpoints'
 import type { CardRow, ScorerRow, YellowTally } from '../api/types'
+import { editionBySlug } from '../editions'
 import { t } from '../i18n'
 
 const route = useRoute()
-const tournamentId = computed(() => Number(route.params.id))
+const tournamentId = computed(() => editionBySlug(route.params.edicion)?.id ?? 0)
 const scorers = ref<ScorerRow[] | null>(null)
 const cards = ref<CardRow[] | null>(null)
 const yellows = ref<YellowTally[]>([])

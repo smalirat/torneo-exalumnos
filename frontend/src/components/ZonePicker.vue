@@ -2,10 +2,11 @@
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import type { Category } from '../api/types'
+import { groupSegments, zoneFromSegments } from '../slugs'
 import { t } from '../i18n'
 
 // Category + zone selectors (the zone one only when the category has more than one zone).
-// The selection is kept in the URL (?categoria=&zona=) so pages are shareable and remember it.
+// The selection is kept in the URL as a filter (?grupo=categoria-a/zona-2) so pages are shareable and remember it.
 const props = defineProps<{ categories: Category[] }>()
 const zoneId = defineModel<number | null>({ required: true })
 
@@ -15,9 +16,10 @@ const categoryId = ref<number | null>(null)
 const category = computed(() => props.categories.find((c) => c.id === categoryId.value) ?? null)
 
 watch(() => props.categories, (cats) => {
-  const cat = cats.find((c) => c.id === Number(route.query.categoria)) ?? cats[0]
+  const fromUrl = typeof route.query.grupo === 'string' ? zoneFromSegments(cats, route.query.grupo.split('/')) : null
+  const cat = cats.find((c) => c.zones.some((z) => z.id === fromUrl)) ?? cats[0]
   categoryId.value = cat?.id ?? null
-  zoneId.value = cat?.zones.find((z) => z.id === Number(route.query.zona))?.id ?? cat?.zones[0]?.id ?? null
+  zoneId.value = fromUrl ?? cat?.zones[0]?.id ?? null
 }, { immediate: true })
 
 function onCategoryChange() {
@@ -25,7 +27,8 @@ function onCategoryChange() {
 }
 
 watch(zoneId, (z) => {
-  router.replace({ query: { ...route.query, categoria: categoryId.value ?? undefined, zona: z ?? undefined } })
+  const grupo = groupSegments(props.categories, z).join('/')
+  router.replace({ query: { ...route.query, grupo: grupo || undefined } })
 })
 </script>
 

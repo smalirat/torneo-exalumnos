@@ -8,6 +8,7 @@ import InlineEdit from '../components/InlineEdit.vue'
 import { authApi, requestApi, teamApi } from '../api/endpoints'
 import { isAdmin } from '../auth'
 import type { Decision, Player, RequestItem, TeamRef, TeamSummary } from '../api/types'
+import { AUTH, teamPath } from '../paths'
 import { t } from '../i18n'
 
 const teams = ref<TeamSummary[] | null>(null)
@@ -122,7 +123,7 @@ const invite = ref<{ teamId: number; teamName: string; url: string; copied: bool
 const showInvite = (team: TeamSummary) => run(async () => {
   if (invite.value?.teamId === team.id) { invite.value = null; return }
   const res = await authApi.invite(team.id)
-  invite.value = { teamId: team.id, teamName: res.teamName, url: `${window.location.origin}/invitacion/${res.token}`, copied: false }
+  invite.value = { teamId: team.id, teamName: res.teamName, url: `${window.location.origin}${AUTH.invite(res.token)}`, copied: false }
 })
 async function copyInvite() {
   if (!invite.value) return
@@ -169,7 +170,7 @@ const countLabel = (n: number) => (n === 1 ? t('teams.onePlayer') : t('teams.pla
             <div class="info">
               <span class="name">
                 <InlineEdit :value="team.name" :save="(name) => renameTeam(team, name)">
-                  <RouterLink :to="`/equipos/${team.id}`" class="team-link">{{ team.name }}</RouterLink>
+                  <RouterLink :to="teamPath(team)" class="team-link">{{ team.name }}</RouterLink>
                 </InlineEdit>
               </span>
               <span v-if="!team.approved || team.pendingName || team.deletionRequested" class="review small">

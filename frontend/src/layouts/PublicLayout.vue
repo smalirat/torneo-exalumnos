@@ -4,6 +4,7 @@ import { useRoute } from 'vue-router'
 import AppIcon from '../components/AppIcon.vue'
 import { leagueApi } from '../api/endpoints'
 import { isAdmin, isLoggedIn } from '../auth'
+import { AUTH, PANEL } from '../paths'
 import { t } from '../i18n'
 
 // Public pages (no sidebar, phone first): one navy top bar with the school logo + league name on the left,
@@ -30,10 +31,10 @@ const shortName = computed(() => (leagueName.value || t('publicSite.brand')).spl
         <span class="name">{{ shortName }}</span>
       </RouterLink>
       <div class="nav"><slot name="nav" /></div>
-      <RouterLink v-if="isLoggedIn" :to="isAdmin ? '/ediciones' : '/equipos'" class="link" :aria-label="t('publicSite.panel')">
+      <RouterLink v-if="isLoggedIn" :to="isAdmin ? PANEL.editions : PANEL.teams" class="link" :aria-label="t('publicSite.panel')">
         <AppIcon name="user" :size="18" /> <span class="link-text">{{ t('publicSite.panel') }}</span>
       </RouterLink>
-      <RouterLink v-else :to="{ path: '/login', query: { redirect: route.fullPath } }" class="link" :aria-label="t('nav.login')">
+      <RouterLink v-else :to="{ path: AUTH.login, query: { redirect: route.fullPath } }" class="link" :aria-label="t('nav.login')">
         <AppIcon name="login" :size="18" /> <span class="link-text">{{ t('nav.login') }}</span>
       </RouterLink>
     </header>

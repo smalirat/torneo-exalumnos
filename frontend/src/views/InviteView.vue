@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { acceptInvite, claimInvite, currentUser, logout } from '../auth'
 import { authApi } from '../api/endpoints'
 import { ApiError } from '../api/client'
+import { AUTH, PANEL } from '../paths'
 import { t } from '../i18n'
 
 // Invitation link of a pending captain (/invitacion/:token): the real captain picks username and password,
@@ -37,7 +38,7 @@ async function run(action: () => Promise<void>) {
   fieldErrors.value = {}
   try {
     await action()
-    router.push(`/equipos/${currentUser.value?.teamIds[0] ?? ''}`)
+    router.push(PANEL.teams)
   } catch (e) {
     error.value = e instanceof Error ? e.message : t('common.genericError')
     if (e instanceof ApiError) fieldErrors.value = e.fieldErrors
@@ -83,7 +84,7 @@ const accept = () => run(() => acceptInvite(token))
           </div>
           <p v-if="error" class="error">{{ error }}</p>
           <button class="btn" :disabled="busy">{{ t('invite.submit') }}</button>
-          <RouterLink class="link" :to="{ path: '/login', query: { redirect: route.fullPath } }">{{ t('invite.haveAccount') }}</RouterLink>
+          <RouterLink class="link" :to="{ path: AUTH.login, query: { redirect: route.fullPath } }">{{ t('invite.haveAccount') }}</RouterLink>
         </form>
       </template>
       <p v-else class="muted">{{ t('common.loading') }}</p>

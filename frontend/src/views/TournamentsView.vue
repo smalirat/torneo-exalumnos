@@ -7,6 +7,7 @@ import { tournamentApi, type TournamentInput } from '../api/endpoints'
 import type { Tournament } from '../api/types'
 import { isAdmin, isLoggedIn } from '../auth'
 import { registrationLabel } from '../editions'
+import { AUTH, PANEL, panelEditionPath } from '../paths'
 import { t } from '../i18n'
 
 const tournaments = ref<Tournament[] | null>(null)
@@ -51,7 +52,7 @@ const groups = computed(() => {
       <span class="empty-icon"><AppIcon name="trophy" :size="34" /></span>
       <h2>{{ t('tournaments.emptyTitle') }}</h2>
       <p class="muted">{{ t('tournaments.emptyText') }}</p>
-      <RouterLink v-if="!isLoggedIn" to="/login" class="btn violet">
+      <RouterLink v-if="!isLoggedIn" :to="AUTH.login" class="btn violet">
         <AppIcon name="login" :size="18" /> {{ t('auth.doLogin') }}
       </RouterLink>
     </div>
@@ -59,10 +60,10 @@ const groups = computed(() => {
     <section v-for="g in groups" v-else :key="g.year ?? 'none'" class="season">
       <header class="season-head">
         <h2>{{ g.year ? t('season.title', { year: g.year }) : t('tournaments.noSeason') }}</h2>
-        <RouterLink v-if="g.seasonId" :to="`/temporadas/${g.seasonId}`" class="season-link">{{ t('tournaments.seasonLink') }} ›</RouterLink>
+        <RouterLink v-if="g.year" :to="PANEL.season(g.year)" class="season-link">{{ t('tournaments.seasonLink') }} ›</RouterLink>
       </header>
     <div class="grid">
-      <RouterLink v-for="tour in g.items" :key="tour.id" :to="`/campeonatos/${tour.id}`" class="card tour">
+      <RouterLink v-for="tour in g.items" :key="tour.id" :to="panelEditionPath(tour)" class="card tour">
         <span class="tour-icon"><AppIcon name="trophy" /></span>
         <div>
           <h2>{{ tour.name }}</h2>

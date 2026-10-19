@@ -5,14 +5,14 @@ import { login, register } from '../auth'
 import { ApiError } from '../api/client'
 import { teamApi } from '../api/endpoints'
 import type { TeamRef } from '../api/types'
+import { AUTH, PANEL, safeRedirect } from '../paths'
 import { t } from '../i18n'
 
 const props = defineProps<{ mode: 'login' | 'register' }>()
 const router = useRouter()
 const route = useRoute()
 /** Only same-app paths, never an external URL; a new captain goes to their team */
-const redirect = typeof route.query.redirect === 'string' && route.query.redirect.startsWith('/') ? route.query.redirect
-  : props.mode === 'register' ? '/equipos' : '/'
+const redirect = safeRedirect(route.query.redirect, props.mode === 'register' ? PANEL.teams : '/')
 
 const username = ref('')
 const password = ref('')
@@ -81,7 +81,7 @@ async function submit() {
       <button class="btn" :disabled="busy">
         {{ mode === 'login' ? t('auth.submitLogin') : t('auth.submitRegister') }}
       </button>
-      <RouterLink class="switch" :to="mode === 'login' ? '/registro' : '/login'">
+      <RouterLink class="switch" :to="mode === 'login' ? AUTH.register : AUTH.login">
         {{ mode === 'login' ? t('auth.noAccount') : t('auth.haveAccount') }}
       </RouterLink>
     </form>

@@ -8,11 +8,12 @@ import StandingsTable from '../components/StandingsTable.vue'
 import ZonePicker from '../components/ZonePicker.vue'
 import { tournamentApi, zoneApi } from '../api/endpoints'
 import type { Category, Match, StandingRow } from '../api/types'
+import { editionBySlug } from '../editions'
 import { t } from '../i18n'
 import { isAdmin } from '../auth'
 
 const route = useRoute()
-const tournamentId = computed(() => Number(route.params.id))
+const tournamentId = computed(() => editionBySlug(route.params.edicion)?.id ?? 0)
 
 const categories = ref<Category[] | null>(null)
 const zoneId = ref<number | null>(null)

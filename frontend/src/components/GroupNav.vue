@@ -4,11 +4,12 @@ import { useRoute, useRouter } from 'vue-router'
 import AppIcon from './AppIcon.vue'
 import type { Category } from '../api/types'
 import { zoneOptions } from '../groups'
+import { groupSegments, zoneFromSegments } from '../slugs'
 import { t } from '../i18n'
 
 // Navy strip on top of the standings / fixture card: ‹ Categoría A · Zona 1 › steps through every zone of every
 // category, in order (wraps around at the ends); changing it changes everything shown for that group.
-// The selection is kept in the URL (?categoria=&zona=) so the shared link opens the same group.
+// The selection is kept in the URL as a filter (?grupo=categoria-a/zona-2) so the shared link opens the same group.
 const props = defineProps<{ categories: Category[] }>()
 const zoneId = defineModel<number | null>({ required: true })
 
@@ -21,9 +22,8 @@ const index = computed(() => groups.value.findIndex((g) => g.zoneId === zoneId.v
 const current = computed(() => groups.value[index.value] ?? null)
 
 watch(() => props.categories, () => {
-  const fromUrl = groups.value.find((g) => g.zoneId === Number(route.query.zona))
-    ?? groups.value.find((g) => g.categoryId === Number(route.query.categoria))
-  zoneId.value = (fromUrl ?? groups.value[0])?.zoneId ?? null
+  const fromUrl = typeof route.query.grupo === 'string' ? zoneFromSegments(props.categories, route.query.grupo.split('/')) : null
+  zoneId.value = fromUrl ?? groups.value[0]?.zoneId ?? null
 }, { immediate: true })
 
 function step(delta: number) {
@@ -33,7 +33,8 @@ function step(delta: number) {
 }
 
 watch(zoneId, () => {
-  router.replace({ query: { ...route.query, categoria: current.value?.categoryId ?? undefined, zona: zoneId.value ?? undefined } })
+  const grupo = groupSegments(props.categories, zoneId.value).join('/')
+  router.replace({ query: { ...route.query, grupo: grupo || undefined } })
 })
 </script>
 

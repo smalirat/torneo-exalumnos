@@ -3,20 +3,24 @@ import { computed, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import AppIcon from '../components/AppIcon.vue'
 import UserFooter from './UserFooter.vue'
-import { tournamentApi } from '../api/endpoints'
 import type { Tournament } from '../api/types'
+import { editionBySlug, loadEditions } from '../editions'
+import { PANEL, panelEditionPath, publicPath, type PanelEditionPage } from '../paths'
 import { t } from '../i18n'
 import { isAdmin } from '../auth'
 
 // Sidebar + breadcrumb shared by every page inside a tournament
 const route = useRoute()
-const tournamentId = computed(() => Number(route.params.id))
 const tournament = ref<Tournament | null>(null)
 
-watch(tournamentId, async (id) => {
-  // No single-tournament endpoint yet: pick it from the public list
-  tournament.value = (await tournamentApi.list()).find((x) => x.id === id) ?? null
+// The router guard loaded the editions for this slug; refreshed so an edited name shows up
+watch(() => route.params.edicion, async (slug) => {
+  await loadEditions(true)
+  tournament.value = editionBySlug(slug)
 }, { immediate: true })
+
+/** Link to a page of this edition in the panel */
+const page = (p: PanelEditionPage) => (tournament.value ? panelEditionPath(tournament.value, p) : PANEL.editions)
 
 const pageTitle = computed(() => (route.meta.title as string | undefined) ?? '')
 </script>
@@ -28,22 +32,22 @@ const pageTitle = computed(() => (route.meta.title as string | undefined) ?? '')
         <span class="logo"><AppIcon name="trophy" :size="26" /></span>
         <span class="name">{{ tournament?.name }}</span>
       </div>
-      <RouterLink :to="`/campeonatos/${tournamentId}`" class="item" exact-active-class="active">
+      <RouterLink :to="page('inicio')" class="item" exact-active-class="active">
         <AppIcon name="home" /> {{ t('nav.home') }}
       </RouterLink>
-      <RouterLink :to="`/campeonatos/${tournamentId}/clasificacion`" class="item" active-class="active">
+      <RouterLink :to="page('clasificacion')" class="item" active-class="active">
         <AppIcon name="chart" /> {{ t('nav.standings') }}
       </RouterLink>
-      <RouterLink :to="`/campeonatos/${tournamentId}/fixture`" class="item" active-class="active">
+      <RouterLink :to="page('fixture')" class="item" active-class="active">
         <AppIcon name="calendar" /> {{ t('nav.fixture') }}
       </RouterLink>
-      <RouterLink :to="`/campeonatos/${tournamentId}/rankings`" class="item" active-class="active">
+      <RouterLink :to="page('rankings')" class="item" active-class="active">
         <AppIcon name="star" /> {{ t('nav.rankings') }}
       </RouterLink>
-      <RouterLink :to="`/campeonatos/${tournamentId}/definiciones`" class="item" active-class="active">
+      <RouterLink :to="page('definiciones')" class="item" active-class="active">
         <AppIcon name="flag" /> {{ t('nav.playoffs') }}
       </RouterLink>
-      <RouterLink v-if="isAdmin" :to="`/campeonatos/${tournamentId}/equipos`" class="item" active-class="active">
+      <RouterLink v-if="isAdmin" :to="page('equipos')" class="item" active-class="active">
         <AppIcon name="shield" /> {{ t('nav.tournamentTeams') }}
       </RouterLink>
       <UserFooter />
@@ -51,14 +55,14 @@ const pageTitle = computed(() => (route.meta.title as string | undefined) ?? '')
     <main class="content">
       <header class="top">
         <nav class="crumbs">
-          <RouterLink to="/ediciones">{{ t('nav.myTournaments') }}</RouterLink>
+          <RouterLink :to="PANEL.editions">{{ t('nav.myTournaments') }}</RouterLink>
           <span>/</span>
-          <RouterLink :to="`/campeonatos/${tournamentId}`">{{ tournament?.name }}</RouterLink>
+          <RouterLink :to="page('inicio')">{{ tournament?.name }}</RouterLink>
           <span>/</span>
           <strong>{{ t(pageTitle) }}</strong>
         </nav>
         <div class="actions">
-          <RouterLink :to="`/ver/${tournamentId}`" class="public-link"><AppIcon name="eye" :size="18" /> {{ t('nav.publicPage') }}</RouterLink>
+          <RouterLink :to="tournament ? publicPath('fixture', tournament) : '/'" class="public-link"><AppIcon name="eye" :size="18" /> {{ t('nav.publicPage') }}</RouterLink>
         </div>
       </header>
       <slot :tournament="tournament" />

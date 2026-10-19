@@ -2,6 +2,7 @@
 import { useRouter } from 'vue-router'
 import AppIcon from '../components/AppIcon.vue'
 import { currentUser, logout } from '../auth'
+import { AUTH } from '../paths'
 import { t } from '../i18n'
 
 const router = useRouter()
@@ -21,7 +22,7 @@ function doLogout() {
       </div>
       <button class="link" @click="doLogout"><AppIcon name="logout" :size="18" /> {{ t('nav.logout') }}</button>
     </template>
-    <RouterLink v-else to="/login" class="link"><AppIcon name="login" :size="18" /> {{ t('nav.login') }}</RouterLink>
+    <RouterLink v-else :to="AUTH.login" class="link"><AppIcon name="login" :size="18" /> {{ t('nav.login') }}</RouterLink>
   </div>
 </template>
 

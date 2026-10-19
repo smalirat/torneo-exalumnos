@@ -8,11 +8,13 @@ import SanctionsTable from '../components/SanctionsTable.vue'
 import { seasonApi } from '../api/endpoints'
 import type { Sanction, Season, SeasonStatRow } from '../api/types'
 import { splitSanctions } from '../sanctions'
+import { panelEditionPath } from '../paths'
 import { t } from '../i18n'
 
 // Annual data of a season: scorers, figures, goalkeepers (totals, e.g. from the Excel) and sanctions
 const route = useRoute()
-const seasonId = computed(() => Number(route.params.id))
+/** /panel/temporadas/2026: the season of that year */
+const year = computed(() => Number(route.params.anio))
 const season = ref<Season | null>(null)
 const tab = ref('scorers')
 const tabs = [
@@ -25,10 +27,12 @@ const rankings = ref<Record<string, SeasonStatRow[]>>({ scorers: [], figures: []
 const sanctions = ref<Sanction[]>([])
 const split = computed(() => splitSanctions(sanctions.value))
 
-watch(seasonId, async (id) => {
-  const [seasons, scorers, figures, goalkeepers, sanc] = await Promise.all([
-    seasonApi.list(), seasonApi.scorers(id), seasonApi.figures(id), seasonApi.goalkeepers(id), seasonApi.sanctions(id)])
-  season.value = seasons.find((s) => s.id === id) ?? null
+watch(year, async (y) => {
+  season.value = (await seasonApi.list()).find((s) => s.year === y) ?? null
+  const id = season.value?.id
+  if (!id) return
+  const [scorers, figures, goalkeepers, sanc] = await Promise.all([
+    seasonApi.scorers(id), seasonApi.figures(id), seasonApi.goalkeepers(id), seasonApi.sanctions(id)])
   rankings.value = { scorers, figures, goalkeepers }
   sanctions.value = sanc
 }, { immediate: true })
@@ -42,7 +46,7 @@ const valueLabel = computed(() => ({
   <GlobalLayout>
     <h1 class="title">{{ season ? t('season.title', { year: season.year }) : '' }}</h1>
     <div v-if="season" class="tournaments">
-      <RouterLink v-for="tour in season.tournaments" :key="tour.id" :to="`/campeonatos/${tour.id}`" class="chip">
+      <RouterLink v-for="tour in season.tournaments" :key="tour.id" :to="panelEditionPath(tour)" class="chip">
         {{ tour.name }}
       </RouterLink>
     </div>
