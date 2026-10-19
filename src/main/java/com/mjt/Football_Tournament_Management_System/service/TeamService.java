@@ -69,6 +69,42 @@ public class TeamService {
         return ResponseDtos.TeamRes.from(teamRepo.save(t));
     }
 
+    /** Sign-up with a new team: it starts in review, owned by the new captain. */
+    @Transactional
+    public void createTeamFor(AppUser captain, String name) {
+        if (teamRepo.findByName(name).isPresent()) throw new ConflictException("Ya hay un equipo llamado " + name);
+        var t = new Team();
+        t.setName(name); t.setCaptain(captain); t.setApproved(false); t.setCreatedAt(LocalDateTime.now());
+        teamRepo.save(t);
+    }
+
+    /**
+     * A user without team asks to be the captain of a team that has none yet (its captain is pending).
+     * One request per team at a time; the admin approves (the user takes over) or rejects it.
+     */
+    @Transactional
+    public void requestClaim(AppUser user, Long teamId) {
+        if (!teamRepo.findByCaptain(user).isEmpty()) throw new ConflictException("Ya sos capitán de un equipo");
+        if (!teamRepo.findByClaimUser(user).isEmpty()) throw new ConflictException("Ya pediste ser capitán de un equipo; esperá la respuesta");
+        var t = findTeam(teamId);
+        if (!t.isApproved() || !t.getCaptain().isPending()) throw new ConflictException("Ese equipo ya tiene capitán");
+        if (t.getClaimUser() != null) throw new ConflictException("Alguien ya pidió ser el capitán de ese equipo");
+        t.setClaimUser(user);
+        t.setClaimRequestedAt(LocalDateTime.now());
+    }
+
+    @Transactional
+    public void requestClaim(String username, Long teamId) {
+        requestClaim(userRepo.findByUsername(username).orElseThrow(() -> NotFoundException.of("Usuario", username)), teamId);
+    }
+
+    /** Teams a new captain can ask for: approved, without a real captain and without a pending request */
+    @Transactional(readOnly = true)
+    public List<ResponseDtos.TeamRef> claimable() {
+        return teamRepo.findByApprovedTrueAndCaptain_PendingTrueAndClaimUserIsNullOrderByNameAsc().stream()
+                .map(ResponseDtos.TeamRef::from).toList();
+    }
+
     /** Admins see every team; captains only the one they own. */
     @Transactional(readOnly = true)
     public List<ResponseDtos.TeamSummaryRes> listFor(Authentication auth) {

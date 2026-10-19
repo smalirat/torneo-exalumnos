@@ -43,6 +43,11 @@ public class RequestService {
         for (var p : playerRepo.findByApprovedFalseAndTeam_ApprovedTrue()) out.add(req(Type.PLAYER_ADD, p.getId(), p.getTeam(), playerName(p), p.getRequestedAt()));
         for (var p : playerRepo.findByRemovalRequestedAtNotNull()) out.add(req(Type.PLAYER_REMOVE, p.getId(), p.getTeam(), playerName(p), p.getRemovalRequestedAt()));
         for (var r : regRepo.findByApprovedFalse()) out.add(req(Type.REGISTRATION, r.getId(), r.getTeam(), r.getTournament().getName(), r.getRequestedAt()));
+        // The one asking is the "captain" of a claim (so it shows among their own requests)
+        for (var t : teamRepo.findByClaimUserNotNull()) {
+            var who = t.getClaimUser().getUsername();
+            out.add(new ResponseDtos.RequestRes(Type.CLAIM.name(), t.getId(), t.getId(), t.getName(), who, who, t.getClaimRequestedAt()));
+        }
         out.sort(Comparator.comparing(ResponseDtos.RequestRes::requestedAt, Comparator.nullsFirst(Comparator.naturalOrder())));
         return out;
     }
@@ -55,7 +60,7 @@ public class RequestService {
     public ResponseDtos.MyRequestsRes mine(String username) {
         var me = userRepo.findByUsername(username).orElseThrow(() -> NotFoundException.of("Usuario", username));
         var mine = pending().stream().filter(r -> r.captain() != null && r.captain().equals(username)).toList();
-        var decisions = decisionRepo.findTop20ByCaptainOrderByDecidedAtDesc(me).stream().map(ResponseDtos.DecisionRes::from).toList();
+        var decisions = decisionRepo.findTop20ByCaptainOrderByDecidedAtDescIdDesc(me).stream().map(ResponseDtos.DecisionRes::from).toList();
         return new ResponseDtos.MyRequestsRes(mine, decisions);
     }
 
@@ -104,6 +109,17 @@ public class RequestService {
                 r.setApproved(true); r.setRequestedAt(null);
                 log(r.getTeam(), type, r.getTournament().getName(), true, null);
             }
+            case CLAIM -> {
+                var t = team(id);
+                var user = t.getClaimUser();
+                if (user == null) throw done();
+                if (!teamRepo.findByCaptain(user).isEmpty()) throw new ConflictException(user.getUsername() + " ya es capitán de otro equipo");
+                var previous = t.getCaptain();
+                t.setCaptain(user); t.setClaimUser(null); t.setClaimRequestedAt(null);
+                teamRepo.flush();
+                if (previous.isPending()) userRepo.delete(previous); // the placeholder captain is no longer needed
+                decisionRepo.save(new RequestDecision(null, t, t.getName(), user, type, user.getUsername(), true, null, LocalDateTime.now()));
+            }
         }
     }
 
@@ -146,6 +162,14 @@ public class RequestService {
                 if (r.isApproved()) throw done();
                 log(r.getTeam(), type, r.getTournament().getName(), false, why);
                 regRepo.delete(r);
+            }
+            case CLAIM -> {
+                var t = team(id);
+                var user = t.getClaimUser();
+                if (user == null) throw done();
+                // The answer goes to the one who asked (they stay without team and can ask again or create one)
+                decisionRepo.save(new RequestDecision(null, t, t.getName(), user, type, user.getUsername(), false, why, LocalDateTime.now()));
+                t.setClaimUser(null); t.setClaimRequestedAt(null);
             }
         }
     }

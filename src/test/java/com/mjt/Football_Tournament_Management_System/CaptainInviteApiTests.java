@@ -47,7 +47,10 @@ class CaptainInviteApiTests extends ApiTestSupport {
         long team = read(post("/api/teams/register", "{\"name\":\"Equipo " + UUID.randomUUID() + "\"}", admin)).get("id").asLong();
         String token = read(post("/api/admin/teams/" + team + "/invite", "", admin)).get("token").asText();
 
+        // A user left without team (their new team was rejected) takes the invited one with their account
         String captain = newUser();
+        long rejected = read(get("/api/teams", captain)).get(0).get("id").asLong();
+        post("/api/admin/requests/TEAM/" + rejected + "/reject", "", admin).andExpect(status().isNoContent());
         post("/api/me/invites/" + token + "/accept", "", null).andExpect(status().isUnauthorized());
         post("/api/me/invites/" + token + "/accept", "", captain)
                 .andExpect(status().isOk()).andExpect(jsonPath("$.teamIds[0]").value(team));
@@ -65,8 +68,7 @@ class CaptainInviteApiTests extends ApiTestSupport {
     void signUpCannotUseThePendingPrefixAndCaptainsHaveASingleTeam() throws Exception {
         post("/api/auth/register", "{\"username\":\"pendiente-99\",\"password\":\"password123\"}", null)
                 .andExpect(status().isBadRequest());
-        String captain = newUser();
-        post("/api/teams/register", "{\"name\":\"Uno " + UUID.randomUUID() + "\"}", captain).andExpect(status().isOk());
+        String captain = newUser(); // signs up with their team
         post("/api/teams/register", "{\"name\":\"Dos " + UUID.randomUUID() + "\"}", captain).andExpect(status().isConflict());
     }
 

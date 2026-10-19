@@ -1,6 +1,6 @@
 import { computed, ref } from 'vue'
 import { getToken, setToken, setUnauthorizedHandler } from './api/client'
-import { authApi } from './api/endpoints'
+import { authApi, type SignUpTeam } from './api/endpoints'
 import type { Me } from './api/types'
 
 const me = ref<Me | null>(null)
@@ -24,8 +24,8 @@ export async function login(username: string, password: string) {
   me.value = await authApi.me()
 }
 
-export async function register(username: string, password: string) {
-  setToken((await authApi.register(username, password)).token)
+export async function register(username: string, password: string, team: SignUpTeam) {
+  setToken((await authApi.register(username, password, team)).token)
   me.value = await authApi.me()
 }
 

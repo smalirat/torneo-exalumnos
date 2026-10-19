@@ -11,7 +11,9 @@ export const leagueApi = {
 
 export const authApi = {
   login: (username: string, password: string) => post<TokenRes>('/api/auth/login', { username, password }),
-  register: (username: string, password: string) => post<TokenRes>('/api/auth/register', { username, password }),
+  /** Signing up goes with a team: a new one (teamName) or one without captain (claimTeamId); both need approval */
+  register: (username: string, password: string, team: SignUpTeam) =>
+    post<TokenRes>('/api/auth/register', { username, password, ...team }),
   me: () => get<Me>('/api/auth/me'),
   /** Captain invitations: teams created by the Excel / an admin start with a pending captain */
   invite: (teamId: number) => post<InviteRes>(`/api/admin/teams/${teamId}/invite`),
@@ -20,6 +22,8 @@ export const authApi = {
     post<TokenRes>('/api/auth/claim', { token, username, password }),
   acceptInvite: (token: string) => post<Me>(`/api/me/invites/${token}/accept`),
 }
+
+export type SignUpTeam = { teamName: string } | { claimTeamId: number }
 
 /** Body for creating/updating a tournament (status is ignored on create). */
 export interface TournamentInput {
@@ -64,6 +68,8 @@ export const tournamentApi = {
 export const teamApi = {
   list: () => get<TeamSummary[]>('/api/teams'),
   create: (name: string) => post<{ id: number; name: string }>('/api/teams/register', { name }),
+  /** Teams without captain yet: a new captain can ask for one */
+  unclaimed: () => get<TeamRef[]>('/api/public/teams/unclaimed'),
   rename: (teamId: number, name: string) => put<{ id: number; name: string }>(`/api/teams/${teamId}`, { name }),
   remove: (teamId: number) => del(`/api/teams/${teamId}`),
   get: (teamId: number) => get<TeamRef>(`/api/public/teams/${teamId}`),
@@ -159,4 +165,6 @@ export const requestApi = {
   reject: (type: RequestType, id: number, reason: string | null) => post<void>(`/api/admin/requests/${type}/${id}/reject`, { reason }),
   approveAll: (teamId: number) => post<{ approved: number }>(`/api/admin/requests/teams/${teamId}/approve-all`),
   mine: () => get<MyRequests>('/api/me/requests'),
+  /** A user without team asks to be the captain of a team that has none */
+  claim: (teamId: number) => post<void>('/api/me/claims', { teamId }),
 }

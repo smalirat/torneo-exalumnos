@@ -3,7 +3,9 @@ package com.mjt.Football_Tournament_Management_System.controller;
 import com.mjt.Football_Tournament_Management_System.dto.AdminDtos;
 import com.mjt.Football_Tournament_Management_System.dto.ResponseDtos;
 import com.mjt.Football_Tournament_Management_System.entire.RequestDecision;
+import com.mjt.Football_Tournament_Management_System.dto.AuthDtos;
 import com.mjt.Football_Tournament_Management_System.service.RequestService;
+import com.mjt.Football_Tournament_Management_System.service.TeamService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -21,6 +23,7 @@ import java.util.Map;
 @Tag(name="Captain requests")
 public class RequestController {
     private final RequestService service;
+    private final TeamService teamService;
 
     @GetMapping("/api/admin/requests")
     @Operation(summary = "Pending requests, oldest first")
@@ -46,6 +49,13 @@ public class RequestController {
     @PostMapping("/api/admin/requests/teams/{teamId}/approve-all")
     @Operation(summary = "Approve everything a team has pending, except deleting it")
     public Map<String, Integer> approveAll(@PathVariable Long teamId) { return Map.of("approved", service.approveAll(teamId)); }
+
+    @PostMapping("/api/me/claims")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Operation(summary = "A user without team asks to be the captain of a team that has none (needs approval)")
+    public void claim(@Valid @RequestBody AuthDtos.ClaimTeamReq req, Authentication auth) {
+        teamService.requestClaim(auth.getName(), req.getTeamId());
+    }
 
     @GetMapping("/api/me/requests")
     @Operation(summary = "The captain's pending requests and the latest answers")

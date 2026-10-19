@@ -26,6 +26,12 @@ public class Team {
     /** The captain asked to delete the team; null when not */
     private java.time.LocalDateTime deletionRequestedAt;
 
+    /** A user asking to be the captain of this team (it has a pending one), waiting for the admin */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JsonIgnore
+    private AppUser claimUser;
+    private java.time.LocalDateTime claimRequestedAt;
+
     /** Changes on every crest upload (goes in the image URL); null = no crest */
     private Integer crestVersion;
 

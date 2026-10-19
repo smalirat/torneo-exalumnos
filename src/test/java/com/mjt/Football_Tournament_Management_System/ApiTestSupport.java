@@ -36,8 +36,8 @@ abstract class ApiTestSupport {
     /** Registers a fresh captain user and returns its token. */
     String newUser() throws Exception {
         String user = "u" + UUID.randomUUID().toString().substring(0, 8);
-        return read(post("/api/auth/register", "{\"username\":\"" + user + "\",\"password\":\"password123\"}", null)
-                .andExpect(status().isCreated())).get("token").asText();
+        return read(post("/api/auth/register", "{\"username\":\"" + user + "\",\"password\":\"password123\",\"teamName\":\"Team "
+                + UUID.randomUUID() + "\"}", null).andExpect(status().isCreated())).get("token").asText();
     }
 
     long newTournament(String token) throws Exception {
@@ -57,10 +57,16 @@ abstract class ApiTestSupport {
                 .andExpect(status().isOk())).get("id").asLong();
     }
 
-    /** A team; a captain's one is approved by the admin right away (it starts in review) */
+    /**
+     * A team: for a captain, the one they signed up with (captains have a single team); for the admin, a new one.
+     * Approved right away (a captain's team starts in review).
+     */
     long newTeam(String token) throws Exception {
-        long id = read(post("/api/teams/register", "{\"name\":\"Team " + UUID.randomUUID() + "\"}", token)
-                .andExpect(status().isOk())).get("id").asLong();
+        var mine = read(get("/api/teams", token));
+        boolean captain = "CAPTAIN".equals(read(get("/api/auth/me", token)).get("role").asText());
+        long id = captain && mine.size() > 0 ? mine.get(0).get("id").asLong()
+                : read(post("/api/teams/register", "{\"name\":\"Team " + UUID.randomUUID() + "\"}", token)
+                        .andExpect(status().isOk())).get("id").asLong();
         post("/api/admin/requests/teams/" + id + "/approve-all", "", admin()).andExpect(status().isOk());
         return id;
     }

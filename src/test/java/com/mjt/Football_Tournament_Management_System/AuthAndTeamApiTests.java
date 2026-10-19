@@ -49,7 +49,10 @@ class AuthAndTeamApiTests {
 
         String user = uniqueUser();
         register(user);
-        post("/api/auth/register", creds(user), null).andExpect(status().isConflict());
+        post("/api/auth/register", "{\"username\":\"" + user + "\",\"password\":\"password123\",\"teamName\":\"Otro "
+                + UUID.randomUUID() + "\"}", null).andExpect(status().isConflict());
+        // Signing up goes with a team: a new one or one without captain
+        post("/api/auth/register", creds(uniqueUser()), null).andExpect(status().isBadRequest());
     }
 
     @Test
@@ -73,8 +76,7 @@ class AuthAndTeamApiTests {
         String other = register(uniqueUser());
         String admin = login("admin", "admin123");
 
-        long teamId = read(post("/api/teams/register", "{\"name\":\"Team " + UUID.randomUUID() + "\"}", owner)
-                .andExpect(status().isOk())).get("id").asLong();
+        long teamId = newTeam(owner); // the one they signed up with
         String players = "{\"players\":[{\"fullName\":\"Juan Pérez\",\"jerseyNo\":10}]}";
 
         post("/api/teams/" + teamId + "/players", players, other).andExpect(status().isForbidden());
@@ -148,11 +150,11 @@ class AuthAndTeamApiTests {
         long tournamentId = newTournament(admin);
         JsonNode category = newCategory(admin, tournamentId, "A");
         long categoryId = category.get("id").asLong();
-        long teamId = read(post("/api/teams/register", "{\"name\":\"Team " + UUID.randomUUID()
-                + "\",\"phone\":\"1155554444\",\"email\":\"capi@example.com\"}", captain)
+        long teamId = newTeam(captain); // the one they signed up with, approved
+        String teamName = read(mvc.perform(get("/api/public/teams/" + teamId))).get("name").asText();
+        put("/api/teams/" + teamId, "{\"name\":\"" + teamName + "\",\"phone\":\"1155554444\",\"email\":\"capi@example.com\"}", captain)
                 .andExpect(jsonPath("$.captainId").isNumber())
-                .andExpect(jsonPath("$.captain").doesNotExist())).get("id").asLong();
-        approveAll(teamId); // a captain's team starts in review
+                .andExpect(jsonPath("$.captain").doesNotExist());
         enrollInZone(teamId, category, captain, admin);
 
         mvc.perform(get("/api/public/tournaments/" + tournamentId + "/registrations"))
@@ -995,9 +997,13 @@ class AuthAndTeamApiTests {
                 "{\"name\":\"" + name + "\"}", token).andExpect(status().isOk()));
     }
 
+    /** For a captain, the team they signed up with (a single one); for the admin, a new one. Approved right away. */
     private long newTeam(String token) throws Exception {
-        long id = read(post("/api/teams/register", "{\"name\":\"Team " + UUID.randomUUID() + "\"}", token)
-                .andExpect(status().isOk())).get("id").asLong();
+        var mine = read(mvc.perform(get("/api/teams").header("Authorization", "Bearer " + token)));
+        var me = read(mvc.perform(get("/api/auth/me").header("Authorization", "Bearer " + token)));
+        long id = "CAPTAIN".equals(me.get("role").asText()) && mine.size() > 0 ? mine.get(0).get("id").asLong()
+                : read(post("/api/teams/register", "{\"name\":\"Team " + UUID.randomUUID() + "\"}", token)
+                        .andExpect(status().isOk())).get("id").asLong();
         approveAll(id);
         return id;
     }
@@ -1048,9 +1054,10 @@ class AuthAndTeamApiTests {
         return "{\"username\":\"" + user + "\",\"password\":\"password123\"}";
     }
 
+    /** Signing up goes with a new team (in review) */
     private String register(String user) throws Exception {
-        return read(post("/api/auth/register", creds(user), null).andExpect(status().isCreated()))
-                .get("token").asText();
+        return read(post("/api/auth/register", "{\"username\":\"" + user + "\",\"password\":\"password123\",\"teamName\":\"Team "
+                + UUID.randomUUID() + "\"}", null).andExpect(status().isCreated())).get("token").asText();
     }
 
     private String login(String user, String pass) throws Exception {

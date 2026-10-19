@@ -1,6 +1,7 @@
 package com.mjt.Football_Tournament_Management_System.dto;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
@@ -21,6 +22,15 @@ public class AuthDtos {
         private String username;
         @NotBlank @Size(min = 8, max = 100)
         private String password;
+        /** Signing up goes with a team: either a new one (teamName) or one without captain (claimTeamId). */
+        @Size(max = 100) private String teamName;
+        private Long claimTeamId;
+    }
+
+    /** A user without team asks to be the captain of a team that has none */
+    @Data
+    public static class ClaimTeamReq {
+        @NotNull private Long teamId;
     }
 
     /** Claim a pending captain account from an invitation link: the real captain picks username and password. */

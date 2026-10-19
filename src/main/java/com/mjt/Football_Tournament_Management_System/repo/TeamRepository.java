@@ -15,4 +15,8 @@ public interface TeamRepository extends JpaRepository<Team, Long> {
     List<Team> findByApprovedFalse();
     List<Team> findByPendingNameNotNull();
     List<Team> findByDeletionRequestedAtNotNull();
+    List<Team> findByClaimUserNotNull();
+    List<Team> findByClaimUser(AppUser user);
+    /** Approved teams whose captain is still pending and nobody asked for: a new user can claim them */
+    List<Team> findByApprovedTrueAndCaptain_PendingTrueAndClaimUserIsNullOrderByNameAsc();
 }

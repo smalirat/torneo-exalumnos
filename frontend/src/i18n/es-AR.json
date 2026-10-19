@@ -31,7 +31,13 @@
     "submitRegister": "Crear cuenta",
     "noAccount": "¿No tenés cuenta? Registrate como capitán",
     "haveAccount": "¿Ya tenés cuenta? Iniciá sesión",
-    "doLogin": "Hacer login"
+    "doLogin": "Hacer login",
+    "yourTeam": "Tu equipo",
+    "newTeam": "Crear un equipo nuevo",
+    "existingTeam": "Mi equipo ya está en el torneo",
+    "pickTeam": "Elegí tu equipo",
+    "approvalHint": "El organizador tiene que aprobarlo. Mientras tanto ya podés entrar y cargar tu plantel.",
+    "claimHint": "El organizador tiene que aprobarlo: cuando lo haga, el equipo pasa a ser tuyo."
   },
   "tournaments": {
     "emptyTitle": "Todavía no hay ediciones",
@@ -135,6 +141,8 @@
     "delete": "Eliminar equipo",
     "deleteConfirm": "Se eliminará \"{name}\" con su plantel. Solo es posible si no está inscripto en ningún campeonato.",
     "sentForApproval": "Pedido enviado: el organizador tiene que aprobarlo.",
+    "askCaptain": "Pedir ser el capitán",
+    "claimPending": "Pediste ser el capitán de {name}: esperando la aprobación del organizador.",
     "inReview": "En revisión",
     "pendingName": "Nombre pedido: {name}",
     "deletionRequested": "Baja del equipo pedida",
@@ -193,7 +201,8 @@
       "DELETE_TEAM": "Borrar el equipo",
       "PLAYER_ADD": "Alta de jugador: {subject}",
       "PLAYER_REMOVE": "Baja de jugador: {subject}",
-      "REGISTRATION": "Inscripción en {subject}"
+      "REGISTRATION": "Inscripción en {subject}",
+      "CLAIM": "Pide ser el capitán: {subject}"
     }
   },
   "invite": {

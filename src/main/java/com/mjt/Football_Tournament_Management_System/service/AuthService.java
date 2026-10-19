@@ -29,6 +29,7 @@ public class AuthService {
     private final AppUserRepository userRepo;
     private final TeamRepository teamRepo;
     private final PasswordEncoder encoder;
+    private final TeamService teamService;
 
     public AuthDtos.TokenRes login(AuthDtos.LoginReq req) {
         am.authenticate(new UsernamePasswordAuthenticationToken(req.getUsername(), req.getPassword()));
@@ -38,8 +39,15 @@ public class AuthService {
     /** Public sign-up: always creates a CAPTAIN. Admins are only created via bootstrap. */
     @Transactional
     public AuthDtos.TokenRes register(AuthDtos.RegisterReq req) {
+        boolean newTeam = req.getTeamName() != null && !req.getTeamName().isBlank();
+        if (newTeam == (req.getClaimTeamId() != null)) {
+            throw new BadRequestException("Elegí crear un equipo nuevo o pedir ser capitán de uno que ya está en el torneo");
+        }
         checkUsernameFree(req.getUsername());
-        userRepo.save(new AppUser(null, req.getUsername(), encoder.encode(req.getPassword()), AppUser.Role.CAPTAIN));
+        var user = userRepo.save(new AppUser(null, req.getUsername(), encoder.encode(req.getPassword()), AppUser.Role.CAPTAIN));
+        // Both wait for the admin; if they fail (e.g. the team name exists) the user is not created either
+        if (newTeam) teamService.createTeamFor(user, req.getTeamName().trim());
+        else teamService.requestClaim(user, req.getClaimTeamId());
         return token(req.getUsername());
     }
 

@@ -10,7 +10,7 @@ import java.time.LocalDateTime;
 @Entity @Table(name="request_decisions")
 public class RequestDecision {
     /** What a captain can ask for. Cosmetic changes (crest, jersey numbers) never need approval. */
-    public enum Type { TEAM, RENAME, DELETE_TEAM, PLAYER_ADD, PLAYER_REMOVE, REGISTRATION }
+    public enum Type { TEAM, RENAME, DELETE_TEAM, PLAYER_ADD, PLAYER_REMOVE, REGISTRATION, CLAIM }
 
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

@@ -91,6 +91,12 @@ public class PublicApiController {
         return rService.cards(id);
     }
 
+    @GetMapping("/teams/unclaimed")
+    @Operation(summary = "Teams without captain yet (approved, captain pending, nobody asked): a new user can ask for one")
+    public List<ResponseDtos.TeamRef> unclaimedTeams() {
+        return teamService.claimable();
+    }
+
     @GetMapping("/teams/{id}")
     @Operation(summary = "A team (one in review only for its captain and the admin)")
     public ResponseDtos.TeamRef team(@PathVariable Long id, Authentication auth) {

@@ -19,8 +19,7 @@ class TeamCrestApiTests extends ApiTestSupport {
     @Test
     void captainOrAdminSetsTheCrestAndEveryTeamReferenceCarriesItsUrl() throws Exception {
         String captain = newUser();
-        long team = read(post("/api/teams/register", "{\"name\":\"Escudo " + UUID.randomUUID() + "\"}", captain)).get("id").asLong();
-        post("/api/admin/requests/teams/" + team + "/approve-all", "", admin()).andExpect(status().isOk()); // starts in review
+        long team = newTeam(captain); // the one they signed up with, approved
         get("/api/public/teams/" + team, null).andExpect(jsonPath("$.crest").doesNotExist());
 
         byte[] png = png();

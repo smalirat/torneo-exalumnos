@@ -12,9 +12,10 @@ class CaptainApprovalApiTests extends ApiTestSupport {
 
     @Test
     void aCaptainsTeamIsInReviewUntilApprovedWithItsRoster() throws Exception {
-        String admin = admin(), captain = newUser();
-        String name = "Nuevo " + UUID.randomUUID();
-        long team = read(post("/api/teams/register", "{\"name\":\"" + name + "\"}", captain).andExpect(status().isOk())).get("id").asLong();
+        String admin = admin(), captain = newUser(); // signs up with a new team
+        var mine = read(get("/api/teams", captain)).get(0);
+        long team = mine.get("id").asLong();
+        String name = mine.get("name").asText();
         post("/api/teams/" + team + "/players", "{\"players\":[{\"fullName\":\"Juan Pérez\",\"jerseyNo\":9}]}", captain)
                 .andExpect(status().isOk());
 
@@ -96,7 +97,7 @@ class CaptainApprovalApiTests extends ApiTestSupport {
 
         // Rejecting a new team deletes it; the captain can create another one
         String other = newUser();
-        long rejected = read(post("/api/teams/register", "{\"name\":\"Rechazado " + UUID.randomUUID() + "\"}", other)).get("id").asLong();
+        long rejected = read(get("/api/teams", other)).get(0).get("id").asLong();
         post("/api/admin/requests/TEAM/" + rejected + "/reject", "{\"reason\":\"Duplicado\"}", admin).andExpect(status().isNoContent());
         get("/api/teams", other).andExpect(jsonPath("$.length()").value(0));
         get("/api/me/requests", other).andExpect(jsonPath("$.decisions[0].reason").value("Duplicado"));

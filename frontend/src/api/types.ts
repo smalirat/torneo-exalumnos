@@ -122,7 +122,7 @@ export interface TeamSummary {
 }
 
 /** What a captain can ask for; crest and jersey numbers never need approval */
-export type RequestType = 'TEAM' | 'RENAME' | 'DELETE_TEAM' | 'PLAYER_ADD' | 'PLAYER_REMOVE' | 'REGISTRATION'
+export type RequestType = 'TEAM' | 'RENAME' | 'DELETE_TEAM' | 'PLAYER_ADD' | 'PLAYER_REMOVE' | 'REGISTRATION' | 'CLAIM'
 
 /** A captain's request waiting for the admin; subject: new name, player or tournament */
 export interface RequestItem {

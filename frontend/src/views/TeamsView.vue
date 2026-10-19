@@ -7,7 +7,7 @@ import ConfirmButton from '../components/ConfirmButton.vue'
 import InlineEdit from '../components/InlineEdit.vue'
 import { authApi, requestApi, teamApi } from '../api/endpoints'
 import { isAdmin } from '../auth'
-import type { Decision, Player, TeamSummary } from '../api/types'
+import type { Decision, Player, RequestItem, TeamRef, TeamSummary } from '../api/types'
 import { t } from '../i18n'
 
 const teams = ref<TeamSummary[] | null>(null)
@@ -17,6 +17,10 @@ const error = ref('')
 const notice = ref('')
 /** Captain: the organizer's latest answers to their requests */
 const decisions = ref<Decision[]>([])
+/** Captain without team: a pending request to captain an existing team, and the teams they could ask for */
+const pendingClaim = ref<RequestItem | null>(null)
+const unclaimed = ref<TeamRef[]>([])
+const claimTeamId = ref<number | null>(null)
 
 // Roster panel of the expanded team
 const openTeamId = ref<number | null>(null)
@@ -27,7 +31,11 @@ const jerseyNo = ref<number | null>(null)
 
 async function loadTeams() {
   teams.value = await teamApi.list()
-  if (!isAdmin.value) decisions.value = (await requestApi.mine().catch(() => ({ decisions: [] as Decision[] }))).decisions
+  if (isAdmin.value) return
+  const mine = await requestApi.mine().catch(() => ({ pending: [] as RequestItem[], decisions: [] as Decision[] }))
+  decisions.value = mine.decisions
+  pendingClaim.value = mine.pending.find((r) => r.type === 'CLAIM') ?? null
+  if (teams.value?.length === 0 && !pendingClaim.value) unclaimed.value = await teamApi.unclaimed().catch(() => [])
 }
 onMounted(loadTeams)
 
@@ -45,6 +53,14 @@ async function run(action: () => Promise<void>) {
     error.value = e instanceof Error ? e.message : t('common.genericError')
   }
 }
+
+const claimTeam = () => run(async () => {
+  if (!claimTeamId.value) return
+  await requestApi.claim(claimTeamId.value)
+  claimTeamId.value = null
+  await loadTeams()
+  sentForApproval()
+})
 
 const addTeam = () => run(async () => {
   await teamApi.create(newTeam.value)
@@ -118,8 +134,8 @@ async function copyInvite() {
 const whatsappUrl = computed(() => invite.value
   ? `https://wa.me/?text=${encodeURIComponent(t('teams.whatsappText', { name: invite.value.teamName, url: invite.value.url }))}`
   : '')
-/** A captain has a single team: once it exists the "add" form goes away */
-const canAdd = computed(() => isAdmin.value || (teams.value?.length ?? 0) === 0)
+/** A captain has a single team: once it exists (or asked to captain one) the "add" forms go away */
+const canAdd = computed(() => isAdmin.value || ((teams.value?.length ?? 0) === 0 && !pendingClaim.value))
 
 const countLabel = (n: number) => (n === 1 ? t('teams.onePlayer') : t('teams.players', { n }))
 </script>
@@ -132,6 +148,14 @@ const countLabel = (n: number) => (n === 1 ? t('teams.onePlayer') : t('teams.pla
         <input v-model="newTeam" class="input" :placeholder="t('teams.namePlaceholder')" required />
         <button class="btn">{{ t('teams.add') }}</button>
       </form>
+      <form v-if="canAdd && !isAdmin && unclaimed.length" class="add claim" @submit.prevent="claimTeam">
+        <select v-model="claimTeamId" class="select" required :aria-label="t('auth.existingTeam')">
+          <option :value="null" disabled>{{ t('auth.existingTeam') }}</option>
+          <option v-for="tm in unclaimed" :key="tm.id" :value="tm.id">{{ tm.name }}</option>
+        </select>
+        <button class="btn secondary">{{ t('teams.askCaptain') }}</button>
+      </form>
+      <p v-if="pendingClaim" class="review small">{{ t('teams.claimPending', { name: pendingClaim.teamName }) }}</p>
       <p v-if="error" class="error">{{ error }}</p>
       <p v-if="notice" class="notice">{{ notice }}</p>
 
@@ -232,6 +256,8 @@ const countLabel = (n: number) => (n === 1 ? t('teams.onePlayer') : t('teams.pla
 .title { font-size: 28px; color: var(--navy); margin-bottom: 24px; }
 .add { display: flex; gap: 10px; }
 .add .input { border: 2px solid var(--navy); }
+.claim { margin-top: 10px; }
+.claim .select { flex: 1; }
 .total { font-size: 13px; font-weight: 700; color: var(--muted); margin: 10px 0 4px; }
 .team { border-bottom: 1px solid var(--border); }
 .team:last-child { border-bottom: 0; }
