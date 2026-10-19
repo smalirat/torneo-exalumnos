@@ -35,7 +35,7 @@ npm run build      # chequeo de tipos (vue-tsc) + build
 | `/ediciones` | logueado | Ediciones del torneo; el admin crea ediciones (FAB +) |
 | `/login`, `/registro` | todos | Login y alta de capitán |
 | `/invitacion/:token` | todos | El capitán de un equipo creado por el Excel/admin activa su usuario (o lo acepta con su cuenta) |
-| `/equipos` | logueado | Registro de equipos: plantel, inscripción, renombrar/eliminar |
+| `/equipos` | logueado | Registro de equipos: escudo, plantel, invitar capitán, renombrar/eliminar |
 | `/planilla` | admin | Planilla Excel: importar con vista previa y conflictos, historial, exportar temporada |
 | `/temporadas/:id` | todos | Temporada: goleadores, figuras, imbatibles y sanciones del año |
 | `/historia` | todos | Historia de campeones por categoría y máximos campeones |
