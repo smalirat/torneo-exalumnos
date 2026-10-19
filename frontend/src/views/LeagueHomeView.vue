@@ -5,6 +5,7 @@ import PublicLayout from '../layouts/PublicLayout.vue'
 import AppIcon from '../components/AppIcon.vue'
 import ChampionsCollage from '../components/ChampionsCollage.vue'
 import ChampionsHistory from '../components/ChampionsHistory.vue'
+import GroupNav from '../components/GroupNav.vue'
 import LeagueTable from '../components/LeagueTable.vue'
 import MatchCard from '../components/MatchCard.vue'
 import MatchCarousel from '../components/MatchCarousel.vue'
@@ -14,7 +15,6 @@ import SanctionsTable from '../components/SanctionsTable.vue'
 import ScoreCard from '../components/ScoreCard.vue'
 import ShareButton from '../components/ShareButton.vue'
 import YellowCardsByTeam from '../components/YellowCardsByTeam.vue'
-import ZonePicker from '../components/ZonePicker.vue'
 import { championApi, collageApi, playoffApi, seasonApi, tournamentApi, zoneApi } from '../api/endpoints'
 import type { Category, CategoryHistory, CollagePhoto, Match, Sanction, ScorerRow, SeasonStatRow, StandingRow, Tournament, YellowTally } from '../api/types'
 import { isAdmin, isLoggedIn } from '../auth'
@@ -194,10 +194,7 @@ function changeEdition(event: Event) {
     <template v-else-if="tournament">
       <p v-if="categories && categories.length === 0" class="card muted">{{ t('publicSite.noCategories') }}</p>
 
-      <div v-if="categories?.length && ['inicio', 'fixture'].includes(tab)" class="filters">
-        <span class="filter-label">{{ t('standings.category') }}</span>
-        <ZonePicker v-model="zoneId" :categories="categories" />
-      </div>
+      <GroupNav v-if="categories?.length && ['inicio', 'fixture'].includes(tab)" v-model="zoneId" :categories="categories" />
 
       <!-- INICIO -->
       <template v-if="tab === 'inicio' && categories?.length">
@@ -320,9 +317,6 @@ function changeEdition(event: Event) {
 }
 .tab.active { color: #fff; border-bottom-color: #fff; }
 
-.filters { display: flex; justify-content: flex-end; align-items: center; gap: 8px; margin-bottom: 4px; }
-.filter-label { font-size: 13px; font-weight: 500; color: var(--muted); }
-.filters :deep(.select) { border-radius: 999px; min-width: 0; width: auto; padding: 6px 30px 6px 14px; font-size: 14px; }
 .block { margin-bottom: 32px; }
 .block-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; margin-bottom: 12px; }
 .block-head h2 { font-family: var(--condensed); text-transform: uppercase; color: var(--navy); font-size: clamp(26px, 5vw, 34px); line-height: 1; }
