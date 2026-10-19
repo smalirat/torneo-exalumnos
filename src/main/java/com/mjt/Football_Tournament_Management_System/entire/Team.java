@@ -17,6 +17,15 @@ public class Team {
     private String phone;
     private String email;
 
+    /** false while a team created by a captain waits for the admin (in review: not public, cannot register) */
+    private boolean approved = true;
+    private java.time.LocalDateTime createdAt;
+    /** Name the captain asked for, waiting for the admin; null when there is none */
+    private String pendingName;
+    private java.time.LocalDateTime pendingNameAt;
+    /** The captain asked to delete the team; null when not */
+    private java.time.LocalDateTime deletionRequestedAt;
+
     /** Changes on every crest upload (goes in the image URL); null = no crest */
     private Integer crestVersion;
 

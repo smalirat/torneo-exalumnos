@@ -11,6 +11,8 @@ import java.util.List;
 
 public interface RegistrationRepository extends JpaRepository<Registration, Long> {
     List<Registration> findByTournament(Tournament t);
+    List<Registration> findByTournamentAndApprovedTrue(Tournament t);
+    List<Registration> findByApprovedFalse();
     boolean existsByTournament(Tournament t);
     boolean existsByTeam(Team team);
     List<Registration> findByTeamOrderByIdDesc(Team team);

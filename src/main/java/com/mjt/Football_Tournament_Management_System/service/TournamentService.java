@@ -102,8 +102,9 @@ public class TournamentService {
         return tournamentRepo.findAll().stream().map(ResponseDtos.TournamentRes::from).toList();
     }
 
+    /** Registrations of the edition; captains' ones waiting for approval are not listed */
     public List<ResponseDtos.RegistrationRes> registrations(Long tournamentId) {
-        return regRepo.findByTournament(findTournament(tournamentId)).stream()
+        return regRepo.findByTournamentAndApprovedTrue(findTournament(tournamentId)).stream()
                 .map(ResponseDtos.RegistrationRes::from).toList();
     }
 

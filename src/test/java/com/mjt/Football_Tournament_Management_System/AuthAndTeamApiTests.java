@@ -152,6 +152,7 @@ class AuthAndTeamApiTests {
                 + "\",\"phone\":\"1155554444\",\"email\":\"capi@example.com\"}", captain)
                 .andExpect(jsonPath("$.captainId").isNumber())
                 .andExpect(jsonPath("$.captain").doesNotExist())).get("id").asLong();
+        approveAll(teamId); // a captain's team starts in review
         enrollInZone(teamId, category, captain, admin);
 
         mvc.perform(get("/api/public/tournaments/" + tournamentId + "/registrations"))
@@ -258,12 +259,17 @@ class AuthAndTeamApiTests {
         long rival = newTeam(admin);
         long scorer = newPlayer(captain, mine, "Goleador");
         long bench = newPlayer(captain, mine, "Suplente");
+        approveAll(mine); // the captain's additions wait for the admin
         assignToZone(admin, zone, mine, rival);
         score(admin, scheduleMatch(admin, zone, mine, rival), "{\"events\":[" + event(scorer, "GOAL") + "]}");
 
         delete("/api/teams/" + mine + "/players/" + scorer, captain).andExpect(status().isConflict());
         delete("/api/teams/" + mine + "/players/" + bench, register(uniqueUser())).andExpect(status().isForbidden());
         delete("/api/teams/" + mine + "/players/" + bench, captain).andExpect(status().isNoContent());
+        // A captain's removal waits for the admin
+        mvc.perform(get("/api/teams").header("Authorization", "Bearer " + captain))
+                .andExpect(jsonPath("$[0].playerCount").value(2));
+        post("/api/admin/requests/PLAYER_REMOVE/" + bench + "/approve", "", admin).andExpect(status().isNoContent());
         mvc.perform(get("/api/teams").header("Authorization", "Bearer " + captain))
                 .andExpect(jsonPath("$[0].playerCount").value(1));
     }
@@ -321,7 +327,9 @@ class AuthAndTeamApiTests {
         put("/api/teams/" + team, "{\"name\":\"" + newName + "\"}", register(uniqueUser()))
                 .andExpect(status().isForbidden());
         put("/api/teams/" + team, "{\"name\":\"" + newName + "\"}", captain)
-                .andExpect(jsonPath("$.name").value(newName));
+                .andExpect(jsonPath("$.name").value(org.hamcrest.Matchers.not(newName))); // waits for the admin
+        post("/api/admin/requests/RENAME/" + team + "/approve", "", login("admin", "admin123")).andExpect(status().isNoContent());
+        mvc.perform(get("/api/public/teams/" + team)).andExpect(jsonPath("$.name").value(newName));
 
         // One team per captain
         post("/api/teams/register", "{\"name\":\"Otro " + UUID.randomUUID() + "\"}", captain)
@@ -911,9 +919,29 @@ class AuthAndTeamApiTests {
     }
 
     private long newTeamNamed(String token, String name) throws Exception {
-        return read(post("/api/teams/register", "{\"name\":\"" + name + "\"}", token)
+        long id = read(post("/api/teams/register", "{\"name\":\"" + name + "\"}", token)
                 .andExpect(status().isOk())).get("id").asLong();
+        approveAll(id);
+        return id;
     }
+    /** Captains' teams start in review: the admin approves them (and their roster) like in real life */
+    private void approveAll(long teamId) throws Exception {
+        post("/api/admin/requests/teams/" + teamId + "/approve-all", "", login("admin", "admin123")).andExpect(status().isOk());
+    }
+
+    /** A captain's registration waits for the admin: approve it so the test can go on */
+    private ResultActions approved(ResultActions registration) throws Exception {
+        var res = registration.andReturn().getResponse();
+        if (res.getStatus() == 200) {
+            var body = json.readTree(res.getContentAsString());
+            if (!body.get("approved").asBoolean()) {
+                post("/api/admin/requests/REGISTRATION/" + body.get("id").asLong() + "/approve", "", login("admin", "admin123"))
+                        .andExpect(status().isNoContent());
+            }
+        }
+        return registration;
+    }
+
 
     private void assignToZone(String admin, long zoneId, long... teamIds) throws Exception {
         long tournamentId = zoneTournaments.get(zoneId);
@@ -968,14 +996,16 @@ class AuthAndTeamApiTests {
     }
 
     private long newTeam(String token) throws Exception {
-        return read(post("/api/teams/register", "{\"name\":\"Team " + UUID.randomUUID() + "\"}", token)
+        long id = read(post("/api/teams/register", "{\"name\":\"Team " + UUID.randomUUID() + "\"}", token)
                 .andExpect(status().isOk())).get("id").asLong();
+        approveAll(id);
+        return id;
     }
 
     /** Captains can only register while registration is open: the admin opens it (finishing any other active edition). */
     private ResultActions enroll(long teamId, long tournamentId, String token) throws Exception {
         openRegistration(tournamentId);
-        return post("/api/teams/" + teamId + "/tournaments/" + tournamentId + "/register", "", token);
+        return approved(post("/api/teams/" + teamId + "/tournaments/" + tournamentId + "/register", "", token));
     }
 
     private void openRegistration(long tournamentId) throws Exception {

@@ -117,6 +117,12 @@ public class AdminDtos {
         private LocalDate date;
     }
 
+    /** Optional reason when rejecting a captain's request */
+    @Data
+    public static class RejectReq {
+        @Size(max = 500) private String reason;
+    }
+
     @Data
     public static class CollageLayoutReq {
         @NotEmpty private List<@Valid CollageItem> items;

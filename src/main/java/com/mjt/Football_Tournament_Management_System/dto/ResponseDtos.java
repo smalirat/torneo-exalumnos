@@ -35,11 +35,12 @@ public class ResponseDtos {
      * (nobody claimed the team yet: the admin can send an invitation link).
      */
     public record TeamSummaryRes(Long id, String name, String crest, Long captainId, String captainUsername,
-                                 boolean captainPending, int playerCount) {
+                                 boolean captainPending, int playerCount, boolean approved, String pendingName,
+                                 boolean deletionRequested) {
         public static TeamSummaryRes of(Team t, int playerCount) {
             var c = t.getCaptain();
             return new TeamSummaryRes(t.getId(), t.getName(), crestUrl(t), c.getId(), c.isPending() ? null : c.getUsername(),
-                    c.isPending(), playerCount);
+                    c.isPending(), playerCount, t.isApproved(), t.getPendingName(), t.getDeletionRequestedAt() != null);
         }
     }
 
@@ -127,11 +128,32 @@ public class ResponseDtos {
 
     public record CardRow(PlayerRef player, TeamRef team, int yellowCards, int redCards) {}
 
-    public record PlayerRes(Long id, String fullName, int jerseyNo, Long teamId) {
+    /** approved: false while the admin has not approved its addition; removalRequested: the captain asked to remove it */
+    public record PlayerRes(Long id, String fullName, int jerseyNo, Long teamId, boolean approved, boolean removalRequested) {
         public static PlayerRes from(Player p) {
-            return new PlayerRes(p.getId(), p.getFullName(), p.getJerseyNo(), p.getTeam().getId());
+            return new PlayerRes(p.getId(), p.getFullName(), p.getJerseyNo(), p.getTeam().getId(), p.isApproved(),
+                    p.getRemovalRequestedAt() != null);
         }
     }
+
+    /**
+     * A captain's request waiting for the admin. id is the team, player or registration it is about;
+     * subject the new name, the player or the tournament.
+     */
+    public record RequestRes(String type, Long id, Long teamId, String teamName, String captain, String subject,
+                             LocalDateTime requestedAt) {}
+
+    /** The admin's answer to a request */
+    public record DecisionRes(String type, String teamName, String subject, boolean approved, String reason,
+                              LocalDateTime decidedAt) {
+        public static DecisionRes from(RequestDecision d) {
+            return new DecisionRes(d.getType().name(), d.getTeamName(), d.getSubject(), d.isApproved(), d.getReason(),
+                    d.getDecidedAt());
+        }
+    }
+
+    /** What a captain sees: their pending requests and the latest answers */
+    public record MyRequestsRes(List<RequestRes> pending, List<DecisionRes> decisions) {}
 
     public record LeagueRes(String title) {}
 

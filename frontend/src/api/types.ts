@@ -114,7 +114,37 @@ export interface TeamSummary {
   captainUsername: string | null
   captainPending: boolean
   playerCount: number
+  /** false while a captain's new team waits for the admin */
+  approved: boolean
+  /** Name the captain asked for, waiting for the admin */
+  pendingName: string | null
+  deletionRequested: boolean
 }
+
+/** What a captain can ask for; crest and jersey numbers never need approval */
+export type RequestType = 'TEAM' | 'RENAME' | 'DELETE_TEAM' | 'PLAYER_ADD' | 'PLAYER_REMOVE' | 'REGISTRATION'
+
+/** A captain's request waiting for the admin; subject: new name, player or tournament */
+export interface RequestItem {
+  type: RequestType
+  id: number
+  teamId: number
+  teamName: string
+  captain: string | null
+  subject: string
+  requestedAt: string | null
+}
+
+export interface Decision {
+  type: RequestType
+  teamName: string
+  subject: string | null
+  approved: boolean
+  reason: string | null
+  decidedAt: string
+}
+
+export interface MyRequests { pending: RequestItem[]; decisions: Decision[] }
 
 export interface InviteRes { token: string; teamName: string }
 
@@ -123,6 +153,10 @@ export interface Player {
   fullName: string
   jerseyNo: number
   teamId: number
+  /** false while a player added by a captain waits for the admin */
+  approved: boolean
+  /** the captain asked to remove the player */
+  removalRequested: boolean
 }
 
 export interface TeamRegistration {

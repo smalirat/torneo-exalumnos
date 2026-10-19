@@ -13,6 +13,12 @@ public class TeamDtos {
         @Email private String email;
     }
 
+    /** Jersey number: cosmetic, changed directly (no approval) */
+    @Data
+    public static class JerseyReq {
+        @Min(0) @Max(999) private int jerseyNo;
+    }
+
     @Data
     public static class AddPlayersReq {
         @NotEmpty private List<@Valid PlayerItem> players;

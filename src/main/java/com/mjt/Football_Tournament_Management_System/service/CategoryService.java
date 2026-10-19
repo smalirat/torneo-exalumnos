@@ -93,6 +93,7 @@ public class CategoryService {
         var r = regRepo.findById(registrationId)
                 .orElseThrow(() -> NotFoundException.of("Inscripción", registrationId));
         var target = findZone(zoneId);
+        if (!r.isApproved()) throw new ConflictException("La inscripción todavía no fue aprobada");
         if (!target.getCategory().getTournament().getId().equals(r.getTournament().getId())) {
             throw new ConflictException("La zona no pertenece al campeonato de la inscripción");
         }
@@ -174,6 +175,7 @@ public class CategoryService {
             if (r.getZone() != null) {
                 throw new ConflictException(r.getTeam().getName() + " ya tiene zona asignada");
             }
+            if (!r.isApproved()) throw new ConflictException("La inscripción de " + r.getTeam().getName() + " todavía no fue aprobada");
             regs.add(r);
         }
         var sizes = new LinkedHashMap<Zone, Integer>();

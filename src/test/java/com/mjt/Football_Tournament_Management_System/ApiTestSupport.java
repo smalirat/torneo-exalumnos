@@ -57,9 +57,12 @@ abstract class ApiTestSupport {
                 .andExpect(status().isOk())).get("id").asLong();
     }
 
+    /** A team; a captain's one is approved by the admin right away (it starts in review) */
     long newTeam(String token) throws Exception {
-        return read(post("/api/teams/register", "{\"name\":\"Team " + UUID.randomUUID() + "\"}", token)
+        long id = read(post("/api/teams/register", "{\"name\":\"Team " + UUID.randomUUID() + "\"}", token)
                 .andExpect(status().isOk())).get("id").asLong();
+        post("/api/admin/requests/teams/" + id + "/approve-all", "", admin()).andExpect(status().isOk());
+        return id;
     }
 
     /** Registers the team in the tournament (no zone yet) and returns the registration id. */

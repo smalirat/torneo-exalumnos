@@ -105,3 +105,11 @@ Campeonato (Tournament)   etapa APERTURA / CLAUSURA
 - Un W.O. por baja **cuenta en la tabla** como cualquier W.O. y se ve en el Fixture, pero **no aparece en "Última fecha" ni "Próxima fecha"** del inicio ni cuenta para elegir cuál es la última fecha. El W.O. común (faltó a un partido) sí se muestra.
 - Por ahora sin etiquetas ni distintivos para el equipo que abandonó (pendiente de definir).
 
+## Aprobación de cambios de los capitanes
+
+- Todo cambio de un capitán sobre su equipo espera la aprobación del admin: **crear el equipo, cambiarle el nombre, borrarlo, dar de alta o de baja jugadores e inscribirse en una edición**. Los cambios estéticos (**escudo y números de camiseta**) se aplican directo. Lo que hace el admin (y la importación del Excel) se aplica directo.
+- Lo pendiente vive en las filas (`V12`): `teams.approved` (equipo en revisión), `teams.pending_name`, `teams.deletion_requested_at`, `players.approved`, `players.removal_requested_at`, `registrations.approved`.
+- **Equipo en revisión**: no es público ni puede inscribirse; el capitán ya arma el plantel y el escudo. Al aprobarlo se aprueban también sus jugadores. Un pedido nuevo de nombre reemplaza al anterior; retirar un jugador todavía pendiente es inmediato.
+- Lo público solo muestra lo aprobado (equipos, jugadores, inscripciones); un jugador con baja pedida sigue hasta que se apruebe.
+- Admin: **Solicitudes** (`/solicitudes`, contador en la barra lateral; `GET /api/admin/requests`), agrupadas por equipo: Aprobar / Rechazar (motivo opcional) y **Aprobar todo** por equipo (nunca incluye borrar el equipo). Cada respuesta queda en `request_decisions`; el capitán las ve en Registro de equipos (`GET /api/me/requests`).
+

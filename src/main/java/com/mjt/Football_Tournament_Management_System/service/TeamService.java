@@ -25,6 +25,7 @@ import org.springframework.web.multipart.MultipartFile;
 import javax.imageio.ImageIO;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.*;
 
 @Service
@@ -55,6 +56,7 @@ public class TeamService {
         var t = new Team();
         t.setName(req.getName()); t.setManagerName(req.getManagerName());
         t.setPhone(req.getPhone()); t.setEmail(req.getEmail());
+        t.setCreatedAt(LocalDateTime.now());
         if (isAdmin(auth)) {
             t.setCaptain(userRepo.save(AppUser.pendingCaptain()));
         } else {
@@ -62,6 +64,7 @@ public class TeamService {
                     .orElseThrow(() -> NotFoundException.of("Usuario", auth.getName()));
             if (!teamRepo.findByCaptain(captain).isEmpty()) throw new ConflictException("Ya sos capitán de un equipo");
             t.setCaptain(captain);
+            t.setApproved(false); // in review until the admin approves it (the captain can already build the roster)
         }
         return ResponseDtos.TeamRes.from(teamRepo.save(t));
     }
@@ -77,8 +80,16 @@ public class TeamService {
     @Transactional
     public ResponseDtos.TeamRes updateTeam(Long teamId, TeamDtos.RegisterTeamReq req, Authentication auth) {
         var t = ownedTeam(teamId, auth);
-        t.setName(req.getName()); t.setManagerName(req.getManagerName());
+        t.setManagerName(req.getManagerName());
         t.setPhone(req.getPhone()); t.setEmail(req.getEmail());
+        if (isAdmin(auth) || !t.isApproved()) {
+            t.setName(req.getName());
+        } else if (req.getName().equals(t.getName())) {
+            t.setPendingName(null); t.setPendingNameAt(null);
+        } else {
+            // A newer request replaces the previous one
+            t.setPendingName(req.getName()); t.setPendingNameAt(LocalDateTime.now());
+        }
         return ResponseDtos.TeamRes.from(t);
     }
 
@@ -86,12 +97,27 @@ public class TeamService {
     @Transactional
     public void deleteTeam(Long teamId, Authentication auth) {
         var t = ownedTeam(teamId, auth);
+        checkDeletable(t);
+        if (!isAdmin(auth) && t.isApproved()) {
+            t.setDeletionRequestedAt(LocalDateTime.now()); // the admin decides (a team in review is just withdrawn)
+            return;
+        }
+        removeTeam(t);
+    }
+
+    private void checkDeletable(Team t) {
         if (championRepo.existsByTeam(t)) {
             throw new ConflictException("El equipo figura en la historia de campeones; no se puede eliminar");
         }
         if (regRepo.existsByTeam(t)) {
             throw new ConflictException("El equipo está inscripto en un campeonato; no se puede eliminar");
         }
+    }
+
+    /** Deletes the team with its roster (and its captain, if still pending). Also used when approving a request. */
+    @Transactional
+    public void removeTeam(Team t) {
+        checkDeletable(t);
         playerRepo.deleteAll(playerRepo.findByTeamOrderByJerseyNoAscFullNameAsc(t));
         var captain = t.getCaptain();
         teamRepo.delete(t);
@@ -142,15 +168,49 @@ public class TeamService {
         if (player.getTeam() == null || !player.getTeam().getId().equals(team.getId())) {
             throw NotFoundException.of("Jugador", playerId);
         }
-        if (eventRepo.existsByPlayer(player) || statRepo.existsByPlayer(player)
-                || sanctionRepo.existsByPlayer(player) || yellowRepo.existsByPlayer(player)) {
-            throw new ConflictException("El jugador tiene goles, tarjetas, estadísticas o sanciones cargadas; no se puede eliminar");
+        checkRemovable(player);
+        if (!isAdmin(auth) && player.isApproved() && team.isApproved()) {
+            player.setRemovalRequestedAt(LocalDateTime.now()); // the admin decides
+            return;
         }
         playerRepo.delete(player);
     }
 
-    public ResponseDtos.TeamRef team(Long teamId) {
-        return ResponseDtos.TeamRef.from(findTeam(teamId));
+    private void checkRemovable(Player player) {
+        if (eventRepo.existsByPlayer(player) || statRepo.existsByPlayer(player)
+                || sanctionRepo.existsByPlayer(player) || yellowRepo.existsByPlayer(player)) {
+            throw new ConflictException("El jugador tiene goles, tarjetas, estadísticas o sanciones cargadas; no se puede eliminar");
+        }
+    }
+
+    /** Removes a player (used when approving a removal request). */
+    @Transactional
+    public void removePlayer(Player player) {
+        checkRemovable(player);
+        playerRepo.delete(player);
+    }
+
+    /** Jersey number: cosmetic, the captain changes it directly. */
+    @Transactional
+    public ResponseDtos.PlayerRes setJersey(Long teamId, Long playerId, int jerseyNo, Authentication auth) {
+        var team = ownedTeam(teamId, auth);
+        var player = playerRepo.findById(playerId).orElseThrow(() -> NotFoundException.of("Jugador", playerId));
+        if (player.getTeam() == null || !player.getTeam().getId().equals(team.getId())) throw NotFoundException.of("Jugador", playerId);
+        player.setJerseyNo(jerseyNo);
+        return ResponseDtos.PlayerRes.from(player);
+    }
+
+    /** A team in review is only visible to its captain and the admin. */
+    @Transactional(readOnly = true)
+    public ResponseDtos.TeamRef team(Long teamId, Authentication auth) {
+        var t = findTeam(teamId);
+        if (!t.isApproved() && !canSee(t, auth)) throw NotFoundException.of("Equipo", teamId);
+        return ResponseDtos.TeamRef.from(t);
+    }
+
+    private boolean canSee(Team t, Authentication auth) {
+        return auth != null && auth.isAuthenticated()
+                && (isAdmin(auth) || t.getCaptain().getUsername().equals(auth.getName()));
     }
 
     /** Tournaments a team is registered in, newest first. */
@@ -159,8 +219,18 @@ public class TeamService {
                 .map(ResponseDtos.TeamRegistrationRes::from).toList();
     }
 
+    /** Public roster: approved players only (one with a removal request still plays until approved). */
     public List<ResponseDtos.PlayerRes> players(Long teamId) {
-        return playerRepo.findByTeamOrderByJerseyNoAscFullNameAsc(findTeam(teamId)).stream()
+        var t = findTeam(teamId);
+        if (!t.isApproved()) throw NotFoundException.of("Equipo", teamId);
+        return playerRepo.findByTeamAndApprovedTrueOrderByJerseyNoAscFullNameAsc(t).stream()
+                .map(ResponseDtos.PlayerRes::from).toList();
+    }
+
+    /** Full roster for its captain or the admin, pending players included. */
+    @Transactional(readOnly = true)
+    public List<ResponseDtos.PlayerRes> roster(Long teamId, Authentication auth) {
+        return playerRepo.findByTeamOrderByJerseyNoAscFullNameAsc(ownedTeam(teamId, auth)).stream()
                 .map(ResponseDtos.PlayerRes::from).toList();
     }
 
@@ -168,8 +238,10 @@ public class TeamService {
     public List<ResponseDtos.PlayerRes> addPlayers(Long teamId, TeamDtos.AddPlayersReq req, Authentication auth) {
         var team = ownedTeam(teamId, auth);
         List<Player> list = new ArrayList<>();
+        boolean needsApproval = !isAdmin(auth);
         for (var p : req.getPlayers()) {
             var pl = new Player(); pl.setTeam(team); pl.setFullName(p.getFullName()); pl.setJerseyNo(p.getJerseyNo());
+            if (needsApproval) { pl.setApproved(false); pl.setRequestedAt(LocalDateTime.now()); }
             list.add(pl);
         }
         return playerRepo.saveAll(list).stream().map(ResponseDtos.PlayerRes::from).toList();
@@ -184,10 +256,13 @@ public class TeamService {
         if (!isAdmin(auth) && t.getStatus() != Tournament.Status.OPEN) {
             throw new ConflictException("La inscripción al campeonato no está abierta");
         }
+        if (!team.isApproved()) throw new ConflictException("Tu equipo todavía está en revisión; podrás inscribirlo cuando el organizador lo apruebe");
         if (regRepo.existsByTournamentAndTeam(t, team)) {
             throw new ConflictException("El equipo ya está inscripto en este campeonato");
         }
-        var r = new Registration(); r.setTournament(t); r.setTeam(team); r.setApproved(true);
+        var r = new Registration(); r.setTournament(t); r.setTeam(team);
+        r.setApproved(isAdmin(auth));
+        if (!isAdmin(auth)) r.setRequestedAt(LocalDateTime.now());
         return ResponseDtos.RegistrationRes.from(regRepo.save(r));
     }
 

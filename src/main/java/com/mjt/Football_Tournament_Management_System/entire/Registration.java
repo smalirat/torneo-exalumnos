@@ -21,7 +21,9 @@ public class Registration {
     @ManyToOne
     private Zone zone;
 
+    /** false while a captain's registration waits for the admin */
     private boolean approved = true;
+    private java.time.LocalDateTime requestedAt;
 
     /** The team withdrew from this edition ("se dio de baja"); it stays in the table and can come back. */
     private boolean withdrawn;

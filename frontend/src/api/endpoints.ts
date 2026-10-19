@@ -1,6 +1,6 @@
 import { api, del, download, get, patch, post, put, upload } from './client'
 import type {
-  CardRow, Category, CategoryHistory, CollageItem, CollagePhoto, InviteRes, ImportHistory, ImportPreview, Match, MatchDetails, MatchEvent, Me, Player,
+  CardRow, Category, CategoryHistory, CollageItem, CollagePhoto, InviteRes, MyRequests, RequestItem, RequestType, ImportHistory, ImportPreview, Match, MatchDetails, MatchEvent, Me, Player,
   Registration, Sanction, ScoreReq, ScorerRow, Season, SeasonStatRow, SlotReq, StandingRow, TeamRef, TeamRegistration,
   TeamSummary, TokenRes, Tournament, TournamentStatus, YellowTally, Zone,
 } from './types'
@@ -72,6 +72,10 @@ export const teamApi = {
   addPlayer: (teamId: number, fullName: string, jerseyNo: number) =>
     post<Player[]>(`/api/teams/${teamId}/players`, { players: [{ fullName, jerseyNo }] }),
   deletePlayer: (teamId: number, playerId: number) => del(`/api/teams/${teamId}/players/${playerId}`),
+  /** Full roster for its captain or the admin, players waiting for approval included */
+  roster: (teamId: number) => get<Player[]>(`/api/teams/${teamId}/roster`),
+  setJersey: (teamId: number, playerId: number, jerseyNo: number) =>
+    patch<Player>(`/api/teams/${teamId}/players/${playerId}`, { jerseyNo }),
   setCrest: (teamId: number, image: Blob) => {
     const form = new FormData()
     form.append('file', image, 'escudo.png')
@@ -145,4 +149,14 @@ export const zoneApi = {
     post<Match[]>(`/api/admin/zones/${zoneId}/fixtures/round-robin?start=${encodeURIComponent(start)}&minutesBetween=${minutesBetween}`),
   addMatch: (zoneId: number, homeTeamId: number, awayTeamId: number, scheduledAt: string | null) =>
     post<Match[]>('/api/admin/fixtures/manual', { zoneId, fixtures: [{ homeTeamId, awayTeamId, scheduledAt }] }),
+}
+
+/** Captains' changes waiting for the admin */
+export const requestApi = {
+  list: () => get<RequestItem[]>('/api/admin/requests'),
+  count: () => get<{ count: number }>('/api/admin/requests/count'),
+  approve: (type: RequestType, id: number) => post<void>(`/api/admin/requests/${type}/${id}/approve`),
+  reject: (type: RequestType, id: number, reason: string | null) => post<void>(`/api/admin/requests/${type}/${id}/reject`, { reason }),
+  approveAll: (teamId: number) => post<{ approved: number }>(`/api/admin/requests/teams/${teamId}/approve-all`),
+  mine: () => get<MyRequests>('/api/me/requests'),
 }

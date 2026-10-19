@@ -12,4 +12,7 @@ public interface TeamRepository extends JpaRepository<Team, Long> {
     List<Team> findByCaptain(AppUser captain);
     List<Team> findAllByOrderByNameAsc();
     List<Team> findByCaptain_UsernameOrderByNameAsc(String username);
+    List<Team> findByApprovedFalse();
+    List<Team> findByPendingNameNotNull();
+    List<Team> findByDeletionRequestedAtNotNull();
 }

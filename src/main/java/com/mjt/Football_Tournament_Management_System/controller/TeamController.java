@@ -62,6 +62,19 @@ public class TeamController {
         return teamService.removeCrest(teamId, auth);
     }
 
+    @GetMapping("/{teamId}/roster")
+    @Operation(summary = "Full roster for the team's captain or the admin, players waiting for approval included")
+    public List<ResponseDtos.PlayerRes> roster(@PathVariable Long teamId, Authentication auth) {
+        return teamService.roster(teamId, auth);
+    }
+
+    @PatchMapping("/{teamId}/players/{playerId}")
+    @Operation(summary = "Change a player's jersey number (cosmetic: no approval needed)")
+    public ResponseDtos.PlayerRes setJersey(@PathVariable Long teamId, @PathVariable Long playerId,
+                                            @Valid @RequestBody TeamDtos.JerseyReq req, Authentication auth) {
+        return teamService.setJersey(teamId, playerId, req.getJerseyNo(), auth);
+    }
+
     @PostMapping("/register")
     public ResponseDtos.TeamRes register(@Valid @RequestBody TeamDtos.RegisterTeamReq req, Authentication auth) {
         return teamService.createTeam(req, auth);

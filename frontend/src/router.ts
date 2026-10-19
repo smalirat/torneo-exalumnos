@@ -8,6 +8,7 @@ export const router = createRouter({
     { path: '/equipos', component: () => import('./views/TeamsView.vue') },
     { path: '/planilla', component: () => import('./views/ExcelView.vue') },
     { path: '/historia', component: () => import('./views/HistoryView.vue') },
+    { path: '/solicitudes', component: () => import('./views/RequestsView.vue') },
     { path: '/ver', redirect: '/' },
     { path: '/ver/:id', component: () => import('./views/LeagueHomeView.vue') },
     { path: '/temporadas/:id', component: () => import('./views/SeasonView.vue') },

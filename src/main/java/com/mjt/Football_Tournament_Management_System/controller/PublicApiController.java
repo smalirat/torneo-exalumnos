@@ -17,6 +17,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -91,8 +92,9 @@ public class PublicApiController {
     }
 
     @GetMapping("/teams/{id}")
-    public ResponseDtos.TeamRef team(@PathVariable Long id) {
-        return teamService.team(id);
+    @Operation(summary = "A team (one in review only for its captain and the admin)")
+    public ResponseDtos.TeamRef team(@PathVariable Long id, Authentication auth) {
+        return teamService.team(id, auth);
     }
 
     @GetMapping("/teams/{id}/crest")

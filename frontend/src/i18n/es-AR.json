@@ -5,6 +5,7 @@
   "nav": {
     "organize": "Organizar campeonatos",
     "myTournaments": "Ediciones",
+    "requests": "Solicitudes",
     "user": "Usuario",
     "home": "Inicio",
     "standings": "Clasificación",
@@ -133,6 +134,15 @@
     "empty": "Todavía no registraste equipos.",
     "delete": "Eliminar equipo",
     "deleteConfirm": "Se eliminará \"{name}\" con su plantel. Solo es posible si no está inscripto en ningún campeonato.",
+    "sentForApproval": "Pedido enviado: el organizador tiene que aprobarlo.",
+    "inReview": "En revisión",
+    "pendingName": "Nombre pedido: {name}",
+    "deletionRequested": "Baja del equipo pedida",
+    "playerPending": "(pendiente)",
+    "playerRemovalPending": "(baja pedida)",
+    "answersTitle": "Respuestas del organizador",
+    "approved": "Aprobado",
+    "rejected": "Rechazado",
     "captain": "Capitán: {name}",
     "captainPending": "Capitán pendiente",
     "invite": "Invitar capitán",
@@ -164,6 +174,27 @@
     "conflictTitle": "Ya hay una edición activa",
     "conflictText": "Solo puede haber una edición activa. Si seguís, la otra queda Finalizada y {name} pasa a ser la activa.",
     "finishAndContinue": "Finalizarla y continuar"
+  },
+  "requests": {
+    "title": "Solicitudes",
+    "intro": "Cambios de los capitanes que esperan tu aprobación. Escudos y números de camiseta no pasan por acá.",
+    "empty": "No hay solicitudes pendientes.",
+    "captain": "Capitán: {name}",
+    "approve": "Aprobar",
+    "reject": "Rechazar",
+    "approveAll": "Aprobar todo ({n})",
+    "rejectTitle": "Rechazar solicitud",
+    "reason": "Motivo (opcional, lo ve el capitán)",
+    "reasonPlaceholder": "Ej.: el nombre ya existe",
+    "pendingCount": "{n} solicitudes pendientes",
+    "types": {
+      "TEAM": "Equipo nuevo: {subject}",
+      "RENAME": "Cambiar el nombre a «{subject}»",
+      "DELETE_TEAM": "Borrar el equipo",
+      "PLAYER_ADD": "Alta de jugador: {subject}",
+      "PLAYER_REMOVE": "Baja de jugador: {subject}",
+      "REGISTRATION": "Inscripción en {subject}"
+    }
   },
   "invite": {
     "title": "Capitán de {name}",

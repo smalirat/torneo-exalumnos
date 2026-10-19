@@ -1,8 +1,12 @@
 <script setup lang="ts">
+import { watch } from 'vue'
 import AppIcon from '../components/AppIcon.vue'
 import UserFooter from './UserFooter.vue'
 import { t } from '../i18n'
 import { isAdmin, isLoggedIn } from '../auth'
+import { pendingRequests, refreshPendingRequests } from '../requests'
+
+watch(isAdmin, (admin) => { if (admin) refreshPendingRequests() }, { immediate: true })
 </script>
 
 <template>
@@ -20,6 +24,10 @@ import { isAdmin, isLoggedIn } from '../auth'
       </RouterLink>
       <RouterLink v-if="isAdmin" to="/planilla" class="item" active-class="active">
         <AppIcon name="table" /> {{ t('nav.excel') }}
+      </RouterLink>
+      <RouterLink v-if="isAdmin" to="/solicitudes" class="item" active-class="active">
+        <AppIcon name="check" /> {{ t('nav.requests') }}
+        <span v-if="pendingRequests" class="badge" :aria-label="t('requests.pendingCount', { n: pendingRequests })">{{ pendingRequests }}</span>
       </RouterLink>
       <RouterLink to="/historia" class="item" active-class="active">
         <AppIcon name="star" /> {{ t('nav.history') }}
@@ -54,5 +62,9 @@ import { isAdmin, isLoggedIn } from '../auth'
 }
 .item:hover { background: rgba(255, 255, 255, 0.08); }
 .item.active { background: rgba(255, 255, 255, 0.15); opacity: 1; }
+.badge {
+  margin-left: auto; min-width: 22px; height: 22px; padding: 0 7px; border-radius: 999px; background: #f6c400;
+  color: #3d3000; font-size: 12px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center;
+}
 .content { flex: 1; padding: 28px 36px; min-width: 0; }
 </style>
