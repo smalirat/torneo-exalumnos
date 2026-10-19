@@ -5,7 +5,8 @@ import AppIcon from './AppIcon.vue'
 import type { Category } from '../api/types'
 import { t } from '../i18n'
 
-// ‹ Categoría A · Zona 1 › : steps through every zone of every category, in order (wraps around at the ends).
+// Navy strip on top of the standings / fixture card: ‹ Categoría A · Zona 1 › steps through every zone of every
+// category, in order (wraps around at the ends); changing it changes everything shown for that group.
 // The selection is kept in the URL (?categoria=&zona=) so the shared link opens the same group.
 const props = defineProps<{ categories: Category[] }>()
 const zoneId = defineModel<number | null>({ required: true })
@@ -56,14 +57,17 @@ watch(zoneId, () => {
 </template>
 
 <style scoped>
-.group-nav { display: flex; align-items: center; justify-content: center; gap: 18px; margin: 0 0 18px; }
-.title { display: flex; flex-direction: column; align-items: center; min-width: 0; flex: 0 1 280px; text-align: center; }
-.title strong { font-family: var(--condensed); text-transform: uppercase; font-size: 22px; color: var(--navy); line-height: 1.1; }
-.title span { font-size: 13px; color: var(--muted); font-weight: 500; }
-.nav-btn {
-  width: 38px; height: 38px; flex-shrink: 0; border-radius: 50%; border: 1px solid var(--navy); background: #fff;
-  color: var(--navy); display: inline-flex; align-items: center; justify-content: center; cursor: pointer;
+.group-nav {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  background: var(--navy-dark); color: #fff; padding: 8px 10px; border-radius: var(--radius) var(--radius) 0 0;
 }
-.nav-btn:hover { background: var(--navy); color: #fff; }
+.title { display: flex; align-items: baseline; justify-content: center; gap: 8px; min-width: 0; flex: 1; text-align: center; }
+.title strong { font-family: var(--condensed); text-transform: uppercase; font-size: 19px; letter-spacing: 0.02em; line-height: 1.2; }
+.title span { font-size: 13px; opacity: 0.8; font-weight: 500; }
+.nav-btn {
+  width: 34px; height: 34px; flex-shrink: 0; border-radius: 50%; border: 1px solid rgba(255, 255, 255, 0.5);
+  background: transparent; color: #fff; display: inline-flex; align-items: center; justify-content: center; cursor: pointer;
+}
+.nav-btn:hover { background: rgba(255, 255, 255, 0.15); }
 .flip { transform: rotate(180deg); }
 </style>

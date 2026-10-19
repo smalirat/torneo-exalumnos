@@ -194,7 +194,6 @@ function changeEdition(event: Event) {
     <template v-else-if="tournament">
       <p v-if="categories && categories.length === 0" class="card muted">{{ t('publicSite.noCategories') }}</p>
 
-      <GroupNav v-if="categories?.length && ['inicio', 'fixture'].includes(tab)" v-model="zoneId" :categories="categories" />
 
       <!-- INICIO -->
       <template v-if="tab === 'inicio' && categories?.length">
@@ -212,7 +211,10 @@ function changeEdition(event: Event) {
 
         <section class="block">
           <header class="block-head"><h2>{{ t('league.table') }}</h2></header>
-          <div class="table-card"><LeagueTable :rows="standings" /></div>
+          <div class="table-card">
+            <GroupNav v-model="zoneId" :categories="categories" />
+            <LeagueTable :rows="standings" />
+          </div>
           <p class="muted note">{{ t('publicSite.standingsHelp') }}</p>
         </section>
 
@@ -232,7 +234,8 @@ function changeEdition(event: Event) {
       </template>
 
       <!-- FIXTURE -->
-      <section v-else-if="tab === 'fixture' && categories?.length" class="card">
+      <section v-else-if="tab === 'fixture' && categories?.length" class="card fixture-card">
+        <GroupNav v-model="zoneId" :categories="categories" class="card-bar" />
         <p v-if="allRounds.length === 0" class="muted">{{ t('standings.noGames') }}</p>
         <template v-else>
           <RoundNav v-model="fixtureIndex" :rounds="allRounds" />
@@ -322,7 +325,10 @@ function changeEdition(event: Event) {
 .block-head h2 { font-family: var(--condensed); text-transform: uppercase; color: var(--navy); font-size: clamp(26px, 5vw, 34px); line-height: 1; }
 .sub { margin: 4px 0 0; font-size: 13px; color: var(--muted); font-weight: 500; }
 .more { background: none; border: 0; color: var(--navy); font: inherit; font-size: 14px; font-weight: 500; cursor: pointer; white-space: nowrap; }
-.table-card { background: #fff; border-radius: var(--radius); box-shadow: var(--shadow); }
+.table-card { background: #fff; border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
+.table-card :deep(.scroll) { border-radius: 0; }
+.fixture-card { padding-top: 0; overflow: hidden; }
+.card-bar { margin: 0 -20px 4px; }
 .note { font-size: 13px; margin-top: 10px; }
 .next-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
 .card-title { font-family: var(--condensed); text-transform: uppercase; color: var(--navy); font-size: 22px; margin-bottom: 8px; }
