@@ -69,7 +69,7 @@ Campeonato (Tournament)   etapa APERTURA / CLAUSURA
 - Público: `GET /api/public/collage` (layout) y `/collage/{id}/image` (cacheada un año: una foto nunca cambia). Admin: `POST /api/admin/collage` (JPG/PNG hasta 5 MB; el navegador la achica a 1600 px antes), `PUT /layout`, `PUT /{id}/featured`, `DELETE /{id}`.
 - Se edita **solo desde Historia del panel de admin** (`/historia`); la pestaña pública es de solo lectura para todos.
 - El admin trabaja sobre un **borrador**: botón flotante "+" (varias fotos a la vez, quedan en memoria), arrastrar, esquina para agrandar, al frente / atrás, destacar y borrar. **Nada se publica hasta "Guardar cambios"** (borra, sube, guarda posiciones y destacada, en ese orden); "Descartar" vuelve a lo guardado y salir con cambios pendientes pide confirmación.
-- **"Ordenar automáticamente"** acomoda todo en la grilla por defecto (4 columnas sueltas, en orden de subida): la misma regla que usa el backend para ubicar una foto nueva.
+- **"Restablecer"** acomoda todo en la grilla por defecto (4 columnas sueltas, en orden de subida): la misma regla que usa el backend para ubicar una foto nueva.
 
 ## Capitanes
 
