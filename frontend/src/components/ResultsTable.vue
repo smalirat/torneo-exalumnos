@@ -11,6 +11,18 @@ const props = defineProps<{ rounds: Round[] }>()
 const index = defineModel<number>({ required: true })
 const round = computed(() => props.rounds[index.value] ?? null)
 
+/** Matches actually played / to play, and the walkovers of a team that left the edition (shown apart, at the end) */
+const regular = computed(() => round.value?.matches.filter((m) => !m.withdrawal) ?? [])
+const withdrawals = computed(() => round.value?.matches.filter((m) => m.withdrawal) ?? [])
+/** "PRESION ALTA suma 3 pts · ELPIDIO GONZALEZ se dio de baja" */
+function withdrawalText(m: Match) {
+  const homeLeft = !m.homePresent
+  return t('fixture.withdrawalLine', {
+    winner: (homeLeft ? m.awayTeam : m.homeTeam).name,
+    gone: (homeLeft ? m.homeTeam : m.awayTeam).name,
+  })
+}
+
 const roundName = (r: Round, i: number) =>
   r.number != null ? t('fixture.round', { n: r.number }) : r.label ?? t('fixture.round', { n: i + 1 })
 
@@ -50,7 +62,7 @@ const place = (m: Match) => [m.venue, m.pitch ? `${t('results.pitch')} ${m.pitch
         </tr>
       </thead>
       <tbody>
-        <tr v-for="m in round?.matches ?? []" :key="m.id">
+        <tr v-for="m in regular" :key="m.id">
           <td class="side home">
             <span :class="['team', { win: played(m) && won(m, true) }]">{{ m.homeTeam.name }} <TeamBadge :team="m.homeTeam" :size="26" /></span>
           </td>
@@ -74,6 +86,11 @@ const place = (m: Match) => [m.venue, m.pitch ? `${t('results.pitch')} ${m.pitch
             <span :class="['team', { win: played(m) && won(m, false) }]"><TeamBadge :team="m.awayTeam" :size="26" /> {{ m.awayTeam.name }}</span>
           </td>
         </tr>
+        <template v-if="withdrawals.length">
+          <tr v-for="(m, i) in withdrawals" :key="m.id" :class="['withdrawal', { first: i === 0 && regular.length > 0 }]">
+            <td colspan="3">{{ withdrawalText(m) }}</td>
+          </tr>
+        </template>
       </tbody>
     </table>
     <p v-if="!round" class="muted empty">{{ t('standings.noGames') }}</p>
@@ -121,6 +138,11 @@ tbody tr:last-child td { border-bottom: 0; }
 .flip { transform: rotate(180deg); }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
 .empty { padding: 20px; }
+/* Walkovers of a team that left the edition: one small grey line each, after the real matches */
+.withdrawal td {
+  text-align: center; font-size: 12px; color: var(--muted); padding: 8px 10px; background: var(--row-alt); border-bottom: 0;
+}
+.withdrawal.first td { border-top: 1px dashed #c9d0dd; }
 @media (max-width: 600px) {
   td { padding: 12px 6px; }
   .side { width: 31%; }

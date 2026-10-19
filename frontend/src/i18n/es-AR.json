@@ -267,6 +267,7 @@
   },
   "fixture": {
     "home": "Local",
+    "withdrawalLine": "{winner} suma 3 pts · {gone} se dio de baja",
     "away": "Visitante",
     "categories": "Categorías",
     "rounds": "Fechas",
