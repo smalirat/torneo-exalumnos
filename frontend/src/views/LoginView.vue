@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { login, register } from '../auth'
 import { ApiError } from '../api/client'
@@ -12,7 +12,7 @@ const props = defineProps<{ mode: 'login' | 'register' }>()
 const router = useRouter()
 const route = useRoute()
 /** Only same-app paths, never an external URL; a new captain goes to their team */
-const redirect = safeRedirect(route.query.redirect, props.mode === 'register' ? PANEL.teams : '/')
+const redirect = computed(() => safeRedirect(route.query.redirect, props.mode === 'register' ? PANEL.teams : '/'))
 
 const username = ref('')
 const password = ref('')
@@ -25,9 +25,12 @@ const teamMode = ref<'new' | 'existing'>('new')
 const teamName = ref('')
 const claimTeamId = ref<number | null>(null)
 const unclaimed = ref<TeamRef[]>([])
-onMounted(async () => {
-  if (props.mode === 'register') unclaimed.value = await teamApi.unclaimed().catch(() => [])
-})
+// Login and sign-up are the same component: going from one to the other only changes the mode, it does not remount
+watch(() => props.mode, async (mode) => {
+  error.value = ''
+  fieldErrors.value = {}
+  if (mode === 'register') unclaimed.value = await teamApi.unclaimed().catch(() => [])
+}, { immediate: true })
 
 async function submit() {
   busy.value = true
@@ -37,7 +40,7 @@ async function submit() {
     if (props.mode === 'login') await login(username.value, password.value)
     else await register(username.value, password.value,
       teamMode.value === 'new' ? { teamName: teamName.value.trim() } : { claimTeamId: claimTeamId.value! })
-    router.push(redirect)
+    router.push(redirect.value)
   } catch (e) {
     error.value = e instanceof Error ? e.message : t('common.genericError')
     if (e instanceof ApiError) fieldErrors.value = e.fieldErrors
