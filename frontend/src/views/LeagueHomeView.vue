@@ -219,7 +219,6 @@ function changeEdition(event: Event) {
             <GroupNav v-model="zoneId" :categories="categories" />
             <LeagueTable :rows="standings" />
           </div>
-          <p class="muted note">{{ t('publicSite.standingsHelp') }}</p>
         </section>
 
         <section class="block">
@@ -241,7 +240,7 @@ function changeEdition(event: Event) {
         <p v-if="allRounds.length === 0" class="muted">{{ t('standings.noGames') }}</p>
         <template v-else>
           <RoundNav v-model="fixtureIndex" :rounds="allRounds" />
-          <MatchCard v-for="m in allRounds[fixtureIndex]?.matches ?? []" :key="m.id" :match="m" date-format="time" />
+          <MatchCard v-for="m in allRounds[fixtureIndex]?.matches ?? []" :key="m.id" :match="m" date-format="time" :hints="false" />
         </template>
       </section>
 
@@ -255,7 +254,6 @@ function changeEdition(event: Event) {
           <h2 class="card-title">{{ t('publicSite.figures') }}</h2>
           <PlayerRankingTable :rows="figures.slice(0, 20)" :value-label="t('season.times')" />
         </div>
-        <p v-if="tournament.seasonYear" class="muted note">{{ t('publicSite.annualHelp', { year: tournament.seasonYear }) }}</p>
       </section>
 
       <!-- SANCIONADOS -->
@@ -269,12 +267,10 @@ function changeEdition(event: Event) {
             <h2 class="card-title">{{ t('publicSite.servedSanctions') }} <span class="count">{{ split.served.length }}</span></h2>
             <SanctionsTable :rows="split.served" served />
           </div>
-          <p class="muted note">{{ t('publicSite.sanctionsHelp', { year: tournament.seasonYear ?? '' }) }}</p>
         </template>
         <div class="card">
           <h2 class="card-title">{{ t('publicSite.yellows', { name: tournament.name }) }}</h2>
           <YellowCardsByTeam :rows="yellows" />
-          <p class="muted note">{{ t('publicSite.yellowsHelp') }}</p>
         </div>
       </section>
 
@@ -282,7 +278,7 @@ function changeEdition(event: Event) {
       <section v-else-if="tab === 'definiciones'" class="card">
         <template v-for="g in specialGroups" :key="g.type">
           <h2 class="card-title">{{ t(`publicSite.special.${g.type}`) }}</h2>
-          <MatchCard v-for="m in g.matches" :key="m.id" :match="m" />
+          <MatchCard v-for="m in g.matches" :key="m.id" :match="m" :hints="false" />
         </template>
       </section>
 
@@ -331,11 +327,9 @@ function changeEdition(event: Event) {
 .table-card :deep(.scroll) { border-radius: 0; }
 .fixture-card { padding-top: 0; overflow: hidden; }
 .card-bar { margin: 0 -20px 4px; }
-.note { font-size: 13px; margin-top: 10px; }
 .card-title { font-family: var(--condensed); text-transform: uppercase; color: var(--navy); font-size: 22px; margin-bottom: 8px; }
 .rankings { display: flex; flex-direction: column; gap: 16px; }
 .history :deep(.category) { margin-bottom: 16px; }
-.rankings > .note { margin-top: -6px; }
 .count {
   font-family: 'Roboto', system-ui, sans-serif; font-size: 13px; font-weight: 700; vertical-align: middle;
   padding: 2px 9px; border-radius: 999px; background: var(--bg); color: var(--muted);

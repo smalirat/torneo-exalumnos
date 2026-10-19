@@ -5,10 +5,12 @@ import type { Match } from '../api/types'
 import { t } from '../i18n'
 
 // One match line: date, both teams, score (or "vs"), walkover / penalties marks.
-// `clickable` makes it look interactive; the parent handles @click.
-const props = withDefaults(defineProps<{ match: Match; clickable?: boolean; dateFormat?: 'full' | 'time' | 'none' }>(), {
+// `clickable` makes it look interactive; the parent handles @click. `hints: false` drops explanatory text
+// (public pages show just "W.O.").
+const props = withDefaults(defineProps<{ match: Match; clickable?: boolean; dateFormat?: 'full' | 'time' | 'none'; hints?: boolean }>(), {
   clickable: false,
   dateFormat: 'full',
+  hints: true,
 })
 
 const date = computed(() => {
@@ -47,7 +49,7 @@ const place = computed(() => [
       </span>
     </div>
     <span v-if="walkover && match.status === 'FINISHED'" class="wo">
-      {{ t('standings.walkover') }}<span v-if="match.advanceWalkover" class="muted pending"> · {{ t('standings.advanceWalkover') }}</span>
+      {{ t('standings.walkover') }}<span v-if="hints && match.advanceWalkover" class="muted pending"> · {{ t('standings.advanceWalkover') }}</span>
     </span>
     <p v-if="match.notes" class="note">{{ match.notes }}</p>
   </div>
