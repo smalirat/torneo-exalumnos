@@ -38,7 +38,7 @@ public class TeamController {
 
     @DeleteMapping("/{teamId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    @Operation(summary = "Delete a team and its roster (409 if registered in a tournament)")
+    @Operation(summary = "Admin only: delete a team and its roster (409 if registered in a tournament)")
     public void delete(@PathVariable Long teamId, Authentication auth) {
         teamService.deleteTeam(teamId, auth);
     }

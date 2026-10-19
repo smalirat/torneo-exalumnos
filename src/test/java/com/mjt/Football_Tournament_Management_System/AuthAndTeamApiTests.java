@@ -363,9 +363,10 @@ class AuthAndTeamApiTests {
         String other = register(uniqueUser());
         long registered = newTeam(other);
         enroll(registered, newTournament(login("admin", "admin123")), other).andExpect(status().isOk());
-        delete("/api/teams/" + registered, other).andExpect(status().isConflict());
+        delete("/api/teams/" + registered, login("admin", "admin123")).andExpect(status().isConflict());
         newPlayer(captain, team, "Suplente");
-        delete("/api/teams/" + team, captain).andExpect(status().isNoContent());
+        delete("/api/teams/" + team, captain).andExpect(status().isForbidden()); // only the admin deletes teams
+        delete("/api/teams/" + team, login("admin", "admin123")).andExpect(status().isNoContent());
     }
 
     @Test

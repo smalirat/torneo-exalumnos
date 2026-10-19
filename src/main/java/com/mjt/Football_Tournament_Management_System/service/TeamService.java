@@ -129,16 +129,11 @@ public class TeamService {
         return ResponseDtos.TeamRes.from(t);
     }
 
-    /** A team can be deleted (with its roster) only while it is not registered in any tournament. */
+    /** Only the admin deletes a team (with its roster), and only while it is not registered in any tournament. */
     @Transactional
     public void deleteTeam(Long teamId, Authentication auth) {
-        var t = ownedTeam(teamId, auth);
-        checkDeletable(t);
-        if (!isAdmin(auth) && t.isApproved()) {
-            t.setDeletionRequestedAt(LocalDateTime.now()); // the admin decides (a team in review is just withdrawn)
-            return;
-        }
-        removeTeam(t);
+        if (!isAdmin(auth)) throw new AccessDeniedException("Solo el organizador puede eliminar equipos");
+        removeTeam(ownedTeam(teamId, auth));
     }
 
     private void checkDeletable(Team t) {

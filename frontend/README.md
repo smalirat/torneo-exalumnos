@@ -49,7 +49,7 @@ Todas las URLs se arman en `src/paths.ts` (slugs en `src/slugs.ts`). Criterio: p
 | `/panel/ediciones/:edicion/definiciones` | logueado | Promociones y finales; admin las crea, recalcula y carga resultados |
 | `/panel/ediciones/:edicion/equipos` | admin | Asignar equipos a zonas (a mano o por sorteo), crear zonas |
 | `/panel/temporadas/:anio` | logueado | Temporada: goleadores, figuras, imbatibles y sanciones del año |
-| `/panel/equipos` | logueado | Registro de equipos: escudo, plantel, invitar capitán, renombrar/eliminar |
+| `/panel/equipos` | logueado | Registro de equipos: escudo, plantel, renombrar; el admin además invita capitán y elimina |
 | `/panel/planilla` | admin | Planilla Excel: importar con vista previa y conflictos, historial, exportar temporada |
 | `/panel/historia` | admin | Editar el collage de Historia (borrador con Guardar cambios / Descartar / Restablecer) |
 | `/panel/solicitudes` | admin | Aprobar o rechazar los cambios de los capitanes |

@@ -56,7 +56,7 @@ class CaptainApprovalApiTests extends ApiTestSupport {
         long tournament = openTournament(admin);
         long reg = read(post("/api/teams/" + team + "/tournaments/" + tournament + "/register", "", captain)
                 .andExpect(jsonPath("$.approved").value(false))).get("id").asLong();
-        delete("/api/teams/" + team, captain).andExpect(status().isConflict()); // registered (even if pending)
+        delete("/api/teams/" + team, admin).andExpect(status().isConflict()); // registered (even if pending)
 
         // Nothing changed publicly yet
         get("/api/public/teams/" + team, null).andExpect(jsonPath("$.name").value(oldName));
@@ -105,13 +105,12 @@ class CaptainApprovalApiTests extends ApiTestSupport {
     }
 
     @Test
-    void deletingTheTeamIsAlwaysDecidedApart() throws Exception {
+    void onlyTheAdminDeletesATeam() throws Exception {
         String admin = admin(), captain = newUser();
         long team = newTeam(captain);
-        delete("/api/teams/" + team, captain).andExpect(status().isNoContent());
-        get("/api/teams", captain).andExpect(jsonPath("$[0].deletionRequested").value(true));
-        post("/api/admin/requests/teams/" + team + "/approve-all", "", admin).andExpect(jsonPath("$.approved").value(0));
-        post("/api/admin/requests/DELETE_TEAM/" + team + "/approve", "", admin).andExpect(status().isNoContent());
+        delete("/api/teams/" + team, captain).andExpect(status().isForbidden());
+        get("/api/teams", captain).andExpect(jsonPath("$[0].deletionRequested").value(false));
+        delete("/api/teams/" + team, admin).andExpect(status().isNoContent());
         get("/api/teams", captain).andExpect(jsonPath("$.length()").value(0));
     }
 

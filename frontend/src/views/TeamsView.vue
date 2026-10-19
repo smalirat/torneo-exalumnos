@@ -7,7 +7,7 @@ import ConfirmButton from '../components/ConfirmButton.vue'
 import InlineEdit from '../components/InlineEdit.vue'
 import { authApi, requestApi, teamApi } from '../api/endpoints'
 import { isAdmin } from '../auth'
-import type { Decision, Player, RequestItem, TeamRef, TeamSummary } from '../api/types'
+import type { Player, RequestItem, TeamRef, TeamSummary } from '../api/types'
 import { AUTH, teamPath } from '../paths'
 import { t } from '../i18n'
 
@@ -16,8 +16,6 @@ const newTeam = ref('')
 const error = ref('')
 /** Captain: after a change that needs approval */
 const notice = ref('')
-/** Captain: the organizer's latest answers to their requests */
-const decisions = ref<Decision[]>([])
 /** Captain without team: a pending request to captain an existing team, and the teams they could ask for */
 const pendingClaim = ref<RequestItem | null>(null)
 const unclaimed = ref<TeamRef[]>([])
@@ -33,8 +31,7 @@ const jerseyNo = ref<number | null>(null)
 async function loadTeams() {
   teams.value = await teamApi.list()
   if (isAdmin.value) return
-  const mine = await requestApi.mine().catch(() => ({ pending: [] as RequestItem[], decisions: [] as Decision[] }))
-  decisions.value = mine.decisions
+  const mine = await requestApi.mine().catch(() => ({ pending: [] as RequestItem[] }))
   pendingClaim.value = mine.pending.find((r) => r.type === 'CLAIM') ?? null
   if (teams.value?.length === 0 && !pendingClaim.value) unclaimed.value = await teamApi.unclaimed().catch(() => [])
 }
@@ -110,13 +107,11 @@ const renameTeam = async (team: TeamSummary, name: string) => {
   if (team.approved) sentForApproval()
 }
 
+/** Only the admin deletes teams */
 const deleteTeam = (team: TeamSummary) => run(async () => {
   await teamApi.remove(team.id)
   await loadTeams()
-  if (team.approved) sentForApproval()
 })
-
-const decisionText = (d: Decision) => t(`requests.types.${d.type}`, { subject: d.subject ?? d.teamName })
 
 // Invitation link for a pending captain (admin)
 const invite = ref<{ teamId: number; teamName: string; url: string; copied: boolean } | null>(null)
@@ -192,7 +187,7 @@ const countLabel = (n: number) => (n === 1 ? t('teams.onePlayer') : t('teams.pla
               @click="showInvite(team)"
             >{{ t('teams.invite') }}</button>
             <ConfirmButton
-              icon :label="t('teams.delete')" :message="t('teams.deleteConfirm', { name: team.name })"
+              v-if="isAdmin" icon :label="t('teams.delete')" :message="t('teams.deleteConfirm', { name: team.name })"
               @confirm="deleteTeam(team)"
             />
             <button class="round" :title="t('teams.roster')" :aria-expanded="openTeamId === team.id" @click="toggle(team.id)">
@@ -240,16 +235,6 @@ const countLabel = (n: number) => (n === 1 ? t('teams.onePlayer') : t('teams.pla
       </template>
     </div>
 
-    <section v-if="!isAdmin && decisions.length" class="card answers">
-      <h2>{{ t('teams.answersTitle') }}</h2>
-      <ul>
-        <li v-for="(d, i) in decisions" :key="i">
-          <span :class="['verdict', { ok: d.approved }]">{{ d.approved ? t('teams.approved') : t('teams.rejected') }}</span>
-          <span>{{ decisionText(d) }}</span>
-          <span v-if="d.reason" class="muted">— {{ d.reason }}</span>
-        </li>
-      </ul>
-    </section>
   </GlobalLayout>
 </template>
 
@@ -283,12 +268,6 @@ const countLabel = (n: number) => (n === 1 ? t('teams.onePlayer') : t('teams.pla
 .state { margin-left: 6px; font-size: 12px; font-weight: 700; color: #b26a00; }
 .review { color: #b26a00; font-weight: 700; display: flex; gap: 10px; flex-wrap: wrap; }
 .notice { color: #8a6500; background: #fff6d6; border-radius: 8px; padding: 8px 12px; font-size: 14px; }
-.answers { margin-top: 16px; }
-.answers h2 { font-size: 16px; color: var(--navy); margin-bottom: 8px; }
-.answers ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; font-size: 14px; }
-.answers li { display: flex; gap: 8px; flex-wrap: wrap; align-items: baseline; }
-.verdict { font-size: 12px; font-weight: 700; padding: 1px 8px; border-radius: 999px; background: #fde3e0; color: var(--danger); }
-.verdict.ok { background: #dff3e6; color: #1e7d45; }
 .pname { flex: 1; }
 .add-player { display: flex; gap: 8px; align-items: center; margin-top: 8px; }
 .num { width: 80px; flex-shrink: 0; }
