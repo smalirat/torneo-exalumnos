@@ -145,8 +145,18 @@ function changeEdition(event: Event) {
 
 <template>
   <PublicLayout>
+    <!-- Tabs live in the top bar, next to the logo -->
+    <template #nav>
+      <nav v-if="tournament" class="tabs" role="tablist">
+        <button
+          v-for="key in tabs" :key="key" type="button" role="tab" :aria-selected="tab === key"
+          :class="['tab', { active: tab === key }]" @click="tab = key"
+        >{{ t(`league.tabs.${key}`) }}</button>
+      </nav>
+    </template>
+    <!-- Edition band (name, status, share, edition picker): not on Inicio, which always shows the current edition -->
     <template #hero>
-      <section v-if="tournament" class="hero">
+      <section v-if="tournament && tab !== 'inicio'" class="hero">
         <div class="hero-inner">
           <div class="hero-main">
             <p v-if="tournament?.seasonYear" class="kicker">{{ t('season.title', { year: tournament.seasonYear }) }}</p>
@@ -166,12 +176,6 @@ function changeEdition(event: Event) {
             </select>
           </label>
         </div>
-        <nav v-if="tournament" class="tabs" role="tablist">
-          <button
-            v-for="key in tabs" :key="key" type="button" role="tab" :aria-selected="tab === key"
-            :class="['tab', { active: tab === key }]" @click="tab = key"
-          >{{ t(`league.tabs.${key}`) }}</button>
-        </nav>
       </section>
     </template>
 
@@ -307,14 +311,14 @@ function changeEdition(event: Event) {
   border: 1px solid rgba(255, 255, 255, 0.6); border-radius: 999px; padding: 7px 14px; cursor: pointer;
 }
 .edition option { color: var(--text); }
-.tabs {
-  display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none;
-  padding: 0 max(8px, calc((100% - 1100px) / 2)); background: var(--navy-dark);
-}
+.tabs { display: flex; align-items: stretch; gap: 2px; overflow-x: auto; scrollbar-width: none; width: 100%; }
+.tabs::-webkit-scrollbar { display: none; }
 .tab {
-  flex-shrink: 0; background: none; border: 0; border-bottom: 3px solid transparent; color: rgba(255, 255, 255, 0.75);
-  font-family: var(--condensed); font-size: 17px; text-transform: uppercase; padding: 12px 12px 9px; cursor: pointer;
+  flex-shrink: 0; background: none; border: 0; border-top: 3px solid transparent; border-bottom: 3px solid transparent;
+  color: rgba(255, 255, 255, 0.75); font-family: var(--condensed); font-size: 17px; text-transform: uppercase;
+  padding: 10px 10px; cursor: pointer;
 }
+.tab:hover { color: #fff; }
 .tab.active { color: #fff; border-bottom-color: #fff; }
 
 .block { margin-bottom: 32px; }
