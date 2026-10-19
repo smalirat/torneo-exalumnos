@@ -51,7 +51,7 @@ const teams = computed(() => {
 </template>
 
 <style scoped>
-.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; align-items: start; }
+.grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
 .team-card { border: 1px solid #e3e7ef; border-radius: var(--radius); padding: 12px; background: #fff; }
 header { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
 h3 { font-size: 15px; color: var(--navy); }

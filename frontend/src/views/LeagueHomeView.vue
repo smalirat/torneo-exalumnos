@@ -39,7 +39,16 @@ const scorers = ref<SeasonStatRow[]>([])
 const figures = ref<SeasonStatRow[]>([])
 const sanctions = ref<Sanction[]>([])
 const yellows = ref<YellowTally[]>([])
-const split = computed(() => splitSanctions(sanctions.value))
+// Sancionados: one search box filters every list by player or team (case and accents ignored)
+const search = ref('')
+const fold = (s: string) => s.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase()
+const matchesSearch = (player: string, team: string) => {
+  const q = fold(search.value.trim())
+  return !q || fold(player).includes(q) || fold(team).includes(q)
+}
+const shownSanctions = computed(() => sanctions.value.filter((s) => matchesSearch(s.player.fullName, s.team.name)))
+const shownYellows = computed(() => yellows.value.filter((y) => matchesSearch(y.player.fullName, y.team.name)))
+const split = computed(() => splitSanctions(shownSanctions.value))
 // Champions of every year: league-wide, not tied to the edition
 const history = ref<CategoryHistory[]>([])
 const photos = ref<CollagePhoto[]>([])
@@ -313,6 +322,14 @@ function changeEdition(event: Event) {
 
       <!-- SANCIONADOS -->
       <section v-else-if="tab === 'sancionados'" class="rankings">
+        <label class="search">
+          <AppIcon name="search" :size="20" />
+          <span class="sr-only">{{ t('publicSite.searchLabel') }}</span>
+          <input v-model="search" type="search" :placeholder="t('publicSite.searchPlaceholder')" autocomplete="off">
+        </label>
+        <p v-if="search.trim() && shownSanctions.length === 0 && shownYellows.length === 0" class="card muted">
+          {{ t('publicSite.searchEmpty', { q: search.trim() }) }}
+        </p>
         <template v-if="tournament.seasonId">
           <div class="card">
             <h2 class="card-title">{{ t('publicSite.openSanctions') }} <span class="count">{{ split.open.length }}</span></h2>
@@ -325,7 +342,7 @@ function changeEdition(event: Event) {
         </template>
         <div class="card">
           <h2 class="card-title">{{ t('publicSite.yellows', { name: tournament.name }) }}</h2>
-          <YellowCardsByTeam :rows="yellows" />
+          <YellowCardsByTeam :rows="shownYellows" />
         </div>
       </section>
 
@@ -400,6 +417,13 @@ function changeEdition(event: Event) {
 }
 .card-title { font-family: var(--condensed); text-transform: uppercase; color: var(--navy); font-size: 22px; margin-bottom: 8px; }
 .rankings { display: flex; flex-direction: column; gap: 16px; }
+.search {
+  display: flex; align-items: center; gap: 10px; background: #fff; border-radius: 999px; box-shadow: var(--shadow);
+  padding: 0 16px; color: var(--muted); border: 1px solid var(--border);
+}
+.search:focus-within { border-color: var(--navy); color: var(--navy); }
+.search input { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; font: inherit; font-size: 15px; padding: 12px 0; color: var(--text); }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
 .history :deep(.category) { margin-bottom: 16px; }
 .count {
   font-family: 'Roboto', system-ui, sans-serif; font-size: 13px; font-weight: 700; vertical-align: middle;

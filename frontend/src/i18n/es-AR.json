@@ -393,6 +393,9 @@
     "scorers": "Goleadores",
     "figures": "Figuras",
     "openSanctions": "Sancionados con fechas pendientes",
+    "searchLabel": "Buscar jugador o equipo",
+    "searchPlaceholder": "Buscar jugador o equipo…",
+    "searchEmpty": "No hay sancionados ni amonestados que coincidan con \"{q}\".",
     "servedSanctions": "Sanciones cumplidas",
     "yellows": "Amonestados · {name}",
     "tabs": {
