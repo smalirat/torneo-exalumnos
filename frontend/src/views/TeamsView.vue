@@ -5,13 +5,12 @@ import AppIcon from '../components/AppIcon.vue'
 import CrestPicker from '../components/CrestPicker.vue'
 import ConfirmButton from '../components/ConfirmButton.vue'
 import InlineEdit from '../components/InlineEdit.vue'
-import { authApi, teamApi, tournamentApi } from '../api/endpoints'
+import { authApi, teamApi } from '../api/endpoints'
 import { isAdmin } from '../auth'
-import type { Player, TeamSummary, Tournament } from '../api/types'
+import type { Player, TeamSummary } from '../api/types'
 import { t } from '../i18n'
 
 const teams = ref<TeamSummary[] | null>(null)
-const tournaments = ref<Tournament[]>([])
 const newTeam = ref('')
 const error = ref('')
 
@@ -20,18 +19,14 @@ const openTeamId = ref<number | null>(null)
 const players = ref<Player[]>([])
 const playerName = ref('')
 const jerseyNo = ref<number | null>(null)
-const registerTournamentId = ref<number | null>(null)
-const notice = ref('')
 
-const openTournaments = computed(() => tournaments.value.filter((x) => x.status === 'OPEN' || (isAdmin.value && x.status !== 'COMPLETE')))
 
 onMounted(async () => {
-  ;[teams.value, tournaments.value] = await Promise.all([teamApi.list(), tournamentApi.list()])
+  teams.value = await teamApi.list()
 })
 
 async function run(action: () => Promise<void>) {
   error.value = ''
-  notice.value = ''
   try {
     await action()
   } catch (e) {
@@ -49,7 +44,6 @@ const toggle = (teamId: number) => run(async () => {
   if (openTeamId.value === teamId) { openTeamId.value = null; return }
   players.value = await teamApi.players(teamId)
   openTeamId.value = teamId
-  registerTournamentId.value = openTournaments.value[0]?.id ?? null
 })
 
 async function refreshRoster(teamId: number) {
@@ -70,11 +64,6 @@ const removePlayer = (teamId: number, playerId: number) => run(async () => {
   await refreshRoster(teamId)
 })
 
-const registerTeam = (teamId: number) => run(async () => {
-  if (!registerTournamentId.value) return
-  await teamApi.registerIn(teamId, registerTournamentId.value)
-  notice.value = t('teams.registered')
-})
 
 const renameTeam = async (team: TeamSummary, name: string) => {
   await teamApi.rename(team.id, name)
@@ -118,7 +107,6 @@ const countLabel = (n: number) => (n === 1 ? t('teams.onePlayer') : t('teams.pla
         <button class="btn">{{ t('teams.add') }}</button>
       </form>
       <p v-if="error" class="error">{{ error }}</p>
-      <p v-if="notice" class="notice">{{ notice }}</p>
 
       <p v-if="teams === null" class="muted">{{ t('common.loading') }}</p>
       <template v-else>
@@ -181,13 +169,6 @@ const countLabel = (n: number) => (n === 1 ? t('teams.onePlayer') : t('teams.pla
               <input v-model="playerName" class="input" :placeholder="t('teams.playerName')" required />
               <button class="btn secondary">{{ t('teams.addPlayer') }}</button>
             </form>
-            <form v-if="openTournaments.length" class="register" @submit.prevent="registerTeam(team.id)">
-              <label for="reg-tournament" class="muted small">{{ t('teams.registerIn') }}</label>
-              <select id="reg-tournament" v-model="registerTournamentId" class="select">
-                <option v-for="tour in openTournaments" :key="tour.id" :value="tour.id">{{ tour.name }}</option>
-              </select>
-              <button class="btn">{{ t('teams.register') }}</button>
-            </form>
           </div>
         </div>
       </template>
@@ -200,7 +181,6 @@ const countLabel = (n: number) => (n === 1 ? t('teams.onePlayer') : t('teams.pla
 .add { display: flex; gap: 10px; }
 .add .input { border: 2px solid var(--navy); }
 .total { font-size: 13px; font-weight: 700; color: var(--muted); margin: 10px 0 4px; }
-.notice { color: #1e7d45; font-size: 14px; }
 .team { border-bottom: 1px solid var(--border); }
 .team:last-child { border-bottom: 0; }
 .row { display: flex; align-items: center; gap: 16px; padding: 12px 6px; }
@@ -217,9 +197,8 @@ const countLabel = (n: number) => (n === 1 ? t('teams.onePlayer') : t('teams.pla
 .roster li { display: flex; align-items: center; gap: 10px; padding: 6px 0; border-bottom: 1px dashed var(--border); }
 .jersey { width: 30px; text-align: center; font-weight: 700; color: var(--navy); }
 .pname { flex: 1; }
-.add-player, .register { display: flex; gap: 8px; align-items: center; margin-top: 8px; }
+.add-player { display: flex; gap: 8px; align-items: center; margin-top: 8px; }
 .num { width: 80px; flex-shrink: 0; }
-.register .select { width: auto; min-width: 200px; }
 .pending { font-weight: 700; color: #b26a00; }
 .small-btn { padding: 6px 12px; font-size: 13px; }
 .invite { margin: 0 6px 14px 76px; padding: 12px; border-radius: 10px; background: var(--bg); }
