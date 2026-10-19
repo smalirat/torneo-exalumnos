@@ -9,6 +9,7 @@ import InlineEdit from '../components/InlineEdit.vue'
 import BaseModal from '../components/BaseModal.vue'
 import { tournamentApi } from '../api/endpoints'
 import type { Category, Registration, Zone } from '../api/types'
+import { zoneOptions } from '../groups'
 import { t } from '../i18n'
 
 // Admin: place registered teams into category zones and manage zones
@@ -20,9 +21,8 @@ const error = ref('')
 const zoneFormFor = ref<number | null>(null)
 const zoneName = ref('')
 
-/** Label of a zone; the category alone when it has a single zone. */
-const zoneOptions = computed(() => categories.value.flatMap((c) =>
-  c.zones.map((z) => ({ id: z.id, label: c.zoneCount > 1 ? `${c.name} · ${z.name}` : c.name }))))
+/** Label of every zone: only the zone with a single category, else "A · Zona 1" / "A" (see groups.ts) */
+const options = computed(() => zoneOptions(categories.value, true))
 
 const unassigned = computed(() => registrations.value.filter((r) => r.zoneId === null))
 const inZone = (zoneId: number) => registrations.value.filter((r) => r.zoneId === zoneId)
@@ -122,9 +122,9 @@ const addZone = (categoryId: number) => run(async () => {
       <div v-for="r in unassigned" :key="r.id" class="team">
         <TeamBadge :team="r.team" :size="34" />
         <span class="name">{{ r.team.name }}</span>
-        <select v-if="zoneOptions.length" class="select" :aria-label="t('tournamentTeams.assignTo')" @change="assign(r, $event)">
+        <select v-if="options.length" class="select" :aria-label="t('tournamentTeams.assignTo')" @change="assign(r, $event)">
           <option value="" selected disabled>{{ t('tournamentTeams.assignTo') }}</option>
-          <option v-for="z in zoneOptions" :key="z.id" :value="z.id">{{ z.label }}</option>
+          <option v-for="z in options" :key="z.id" :value="z.id">{{ z.label }}</option>
         </select>
       </div>
     </section>
@@ -157,7 +157,7 @@ const addZone = (categoryId: number) => run(async () => {
           <TeamBadge :team="r.team" :size="34" />
           <span class="name">{{ r.team.name }}</span>
           <select class="select" :value="r.zoneId" :aria-label="t('tournamentTeams.assignTo')" @change="assign(r, $event)">
-            <option v-for="o in zoneOptions" :key="o.id" :value="o.id">{{ o.label }}</option>
+            <option v-for="o in options" :key="o.id" :value="o.id">{{ o.label }}</option>
           </select>
           <button type="button" class="btn secondary small-btn" @click="openWithdraw(r)">
             {{ r.withdrawn ? t('tournamentTeams.undoWithdraw') : t('tournamentTeams.withdraw') }}

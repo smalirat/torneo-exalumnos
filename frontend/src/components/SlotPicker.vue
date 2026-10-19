@@ -2,6 +2,7 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { teamApi, tournamentApi } from '../api/endpoints'
 import type { Category, SlotReq, TeamSummary, Tournament } from '../api/types'
+import { zoneOptions } from '../groups'
 import { t } from '../i18n'
 
 // One side of a promotion/final: a fixed team, or "position N of a zone" from any tournament
@@ -17,8 +18,7 @@ const tournamentId = ref<number>(props.defaultTournamentId)
 const zoneId = ref<number | null>(null)
 const position = ref(1)
 
-const zoneOptions = computed(() => categories.value.flatMap((c) =>
-  c.zones.map((z) => ({ id: z.id, label: c.zoneCount > 1 ? `${c.name} · ${z.name}` : c.name }))))
+const options = computed(() => zoneOptions(categories.value, true))
 
 onMounted(async () => {
   ;[teams.value, tournaments.value] = await Promise.all([teamApi.list(), tournamentApi.list()])
@@ -27,7 +27,7 @@ onMounted(async () => {
 
 watch(tournamentId, async (id) => {
   categories.value = await tournamentApi.categories(id)
-  zoneId.value = zoneOptions.value[0]?.id ?? null
+  zoneId.value = options.value[0]?.id ?? null
 }, { immediate: true })
 
 watch([mode, teamId, zoneId, position], () => {
@@ -56,7 +56,7 @@ watch([mode, teamId, zoneId, position], () => {
       </label>
       <label class="field-inline">{{ t('standings.category') }}
         <select v-model="zoneId" class="select" required>
-          <option v-for="z in zoneOptions" :key="z.id" :value="z.id">{{ z.label }}</option>
+          <option v-for="z in options" :key="z.id" :value="z.id">{{ z.label }}</option>
         </select>
       </label>
     </template>

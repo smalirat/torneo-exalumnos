@@ -163,13 +163,14 @@ public class ResponseDtos {
 
     /** A team's place in a tournament: category/zone are null until the admin assigns them. */
     public record TeamRegistrationRes(Long registrationId, TournamentRes tournament, Long categoryId, String categoryName,
-                                      Long zoneId, String zoneName, int zoneCount) {
+                                      Long zoneId, String zoneName, int zoneCount, int categoryCount) {
         public static TeamRegistrationRes from(Registration r) {
             var z = r.getZone();
             var c = z == null ? null : z.getCategory();
             return new TeamRegistrationRes(r.getId(), TournamentRes.from(r.getTournament()),
                     c == null ? null : c.getId(), c == null ? null : c.getName(),
-                    z == null ? null : z.getId(), z == null ? null : z.getName(), c == null ? 0 : c.getZoneCount());
+                    z == null ? null : z.getId(), z == null ? null : z.getName(), c == null ? 0 : c.getZoneCount(),
+                    r.getTournament().getCategoryCount());
         }
     }
 
@@ -208,12 +209,12 @@ public class ResponseDtos {
     }
 
     /** Rule "position N of zone X"; names included so the UI can label it ("3º · A (Apertura)"). */
-    public record SlotRes(Long zoneId, String zoneName, int zoneCount, String categoryName,
+    public record SlotRes(Long zoneId, String zoneName, int zoneCount, String categoryName, int categoryCount,
                           Long tournamentId, String tournamentName, int position) {
         static SlotRes of(Zone zone, Integer position) {
             if (zone == null || position == null) return null;
             var c = zone.getCategory();
-            return new SlotRes(zone.getId(), zone.getName(), c.getZoneCount(), c.getName(),
+            return new SlotRes(zone.getId(), zone.getName(), c.getZoneCount(), c.getName(), c.getTournament().getCategoryCount(),
                     c.getTournament().getId(), c.getTournament().getName(), position);
         }
     }

@@ -20,6 +20,7 @@ import type { Category, CategoryHistory, CollagePhoto, Match, Sanction, ScorerRo
 import { isAdmin, isLoggedIn } from '../auth'
 import { currentEdition, sortEditions } from '../editions'
 import { dayLabel, groupRounds, isDone } from '../rounds'
+import { zoneOptions } from '../groups'
 import { splitSanctions } from '../sanctions'
 import { t } from '../i18n'
 
@@ -109,13 +110,8 @@ const highlighted = computed(() => matches.value.filter((m) => !m.withdrawal))
 const lastRound = computed(() => groupRounds(highlighted.value.filter(isDone)).at(-1) ?? null)
 const nextRound = computed(() => groupRounds(highlighted.value.filter((m) => !isDone(m)))[0] ?? null)
 
-/** "Categoría A · Zona 2" (zone only when the category has several) */
-const groupLabel = computed(() => {
-  const cat = categories.value?.find((c) => c.zones.some((z) => z.id === zoneId.value))
-  if (!cat) return ''
-  const zone = cat.zoneCount > 1 ? cat.zones.find((z) => z.id === zoneId.value)?.name : null
-  return [t('league.category', { name: cat.name }), zone].filter(Boolean).join(' · ')
-})
+/** Name of the shown group, e.g. "Categoría A" or just "Zona 2" with a single category (see groups.ts) */
+const groupLabel = computed(() => zoneOptions(categories.value ?? []).find((o) => o.id === zoneId.value)?.label ?? '')
 
 const roundTitle = (r: { number: number | null; label: string | null }) =>
   r.number != null ? t('fixture.round', { n: r.number }) : r.label ?? ''

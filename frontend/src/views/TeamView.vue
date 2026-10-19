@@ -10,6 +10,7 @@ import TeamBadge from '../components/TeamBadge.vue'
 import { currentUser, isAdmin } from '../auth'
 import { teamApi, zoneApi } from '../api/endpoints'
 import type { Match, StandingRow, TeamRef, TeamRegistration } from '../api/types'
+import { groupName } from '../groups'
 import { t } from '../i18n'
 
 // A team's season: every tournament it is registered in, its zone table, next match and results
@@ -35,7 +36,7 @@ watch(teamId, async (id) => {
 const canEdit = computed(() => isAdmin.value || (currentUser.value?.teamIds.includes(teamId.value) ?? false))
 
 const placeLabel = (r: TeamRegistration) =>
-  r.zoneCount > 1 ? `${r.categoryName} · ${r.zoneName}` : r.categoryName
+  groupName({ ...r, categoryName: r.categoryName ?? '' })
 const position = (s: Season) => s.rows.find((r) => r.team.id === teamId.value)?.position
 const nextMatch = (s: Season) => s.matches.find((m) => m.status !== 'FINISHED') ?? null
 const results = (s: Season) => s.matches.filter((m) => m.status === 'FINISHED').reverse()

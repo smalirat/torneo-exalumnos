@@ -3,6 +3,7 @@ import { computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AppIcon from './AppIcon.vue'
 import type { Category } from '../api/types'
+import { zoneOptions } from '../groups'
 import { t } from '../i18n'
 
 // Navy strip on top of the standings / fixture card: ‹ Categoría A · Zona 1 › steps through every zone of every
@@ -15,12 +16,7 @@ const route = useRoute()
 const router = useRouter()
 
 /** Every zone in order: categories as listed, zones within each category */
-const groups = computed(() => props.categories.flatMap((c) => c.zones.map((z) => ({
-  zoneId: z.id,
-  categoryId: c.id,
-  title: t('league.category', { name: c.name }),
-  zone: c.zoneCount > 1 ? z.name : null,
-}))))
+const groups = computed(() => zoneOptions(props.categories).map((o) => ({ zoneId: o.id, categoryId: o.categoryId, title: o.label })))
 const index = computed(() => groups.value.findIndex((g) => g.zoneId === zoneId.value))
 const current = computed(() => groups.value[index.value] ?? null)
 
@@ -48,7 +44,6 @@ watch(zoneId, () => {
     </button>
     <div class="title">
       <strong>{{ current.title }}</strong>
-      <span v-if="current.zone">{{ current.zone }}</span>
     </div>
     <button v-if="groups.length > 1" type="button" class="nav-btn" :title="t('fixture.next')" @click="step(1)">
       <AppIcon name="chevron" />

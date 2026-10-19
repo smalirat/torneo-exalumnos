@@ -8,6 +8,7 @@ import MatchResultEditor from '../components/MatchResultEditor.vue'
 import { playoffApi } from '../api/endpoints'
 import type { Match, SlotReq, SlotRes } from '../api/types'
 import { isAdmin } from '../auth'
+import { groupName } from '../groups'
 import { t } from '../i18n'
 
 // Promotions and finals of a tournament
@@ -45,12 +46,11 @@ const create = () => run(async () => {
 
 const resolve = (m: Match) => run(() => playoffApi.resolve(m.id))
 
-/** "3º · A · Zona 2 (Apertura)"; the zone only when the category has more than one. */
+/** "3º · A · Zona 2 (Apertura)" or "3º · Zona 2" with a single category (see groups.ts) */
 function sourceLabel(s: SlotRes | null) {
   if (!s) return ''
-  const zone = s.zoneCount > 1 ? ` · ${s.zoneName}` : ''
   const tour = s.tournamentId === tournamentId.value ? '' : ` (${s.tournamentName})`
-  return `${s.position}º · ${s.categoryName}${zone}${tour}`
+  return `${s.position}º · ${groupName(s, true)}${tour}`
 }
 
 const formatDate = (d: string | null) =>

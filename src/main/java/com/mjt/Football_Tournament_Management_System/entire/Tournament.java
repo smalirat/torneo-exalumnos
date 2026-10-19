@@ -31,6 +31,10 @@ public class Tournament {
     @Enumerated(EnumType.STRING)
     private Stage stage;
 
+    /** Read-only: how many categories it has (a single one is not named in labels, only its zones) */
+    @org.hibernate.annotations.Formula("(select count(*) from categories c where c.tournament_id = id)")
+    private int categoryCount;
+
     /**
      * Moved by hand by the admin: DRAFT -> OPEN (captains can register) -> LIVE (being played; registration
      * closed) -> COMPLETE (can be reopened). Only one edition can be active (OPEN or LIVE) at a time.

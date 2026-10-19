@@ -62,6 +62,8 @@ export interface StandingRow {
 }
 
 export interface SlotRes {
+  /** categories of that edition: with a single one only the zone is named */
+  categoryCount: number
   zoneId: number
   zoneName: string
   zoneCount: number
@@ -124,6 +126,8 @@ export interface Player {
 }
 
 export interface TeamRegistration {
+  /** categories of that edition: with a single one only the zone is named */
+  categoryCount: number
   registrationId: number
   tournament: Tournament
   categoryId: number | null

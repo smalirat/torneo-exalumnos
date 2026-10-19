@@ -2,6 +2,7 @@
 import { nextTick, ref, watch } from 'vue'
 import { tournamentApi } from '../api/endpoints'
 import type { Category, Tournament } from '../api/types'
+import { zoneOptions } from '../groups'
 import { t } from '../i18n'
 
 // Left list of the fixture: every edition of the year with its categories (and zones, when a category has
@@ -27,16 +28,12 @@ const isCurrent = (e: Tournament, zoneId: number) => e.id === props.tournamentId
     <section v-for="e in editions" :key="e.id" class="edition">
       <h3>{{ e.name }}</h3>
       <ul>
-        <template v-for="c in categories[e.id] ?? []" :key="c.id">
-          <li v-for="z in c.zones" :key="z.id">
-            <button
-              type="button" :class="['item', { active: isCurrent(e, z.id) }]" :aria-current="isCurrent(e, z.id) ? 'true' : undefined"
-              @click="emit('select', e.id, c.id, z.id)"
-            >
-              {{ t('league.category', { name: c.name }) }}<template v-if="c.zoneCount > 1"> · {{ z.name }}</template>
-            </button>
-          </li>
-        </template>
+        <li v-for="o in zoneOptions(categories[e.id] ?? [])" :key="o.id">
+          <button
+            type="button" :class="['item', { active: isCurrent(e, o.id) }]" :aria-current="isCurrent(e, o.id) ? 'true' : undefined"
+            @click="emit('select', e.id, o.categoryId, o.id)"
+          >{{ o.label }}</button>
+        </li>
       </ul>
     </section>
   </nav>

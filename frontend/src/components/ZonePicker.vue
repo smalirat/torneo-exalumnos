@@ -31,7 +31,7 @@ watch(zoneId, (z) => {
 
 <template>
   <div class="picker">
-    <select v-model="categoryId" class="select" :aria-label="t('standings.category')" @change="onCategoryChange">
+    <select v-if="categories.length > 1" v-model="categoryId" class="select" :aria-label="t('standings.category')" @change="onCategoryChange">
       <option v-for="c in categories" :key="c.id" :value="c.id">{{ c.name }}</option>
     </select>
     <select v-if="category && category.zoneCount > 1" v-model="zoneId" class="select" :aria-label="t('standings.zone')">
