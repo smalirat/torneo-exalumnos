@@ -58,6 +58,8 @@ const notFound = ref(false)
 const fixtureIndex = ref(0)
 
 const TABS = ['inicio', 'fixture', 'goleadores', 'sancionados', 'definiciones', 'historia'] as const
+/** Tabs that do not depend on the chosen edition: no edition band nor picker */
+const EDITION_FREE_TABS: readonly string[] = ['inicio', 'historia']
 type Tab = (typeof TABS)[number]
 // Sanctions are kept per season and yellow cards per edition (Excel): the tab shows when there is any of them
 const tabs = computed(() => TABS.filter((k) =>
@@ -196,9 +198,10 @@ function changeEdition(event: Event) {
         >{{ t(`league.tabs.${key}`) }}</button>
       </nav>
     </template>
-    <!-- Edition band (name, status, share, edition picker): not on Inicio, which always shows the current edition -->
+    <!-- Edition band (name, status, edition / year picker): not on Inicio (always the current edition) nor on
+         Historia (league-wide, it does not depend on the edition) -->
     <template #hero>
-      <section v-if="tournament && tab !== 'inicio'" class="hero">
+      <section v-if="tournament && !EDITION_FREE_TABS.includes(tab)" class="hero">
         <div class="hero-inner">
           <div class="hero-main">
             <p v-if="tournament?.seasonYear" class="kicker">{{ t('season.title', { year: tournament.seasonYear }) }}</p>
