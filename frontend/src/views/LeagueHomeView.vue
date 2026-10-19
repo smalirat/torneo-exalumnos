@@ -13,7 +13,6 @@ import MatchCard from '../components/MatchCard.vue'
 import MatchCarousel from '../components/MatchCarousel.vue'
 import PlayerRankingTable from '../components/PlayerRankingTable.vue'
 import SanctionsTable from '../components/SanctionsTable.vue'
-import ShareButton from '../components/ShareButton.vue'
 import YellowCardsByTeam from '../components/YellowCardsByTeam.vue'
 import { championApi, collageApi, playoffApi, seasonApi, tournamentApi, zoneApi } from '../api/endpoints'
 import type { Category, CategoryHistory, CollagePhoto, Match, Sanction, ScorerRow, SeasonStatRow, StandingRow, Tournament, YellowTally } from '../api/types'
@@ -134,10 +133,6 @@ const specialGroups = computed(() => (['PROMOTION', 'FINAL'] as const)
   .map((type) => ({ type, matches: specials.value.filter((m) => m.type === type) }))
   .filter((g) => g.matches.length > 0))
 
-const publicUrl = computed(() => tournament.value
-  ? `${window.location.origin}/ver/${tournament.value.id}${route.fullPath.includes('?') ? route.fullPath.slice(route.fullPath.indexOf('?')) : ''}`
-  : window.location.href)
-
 // ---- Fixture tab: Resultados (played + to play) / Posiciones, editions of the year on the left, year picker on top
 const VIEWS = ['resultados', 'posiciones'] as const
 type View = (typeof VIEWS)[number]
@@ -204,7 +199,6 @@ function changeEdition(event: Event) {
               <span v-if="tournament.status === 'OPEN' && tournament.registrationEnd" class="until">
                 {{ t('league.registrationUntil', { date: new Date(`${tournament.registrationEnd}T00:00`).toLocaleDateString('es-AR') }) }}
               </span>
-              <ShareButton v-if="tab !== 'fixture'" :url="publicUrl" :title="tournament.name" tone="light" />
             </div>
           </div>
           <label v-if="tab === 'fixture' && years.length" class="edition">
