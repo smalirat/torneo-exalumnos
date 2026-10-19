@@ -11,17 +11,8 @@ const props = defineProps<{ rounds: Round[] }>()
 const index = defineModel<number>({ required: true })
 const round = computed(() => props.rounds[index.value] ?? null)
 
-/** Matches actually played / to play, and the walkovers of a team that left the edition (shown apart, at the end) */
-const regular = computed(() => round.value?.matches.filter((m) => !m.withdrawal) ?? [])
-const withdrawals = computed(() => round.value?.matches.filter((m) => m.withdrawal) ?? [])
-/** "PRESION ALTA suma 3 pts · ELPIDIO GONZALEZ se dio de baja" */
-function withdrawalText(m: Match) {
-  const homeLeft = !m.homePresent
-  return t('fixture.withdrawalLine', {
-    winner: (homeLeft ? m.awayTeam : m.homeTeam).name,
-    gone: (homeLeft ? m.homeTeam : m.awayTeam).name,
-  })
-}
+/** Walkover of a team that left the edition: the row stays in place, dimmed, the team that left struck through */
+const left = (m: Match, home: boolean) => m.withdrawal && !(home ? m.homePresent : m.awayPresent)
 
 const roundName = (r: Round, i: number) =>
   r.number != null ? t('fixture.round', { n: r.number }) : r.label ?? t('fixture.round', { n: i + 1 })
@@ -62,12 +53,13 @@ const place = (m: Match) => [m.venue, m.pitch ? `${t('results.pitch')} ${m.pitch
         </tr>
       </thead>
       <tbody>
-        <tr v-for="m in regular" :key="m.id">
+        <tr v-for="m in round?.matches ?? []" :key="m.id" :class="{ withdrawal: m.withdrawal }">
           <td class="side home">
-            <span :class="['team', { win: played(m) && won(m, true) }]">{{ m.homeTeam.name }} <TeamBadge :team="m.homeTeam" :size="26" /></span>
+            <span :class="['team', { win: !m.withdrawal && played(m) && won(m, true), left: left(m, true) }]">{{ m.homeTeam.name }} <TeamBadge :team="m.homeTeam" :size="26" /></span>
           </td>
           <td class="center">
-            <template v-if="played(m) || m.advanceWalkover">
+            <span v-if="m.withdrawal" class="abandon">{{ t('fixture.withdrawal') }}</span>
+            <template v-else-if="played(m) || m.advanceWalkover">
               <span class="score">
                 <small v-if="m.homePenalties != null" class="pen">({{ m.homePenalties }})</small>
                 <b :class="{ win: won(m, true) }">{{ m.homeGoals }}</b>
@@ -83,14 +75,9 @@ const place = (m: Match) => [m.venue, m.pitch ? `${t('results.pitch')} ${m.pitch
             </template>
           </td>
           <td class="side away">
-            <span :class="['team', { win: played(m) && won(m, false) }]"><TeamBadge :team="m.awayTeam" :size="26" /> {{ m.awayTeam.name }}</span>
+            <span :class="['team', { win: !m.withdrawal && played(m) && won(m, false), left: left(m, false) }]"><TeamBadge :team="m.awayTeam" :size="26" /> {{ m.awayTeam.name }}</span>
           </td>
         </tr>
-        <template v-if="withdrawals.length">
-          <tr v-for="(m, i) in withdrawals" :key="m.id" :class="['withdrawal', { first: i === 0 && regular.length > 0 }]">
-            <td colspan="3">{{ withdrawalText(m) }}</td>
-          </tr>
-        </template>
       </tbody>
     </table>
     <p v-if="!round" class="muted empty">{{ t('standings.noGames') }}</p>
@@ -138,11 +125,12 @@ tbody tr:last-child td { border-bottom: 0; }
 .flip { transform: rotate(180deg); }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
 .empty { padding: 20px; }
-/* Walkovers of a team that left the edition: one small grey line each, after the real matches */
-.withdrawal td {
-  text-align: center; font-size: 12px; color: var(--muted); padding: 8px 10px; background: var(--row-alt); border-bottom: 0;
-}
-.withdrawal.first td { border-top: 1px dashed #c9d0dd; }
+/* Walkover of a team that left the edition: same row, dimmed; the team that left struck through */
+.withdrawal td { background: var(--row-alt); }
+.withdrawal .team { color: var(--muted); font-weight: 400; }
+.withdrawal .team.left { text-decoration: line-through; }
+.withdrawal :deep(img) { opacity: 0.5; }
+.abandon { font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
 @media (max-width: 600px) {
   td { padding: 12px 6px; }
   .side { width: 31%; }
