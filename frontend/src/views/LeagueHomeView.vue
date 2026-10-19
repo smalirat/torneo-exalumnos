@@ -5,12 +5,13 @@ import PublicLayout from '../layouts/PublicLayout.vue'
 import AppIcon from '../components/AppIcon.vue'
 import ChampionsCollage from '../components/ChampionsCollage.vue'
 import ChampionsHistory from '../components/ChampionsHistory.vue'
+import FixtureSidebar from '../components/FixtureSidebar.vue'
 import GroupNav from '../components/GroupNav.vue'
+import ResultsTable from '../components/ResultsTable.vue'
 import LeagueTable from '../components/LeagueTable.vue'
 import MatchCard from '../components/MatchCard.vue'
 import MatchCarousel from '../components/MatchCarousel.vue'
 import PlayerRankingTable from '../components/PlayerRankingTable.vue'
-import RoundNav from '../components/RoundNav.vue'
 import SanctionsTable from '../components/SanctionsTable.vue'
 import ShareButton from '../components/ShareButton.vue'
 import YellowCardsByTeam from '../components/YellowCardsByTeam.vue'
@@ -80,6 +81,9 @@ watch(requestedId, async (id) => {
     tournamentApi.yellowCards(tid),
   ])
   categories.value = cats
+  const zones = cats.flatMap((c) => c.zones.map((z) => ({ zone: z.id, category: c.id })))
+  zoneId.value = (zones.find((x) => x.zone === Number(route.query.zona))
+    ?? zones.find((x) => x.category === Number(route.query.categoria)) ?? zones[0])?.zone ?? null
   specials.value = special
   scorers.value = goals
   figures.value = figs
@@ -138,6 +142,43 @@ const publicUrl = computed(() => tournament.value
   ? `${window.location.origin}/ver/${tournament.value.id}${route.fullPath.includes('?') ? route.fullPath.slice(route.fullPath.indexOf('?')) : ''}`
   : window.location.href)
 
+// ---- Fixture tab: Resultados (played + to play) / Posiciones, editions of the year on the left, year picker on top
+const VIEWS = ['resultados', 'posiciones'] as const
+type View = (typeof VIEWS)[number]
+const view = computed<View>({
+  get: () => (route.query.vista === 'posiciones' ? 'posiciones' : 'resultados'),
+  set: (value) => router.replace({ query: { ...route.query, vista: value === 'resultados' ? undefined : value } }),
+})
+const years = computed(() => [...new Set(sortedEditions.value.map((e) => e.seasonYear).filter((y): y is number => y != null))])
+/** Editions of the shown year in calendar order (Apertura, then Clausura); without a year, just this one */
+const yearEditions = computed(() => {
+  const year = tournament.value?.seasonYear
+  if (year == null) return tournament.value ? [tournament.value] : []
+  return sortedEditions.value.filter((e) => e.seasonYear === year).reverse()
+})
+const fixtureTitle = computed(() => [tournament.value?.name, groupLabel.value].filter(Boolean).join(' - '))
+const roundDate = (day: string | null) => (day
+  ? new Date(`${day}T00:00`).toLocaleDateString('es-AR', { day: 'numeric', month: 'long', year: 'numeric' })
+  : '')
+
+function selectGroup(tournamentId: number, categoryId: number, zone: number) {
+  const query = { tab: 'fixture', vista: route.query.vista, categoria: String(categoryId), zona: String(zone) }
+  if (tournamentId === tournament.value?.id) {
+    zoneId.value = zone
+    router.replace({ query })
+  } else {
+    router.push({ path: `/ver/${tournamentId}`, query })
+  }
+}
+
+/** Another year: its active edition if it has one, otherwise its newest; same tab and view */
+function changeYear(event: Event) {
+  const year = Number((event.target as HTMLSelectElement).value)
+  const ofYear = sortedEditions.value.filter((e) => e.seasonYear === year)
+  const target = ofYear.find((e) => e.status === 'OPEN' || e.status === 'LIVE') ?? ofYear[0]
+  if (target) router.push({ path: `/ver/${target.id}`, query: { tab: tab.value, vista: route.query.vista } })
+}
+
 /** Another edition, same tab (category/zone are not kept: they belong to the edition you leave) */
 function changeEdition(event: Event) {
   router.push({ path: `/ver/${(event.target as HTMLSelectElement).value}`, query: tab.value === 'inicio' ? {} : { tab: tab.value } })
@@ -167,10 +208,16 @@ function changeEdition(event: Event) {
               <span v-if="tournament.status === 'OPEN' && tournament.registrationEnd" class="until">
                 {{ t('league.registrationUntil', { date: new Date(`${tournament.registrationEnd}T00:00`).toLocaleDateString('es-AR') }) }}
               </span>
-              <ShareButton :url="publicUrl" :title="tournament.name" tone="light" />
+              <ShareButton v-if="tab !== 'fixture'" :url="publicUrl" :title="tournament.name" tone="light" />
             </div>
           </div>
-          <label v-if="sortedEditions.length > 1 && tournament" class="edition">
+          <label v-if="tab === 'fixture' && years.length" class="edition">
+            <span>{{ t('league.year') }}</span>
+            <select :value="tournament.seasonYear" @change="changeYear">
+              <option v-for="y in years" :key="y" :value="y">{{ y }}</option>
+            </select>
+          </label>
+          <label v-else-if="tab !== 'fixture' && sortedEditions.length > 1 && tournament" class="edition">
             <span>{{ t('league.edition') }}</span>
             <select :value="tournament.id" @change="changeEdition">
               <option v-for="e in sortedEditions" :key="e.id" :value="e.id">{{ e.name }}</option>
@@ -234,14 +281,32 @@ function changeEdition(event: Event) {
         </section>
       </template>
 
-      <!-- FIXTURE -->
-      <section v-else-if="tab === 'fixture' && categories?.length" class="card fixture-card">
-        <GroupNav v-model="zoneId" :categories="categories" class="card-bar" />
-        <p v-if="allRounds.length === 0" class="muted">{{ t('standings.noGames') }}</p>
-        <template v-else>
-          <RoundNav v-model="fixtureIndex" :rounds="allRounds" />
-          <MatchCard v-for="m in allRounds[fixtureIndex]?.matches ?? []" :key="m.id" :match="m" date-format="time" :hints="false" />
-        </template>
+      <!-- FIXTURE: editions of the year on the left; Resultados (played + to play) / Posiciones -->
+      <section v-else-if="tab === 'fixture' && categories?.length" class="fixture">
+        <FixtureSidebar :editions="yearEditions" :tournament-id="tournament.id" :zone-id="zoneId" @select="selectGroup" />
+        <div class="fixture-main">
+          <header class="fixture-head">
+            <h2>{{ fixtureTitle }}</h2>
+            <div class="views" role="tablist">
+              <button
+                v-for="v in VIEWS" :key="v" type="button" role="tab" :aria-selected="view === v"
+                :class="['view', { active: view === v }]" @click="view = v"
+              >{{ t(`league.views.${v}`) }}</button>
+            </div>
+          </header>
+
+          <template v-if="view === 'resultados'">
+            <p v-if="allRounds.length === 0" class="card muted">{{ t('standings.noGames') }}</p>
+            <template v-else>
+              <h3 class="round-head">
+                {{ roundTitle(allRounds[fixtureIndex]) }}
+                <span v-if="allRounds[fixtureIndex]?.day" class="round-date">- {{ roundDate(allRounds[fixtureIndex].day) }}</span>
+              </h3>
+              <ResultsTable v-model="fixtureIndex" :rounds="allRounds" />
+            </template>
+          </template>
+          <div v-else class="table-card"><LeagueTable :rows="standings" /></div>
+        </div>
       </section>
 
       <!-- GOLEADORES -->
@@ -325,8 +390,24 @@ function changeEdition(event: Event) {
 .more { background: none; border: 0; color: var(--navy); font: inherit; font-size: 14px; font-weight: 500; cursor: pointer; white-space: nowrap; }
 .table-card { background: #fff; border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
 .table-card :deep(.scroll) { border-radius: 0; }
-.fixture-card { padding-top: 0; overflow: hidden; }
-.card-bar { margin: 0 -20px 4px; }
+.fixture { display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: 32px; align-items: start; }
+.fixture-head {
+  display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; flex-wrap: wrap;
+  border-bottom: 1px solid #d5dbe6; margin-bottom: 18px;
+}
+.fixture-head h2 { font-family: var(--condensed); color: var(--navy); font-size: clamp(22px, 4vw, 30px); line-height: 1.1; padding-bottom: 8px; }
+.views { display: flex; }
+.view {
+  background: none; border: 0; border-bottom: 2px solid transparent; font: inherit; font-size: 15px; font-weight: 500;
+  color: var(--muted); padding: 8px 16px; cursor: pointer; margin-bottom: -1px;
+}
+.view:hover { color: var(--navy); }
+.view.active { color: var(--navy); border-bottom-color: var(--navy); }
+.round-head { font-family: var(--condensed); color: var(--navy); font-size: 22px; margin: 0 0 10px; }
+.round-date { font-family: 'Roboto', system-ui, sans-serif; font-size: 13px; font-weight: 500; color: var(--muted); }
+@media (max-width: 760px) {
+  .fixture { grid-template-columns: minmax(0, 1fr); gap: 16px; }
+}
 .card-title { font-family: var(--condensed); text-transform: uppercase; color: var(--navy); font-size: 22px; margin-bottom: 8px; }
 .rankings { display: flex; flex-direction: column; gap: 16px; }
 .history :deep(.category) { margin-bottom: 16px; }

@@ -266,6 +266,9 @@
     "winner": "Ganador: {team}"
   },
   "fixture": {
+    "home": "Local",
+    "away": "Visitante",
+    "categories": "Categorías",
     "rounds": "Fechas",
     "round": "Fecha {n}",
     "previous": "Fecha anterior",
@@ -420,6 +423,8 @@
     },
     "lastRound": "Última fecha",
     "registrationUntil": "Inscripción hasta el {date}",
+    "year": "Año",
+    "views": { "resultados": "Resultados", "posiciones": "Posiciones" },
     "table": "Tabla de posiciones",
     "nextRound": "Próxima fecha",
     "seeFixture": "Ver fixture",
