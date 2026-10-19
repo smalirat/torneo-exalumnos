@@ -12,7 +12,6 @@ import MatchCarousel from '../components/MatchCarousel.vue'
 import PlayerRankingTable from '../components/PlayerRankingTable.vue'
 import RoundNav from '../components/RoundNav.vue'
 import SanctionsTable from '../components/SanctionsTable.vue'
-import ScoreCard from '../components/ScoreCard.vue'
 import ShareButton from '../components/ShareButton.vue'
 import YellowCardsByTeam from '../components/YellowCardsByTeam.vue'
 import { championApi, collageApi, playoffApi, seasonApi, tournamentApi, zoneApi } from '../api/endpoints'
@@ -226,9 +225,7 @@ function changeEdition(event: Event) {
             </div>
             <button v-if="nextRound" type="button" class="more" @click="tab = 'fixture'">{{ t('league.seeFixture') }} ›</button>
           </header>
-          <div v-if="nextRound" class="next-grid">
-            <ScoreCard v-for="m in nextRound.matches" :key="m.id" :match="m" />
-          </div>
+          <MatchCarousel v-if="nextRound" :matches="nextRound.matches" />
           <p v-else class="muted">{{ t('publicSite.noUpcoming') }}</p>
         </section>
       </template>
@@ -330,7 +327,6 @@ function changeEdition(event: Event) {
 .fixture-card { padding-top: 0; overflow: hidden; }
 .card-bar { margin: 0 -20px 4px; }
 .note { font-size: 13px; margin-top: 10px; }
-.next-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
 .card-title { font-family: var(--condensed); text-transform: uppercase; color: var(--navy); font-size: 22px; margin-bottom: 8px; }
 .rankings { display: flex; flex-direction: column; gap: 16px; }
 .history :deep(.category) { margin-bottom: 16px; }
