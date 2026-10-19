@@ -24,7 +24,6 @@ export const authApi = {
 /** Body for creating/updating a tournament (status is ignored on create). */
 export interface TournamentInput {
   name: string
-  location: string | null
   /** Informative only: shown to the public, they do not open or close registration */
   registrationStart: string | null
   registrationEnd: string | null

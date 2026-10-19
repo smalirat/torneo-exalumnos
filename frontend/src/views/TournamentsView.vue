@@ -66,7 +66,7 @@ const groups = computed(() => {
         <span class="tour-icon"><AppIcon name="trophy" /></span>
         <div>
           <h2>{{ tour.name }}</h2>
-          <p class="muted">{{ t(`tournaments.statuses.${tour.status}`) }}<template v-if="tour.location"> · {{ tour.location }}</template></p>
+          <p class="muted">{{ t(`tournaments.statuses.${tour.status}`) }}</p>
           <p v-if="tour.registrationStart || tour.registrationEnd" class="muted small">
             {{ t('tournaments.registration') }}: {{ registrationLabel(tour.registrationStart, tour.registrationEnd) }}
           </p>

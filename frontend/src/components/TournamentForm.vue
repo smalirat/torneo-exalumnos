@@ -10,7 +10,6 @@ const emit = defineEmits<{ submit: [value: TournamentInput]; cancel: [] }>()
 
 const form = ref<TournamentInput>({
   name: props.initial?.name ?? '',
-  location: props.initial?.location ?? '',
   registrationStart: props.initial?.registrationStart ?? '',
   registrationEnd: props.initial?.registrationEnd ?? '',
   matchStart: props.initial?.matchStart ?? '',
@@ -23,7 +22,6 @@ function submit() {
   const v = form.value
   emit('submit', {
     ...v,
-    location: v.location || null,
     registrationStart: v.registrationStart || null,
     registrationEnd: v.registrationEnd || null,
     matchStart: v.matchStart || null,
@@ -39,10 +37,6 @@ function submit() {
     <div class="field">
       <label for="t-name">{{ t('tournaments.name') }}</label>
       <input id="t-name" v-model="form.name" class="input" required />
-    </div>
-    <div class="field">
-      <label for="t-location">{{ t('tournaments.location') }}</label>
-      <input id="t-location" v-model="form.location" class="input" />
     </div>
     <div class="row">
       <div class="field">
