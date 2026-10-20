@@ -12,6 +12,7 @@ import com.mjt.Football_Tournament_Management_System.service.PlayoffService;
 import com.mjt.Football_Tournament_Management_System.service.RankingService;
 import com.mjt.Football_Tournament_Management_System.service.StandingsService;
 import com.mjt.Football_Tournament_Management_System.service.TeamService;
+import com.mjt.Football_Tournament_Management_System.service.TournamentImageService;
 import com.mjt.Football_Tournament_Management_System.service.TournamentService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -34,6 +35,7 @@ public class PublicApiController {
     private final RankingService rService;
     private final TeamService teamService;
     private final PlayoffService pService;
+    private final TournamentImageService imageService;
 
     @Value("${app.league.title:TORNEO DE EXALUMNOS - COLEGIO MARIANISTA}")
     private String leagueTitle;
@@ -101,6 +103,16 @@ public class PublicApiController {
     @Operation(summary = "A team (one in review only for its captain and the admin)")
     public ResponseDtos.TeamRef team(@PathVariable Long id, Authentication auth) {
         return teamService.team(id, auth);
+    }
+
+    @GetMapping("/tournaments/{id}/images/{kind}")
+    @Operation(summary = "Banner or logo of an edition (kind = banner | logo; the URL carries the version: cached for a year); 404 if none")
+    public ResponseEntity<byte[]> tournamentImage(@PathVariable Long id, @PathVariable String kind) {
+        var img = imageService.get(id, kind);
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(img.getContentType()))
+                .cacheControl(CacheControl.maxAge(Duration.ofDays(365)).cachePublic().immutable())
+                .body(img.getImageData());
     }
 
     @GetMapping("/teams/{id}/crest")

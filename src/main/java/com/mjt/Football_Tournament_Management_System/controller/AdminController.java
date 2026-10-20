@@ -4,6 +4,8 @@ package com.mjt.Football_Tournament_Management_System.controller;
 import com.mjt.Football_Tournament_Management_System.dto.AdminDtos;
 import com.mjt.Football_Tournament_Management_System.dto.ResponseDtos;
 import com.mjt.Football_Tournament_Management_System.service.CategoryService;
+import com.mjt.Football_Tournament_Management_System.service.EditionBuilderService;
+import com.mjt.Football_Tournament_Management_System.service.TournamentImageService;
 import com.mjt.Football_Tournament_Management_System.service.MatchService;
 import com.mjt.Football_Tournament_Management_System.service.PlayoffService;
 import com.mjt.Football_Tournament_Management_System.service.TournamentService;
@@ -13,6 +15,8 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
@@ -27,6 +31,8 @@ public class AdminController {
     private final MatchService mService;
     private final CategoryService cService;
     private final PlayoffService pService;
+    private final TournamentImageService imageService;
+    private final EditionBuilderService builder;
 
     @PostMapping("/tournaments")
     public ResponseDtos.TournamentRes create(@Valid @RequestBody AdminDtos.CreateTournamentReq req) {
@@ -63,6 +69,44 @@ public class AdminController {
     @Operation(summary = "Delete a match and its goals/cards")
     public void deleteMatch(@PathVariable Long id) {
         mService.delete(id);
+    }
+
+    @PutMapping(value = "/tournaments/{id}/images/{kind}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Operation(summary = "Upload the edition's banner or logo (kind = banner | logo; PNG/JPG up to 5 MB)")
+    public ResponseDtos.TournamentRes setImage(@PathVariable Long id, @PathVariable String kind,
+                                               @RequestParam("file") MultipartFile file) {
+        return imageService.set(id, kind, file);
+    }
+
+    @DeleteMapping("/tournaments/{id}/images/{kind}")
+    @Operation(summary = "Remove the edition's banner or logo")
+    public ResponseDtos.TournamentRes removeImage(@PathVariable Long id, @PathVariable String kind) {
+        return imageService.remove(id, kind);
+    }
+
+    @GetMapping("/tournaments/{id}/build/proposal")
+    @Operation(summary = "Automatic build: where every team would play, from the results of another edition (nothing is saved)")
+    public ResponseDtos.BuildProposal buildProposal(@PathVariable Long id, @RequestParam("from") Long sourceId) {
+        return builder.proposal(id, sourceId);
+    }
+
+    @PostMapping("/tournaments/{id}/build")
+    @Operation(summary = "Automatic build: register the teams in their categories, spread them into zones and optionally generate the fixture (409 if the edition has matches)")
+    public ResponseDtos.BuildResult build(@PathVariable Long id, @Valid @RequestBody AdminDtos.BuildReq req) {
+        return builder.apply(id, req);
+    }
+
+    @PostMapping("/zones/{id}/teams")
+    @Operation(summary = "Put a team straight into a zone (existing teamId, or a new teamName with a pending captain)")
+    public ResponseDtos.RegistrationRes addZoneTeam(@PathVariable Long id, @Valid @RequestBody AdminDtos.ZoneTeamReq req) {
+        return cService.addTeamToZone(id, req.getTeamId(), req.getTeamName());
+    }
+
+    @DeleteMapping("/registrations/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Operation(summary = "Take a team out of the edition (409 if it already has matches: withdraw it instead)")
+    public void removeRegistration(@PathVariable Long id) {
+        cService.removeRegistration(id);
     }
 
     @PostMapping("/tournaments/{id}/categories")

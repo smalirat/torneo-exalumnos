@@ -158,6 +158,37 @@ public class AdminDtos {
         @NotNull private Long zoneId;
     }
 
+    /** Admin: a team straight into a zone; an existing one (teamId) or a new one (teamName) */
+    @Data
+    public static class ZoneTeamReq {
+        private Long teamId;
+        @Size(max = 100) private String teamName;
+
+        @AssertTrue(message = "indicar teamId o teamName")
+        public boolean isTeamGiven() { return teamId != null || (teamName != null && !teamName.isBlank()); }
+    }
+
+    /**
+     * Automatic build of an edition: the category of every team (in seeding order: best first), how to spread
+     * them into the zones of each category and, optionally, the round-robin fixture of every zone.
+     */
+    @Data
+    public static class BuildReq {
+        @NotEmpty private List<@Valid BuildAssignment> assignments;
+        @NotNull private ZoneMode zoneMode = ZoneMode.BALANCED;
+        /** When given, a round-robin fixture is generated in every zone from this date */
+        private LocalDateTime fixtureStart;
+        @Min(0) @Max(600) private int minutesBetween = 70;
+
+        public enum ZoneMode { BALANCED, RANDOM }
+    }
+
+    @Data
+    public static class BuildAssignment {
+        @NotNull private Long teamId;
+        @NotNull private Long categoryId;
+    }
+
     @Data
     public static class ZoneDrawReq {
         /** Unassigned registrations of the tournament to draw into the category's zones. */

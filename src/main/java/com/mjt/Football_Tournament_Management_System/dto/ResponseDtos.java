@@ -160,14 +160,16 @@ public class ResponseDtos {
     public record TournamentRes(Long id, String name, String location,
                                 LocalDate registrationStart, LocalDate registrationEnd,
                                 LocalDate matchStart, LocalDate matchEnd, String status,
-                                Long seasonId, Integer seasonYear, String stage) {
+                                Long seasonId, Integer seasonYear, String stage,
+                                Integer bannerVersion, Integer logoVersion) {
         public static TournamentRes from(Tournament t) {
             var s = t.getSeason();
             return new TournamentRes(t.getId(), t.getName(), t.getLocation(),
                     t.getRegistrationStart(), t.getRegistrationEnd(),
                     t.getMatchStart(), t.getMatchEnd(), t.getStatus().name(),
                     s == null ? null : s.getId(), s == null ? null : s.getYear(),
-                    t.getStage() == null ? null : t.getStage().name());
+                    t.getStage() == null ? null : t.getStage().name(),
+                    t.getBannerVersion(), t.getLogoVersion());
         }
     }
 
@@ -242,6 +244,22 @@ public class ResponseDtos {
     }
 
     /** One line of a zone table. fairPlay is a penalty (1 per yellow, 3 per red): lower is better. */
+    /** Proposal of the automatic build: the target categories and where every team would play */
+    public record BuildProposal(Long sourceId, String sourceName, boolean targetHasMatches,
+                                List<BuildCategory> categories, List<BuildTeam> teams) {}
+
+    public record BuildCategory(Long id, String name, int zoneCount) {}
+
+    /**
+     * A team of the proposal: where it played (group label + final position, null for a new team), the proposed
+     * category, why (STAYS, ASCENDS, DESCENDS, PROMO_WON, PROMO_LOST, PROMO_PENDING, NO_RULE, NEW, WITHDRAWN,
+     * PLACED) and whether the admin has to answer (the proposal is a guess).
+     */
+    public record BuildTeam(TeamRef team, String sourceGroup, Integer position, Long categoryId, String reason,
+                            String detail, boolean included, boolean question) {}
+
+    public record BuildResult(int teams, int matches) {}
+
     public record StandingRow(int position, TeamRef team, int points, int played, int won, int drawn, int lost,
                               int goalsFor, int goalsAgainst, int goalDiff, int presencePoints, int fairPlay) {}
 }

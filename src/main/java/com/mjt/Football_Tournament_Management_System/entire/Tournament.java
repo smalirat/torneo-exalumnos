@@ -31,6 +31,10 @@ public class Tournament {
     @Enumerated(EnumType.STRING)
     private Stage stage;
 
+    /** Version of the banner / logo image (changes on every upload, goes in the URL); null = none */
+    private Integer bannerVersion;
+    private Integer logoVersion;
+
     /** Read-only: how many categories it has (a single one is not named in labels, only its zones) */
     @org.hibernate.annotations.Formula("(select count(*) from categories c where c.tournament_id = id)")
     private int categoryCount;

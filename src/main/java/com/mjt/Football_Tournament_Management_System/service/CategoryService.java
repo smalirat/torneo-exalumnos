@@ -1,12 +1,15 @@
 package com.mjt.Football_Tournament_Management_System.service;
 
 import com.mjt.Football_Tournament_Management_System.dto.ResponseDtos;
+import com.mjt.Football_Tournament_Management_System.entire.AppUser;
 import com.mjt.Football_Tournament_Management_System.entire.Category;
 import com.mjt.Football_Tournament_Management_System.entire.DataSource;
 import com.mjt.Football_Tournament_Management_System.entire.MatchGame;
 import com.mjt.Football_Tournament_Management_System.entire.Registration;
+import com.mjt.Football_Tournament_Management_System.entire.Team;
 import com.mjt.Football_Tournament_Management_System.entire.Tournament;
 import com.mjt.Football_Tournament_Management_System.entire.Zone;
+import com.mjt.Football_Tournament_Management_System.exception.BadRequestException;
 import com.mjt.Football_Tournament_Management_System.exception.ConflictException;
 import com.mjt.Football_Tournament_Management_System.exception.NotFoundException;
 import com.mjt.Football_Tournament_Management_System.repo.*;
@@ -15,6 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -29,6 +33,8 @@ public class CategoryService {
     private final ZoneRepository zoneRepo;
     private final RegistrationRepository regRepo;
     private final MatchRepository matchRepo;
+    private final TeamRepository teamRepo;
+    private final AppUserRepository userRepo;
     private final Random random = new Random();
 
     public List<ResponseDtos.CategoryRes> listByTournament(Long tournamentId) {
@@ -187,6 +193,53 @@ public class CategoryService {
             sizes.merge(smallest, 1, Integer::sum);
         }
         return regs.stream().map(ResponseDtos.RegistrationRes::from).toList();
+    }
+
+    /**
+     * Admin: puts a team straight into a zone (registered and approved). An existing team (teamId) or a new one
+     * (teamName), which is created with a pending captain like the ones the admin creates in Registro de equipos.
+     */
+    @Transactional
+    public ResponseDtos.RegistrationRes addTeamToZone(Long zoneId, Long teamId, String teamName) {
+        var zone = findZone(zoneId);
+        var t = zone.getCategory().getTournament();
+        Team team;
+        if (teamId != null) {
+            team = teamRepo.findById(teamId).orElseThrow(() -> NotFoundException.of("Equipo", teamId));
+            if (!team.isApproved()) throw new ConflictException("El equipo " + team.getName() + " todavía está en revisión");
+        } else {
+            var name = teamName == null ? "" : teamName.trim();
+            if (name.isEmpty()) throw new BadRequestException("Elegí un equipo o escribí el nombre de uno nuevo");
+            if (teamRepo.findByName(name).isPresent()) throw new ConflictException("Ya hay un equipo llamado " + name + "; elegilo de la lista");
+            team = new Team();
+            team.setName(name);
+            team.setCaptain(userRepo.save(AppUser.pendingCaptain()));
+            team.setCreatedAt(LocalDateTime.now());
+            team = teamRepo.save(team);
+        }
+        Long id = team.getId();
+        var existing = regRepo.findByTournament(t).stream().filter(r -> r.getTeam().getId().equals(id)).findFirst();
+        if (existing.isPresent()) {
+            var r = existing.get();
+            if (r.getZone() != null) throw new ConflictException(team.getName() + " ya está en una zona de esta edición");
+            r.setApproved(true);
+            r.setRequestedAt(null);
+            r.setZone(zone);
+            return ResponseDtos.RegistrationRes.from(r);
+        }
+        var r = new Registration();
+        r.setTournament(t); r.setTeam(team); r.setZone(zone); r.setApproved(true);
+        return ResponseDtos.RegistrationRes.from(regRepo.save(r));
+    }
+
+    /** Admin: takes a team out of the edition, only while it has no matches in it (otherwise, withdraw it). */
+    @Transactional
+    public void removeRegistration(Long registrationId) {
+        var r = regRepo.findById(registrationId).orElseThrow(() -> NotFoundException.of("Inscripción", registrationId));
+        if (!matchRepo.findByTournamentAndTeam(r.getTournament(), r.getTeam()).isEmpty()) {
+            throw new ConflictException(r.getTeam().getName() + " ya tiene partidos en esta edición; dalo de baja en su lugar");
+        }
+        regRepo.delete(r);
     }
 
     public List<ResponseDtos.RegistrationRes> zoneRegistrations(Long zoneId) {
