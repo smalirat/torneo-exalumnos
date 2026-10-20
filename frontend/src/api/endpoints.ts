@@ -90,7 +90,7 @@ export const tournamentApi = {
     zoneMode: 'BALANCED' | 'RANDOM'
     fixtureStart: string | null
     minutesBetween: number
-    interzonal: boolean
+    interzonal: { pairs: { zoneA: number; zoneB: number }[]; rounds: number; crossing: 'SAME' | 'INVERSE' } | null
     definitions: BuildDefinition[]
   }) => post<{ teams: number; matches: number; definitions: number }>(`/api/admin/tournaments/${id}/build`, body),
 }

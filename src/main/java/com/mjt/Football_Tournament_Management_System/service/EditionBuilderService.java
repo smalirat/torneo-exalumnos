@@ -24,6 +24,8 @@ import java.util.*;
  *       the next.</li>
  *   <li>The promotion places split each table: in the group that defends the upper category, the teams below
  *       them go down; in the group that challenges it, the teams above them go up. Everyone else stays.</li>
+ *   <li>Optionally, interzonal / intercategory match days crossed by seeding (the same crossing as the
+ *       Interzonales button of the fixture, see {@link InterzonalService}).</li>
  *   <li>Unplayed promotions, teams new to the edition, teams that withdrew and groups without any rule when
  *       the structure changed are questions for the admin.</li>
  * </ul>
@@ -41,6 +43,7 @@ public class EditionBuilderService {
     private final StandingsService standings;
     private final TournamentService tournaments;
     private final PlayoffService playoffs;
+    private final InterzonalService interzonals;
     private final Random random = new Random();
 
     /** A team in the final table of the source edition */
@@ -177,7 +180,7 @@ public class EditionBuilderService {
         for (var c : targetCats) {
             var list = zoneRepo.findByCategoryOrderByDisplayOrderAscIdAsc(c);
             for (int i = 0; i < list.size(); i++) {
-                zones.add(new ResponseDtos.BuildZone(list.get(i).getId(), groupLabel(targetCats.size(), c, list.size(), list.get(i))));
+                zones.add(new ResponseDtos.BuildZone(list.get(i).getId(), c.getId(), groupLabel(targetCats.size(), c, list.size(), list.get(i))));
                 targetZoneByKey.put(zoneKey(c, i), list.get(i));
             }
         }
@@ -259,10 +262,16 @@ public class EditionBuilderService {
                 }
             }
         }
-        if (req.isInterzonal()) {
-            var items = new ArrayList<AdminDtos.FixtureItem>();
-            for (var c : cats.values()) items.addAll(interzonal(zoneRepo.findByCategoryOrderByDisplayOrderAscIdAsc(c), seeded));
-            matches += createInterzonalDay(target, items, req);
+        var plan = req.getInterzonal();
+        if (plan != null) {
+            // After the last match day of the edition; with a fixture, a week after its last day, from the same time
+            var start = req.getFixtureStart() == null ? null : matchRepo.findByTournament(target).stream()
+                    .map(MatchGame::getScheduledAt).filter(Objects::nonNull).max(Comparator.naturalOrder())
+                    .map(last -> last.toLocalDate().plusWeeks(1).atTime(req.getFixtureStart().toLocalTime()))
+                    .orElse(req.getFixtureStart());
+            var crossed = interzonals.cross(target, plan.getPairs(), zone -> seeded.getOrDefault(zone.getId(), List.of()),
+                    plan.getRounds(), null, start, req.getMinutesBetween(), plan.getCrossing(), null);
+            matches += matchRepo.saveAll(crossed).size();
         }
         int definitions = 0;
         for (var d : req.getDefinitions()) {
@@ -285,48 +294,6 @@ public class EditionBuilderService {
         s.setZoneId(zoneId);
         s.setPosition(position);
         return s;
-    }
-
-    /**
-     * Interzonal matches of a category with several zones: zone 1 against zone 2 (3 against 4…), each team with
-     * the one of the same seed in the other zone.
-     */
-    private static List<AdminDtos.FixtureItem> interzonal(List<Zone> zones, Map<Long, List<Team>> seeded) {
-        var items = new ArrayList<AdminDtos.FixtureItem>();
-        for (int k = 0; k + 1 < zones.size(); k += 2) {
-            var a = seeded.getOrDefault(zones.get(k).getId(), List.of());
-            var b = seeded.getOrDefault(zones.get(k + 1).getId(), List.of());
-            for (int i = 0; i < Math.min(a.size(), b.size()); i++) {
-                var f = new AdminDtos.FixtureItem();
-                f.setHomeTeamId(a.get(i).getId());
-                f.setAwayTeamId(b.get(i).getId());
-                items.add(f);
-            }
-        }
-        return items;
-    }
-
-    /**
-     * Every interzonal match in one match day "Interzonal": match days are numbered for the whole edition, so it
-     * comes after the last one; with a fixture, a week after its last day, from the same time.
-     */
-    private int createInterzonalDay(Tournament target, List<AdminDtos.FixtureItem> items, AdminDtos.BuildReq req) {
-        if (items.isEmpty()) return 0;
-        var all = matchRepo.findByTournament(target);
-        int round = all.stream().map(MatchGame::getRound).filter(Objects::nonNull).max(Integer::compare).orElse(0) + 1;
-        var cursor = req.getFixtureStart() == null ? null : all.stream().map(MatchGame::getScheduledAt).filter(Objects::nonNull)
-                .max(Comparator.naturalOrder()).map(last -> last.toLocalDate().plusWeeks(1).atTime(req.getFixtureStart().toLocalTime()))
-                .orElse(req.getFixtureStart());
-        for (var f : items) {
-            f.setRound(round);
-            f.setRoundLabel("Interzonal");
-            f.setScheduledAt(cursor);
-            if (cursor != null) cursor = cursor.plusMinutes(req.getMinutesBetween());
-        }
-        var manual = new AdminDtos.ManualFixtureReq();
-        manual.setTournamentId(target.getId());
-        manual.setFixtures(items);
-        return tournaments.createManualFixtures(manual).size();
     }
 
     private record Slot(Long zoneId, int position) {}

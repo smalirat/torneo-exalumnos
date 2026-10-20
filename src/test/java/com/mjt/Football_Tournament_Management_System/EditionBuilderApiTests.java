@@ -102,7 +102,7 @@ class EditionBuilderApiTests extends ApiTestSupport {
         long taZone = ta.get("zones").get(0).get("id").asLong();
         var tb = newCategory(admin, target, "B");
         long tb1 = tb.get("zones").get(0).get("id").asLong();
-        newZone(admin, tb.get("id").asLong(), "Zona 2");
+        long tb2 = newZone(admin, tb.get("id").asLong(), "Zona 2");
 
         var proposal = read(get("/api/admin/tournaments/" + target + "/build/proposal?from=" + source, admin).andExpect(status().isOk()));
         assertThat(proposal.get("zones").size()).isEqualTo(3);
@@ -119,7 +119,8 @@ class EditionBuilderApiTests extends ApiTestSupport {
         }
         var d = defs.get(0);
         var result = read(post("/api/admin/tournaments/" + target + "/build", "{\"assignments\":[" + String.join(",", assignments)
-                + "],\"zoneMode\":\"BALANCED\",\"fixtureStart\":\"2027-03-07T09:00:00\",\"interzonal\":true,\"definitions\":[{\"type\":\""
+                + "],\"zoneMode\":\"BALANCED\",\"fixtureStart\":\"2027-03-07T09:00:00\",\"interzonal\":{\"pairs\":[{\"zoneA\":" + tb1
+                + ",\"zoneB\":" + tb2 + "}],\"rounds\":1},\"definitions\":[{\"type\":\""
                 + d.get("type").asText() + "\",\"homeZoneId\":" + d.get("homeZoneId") + ",\"homePosition\":4,\"awayZoneId\":"
                 + d.get("awayZoneId") + ",\"awayPosition\":1}]}", admin).andExpect(status().isOk()));
         assertThat(result.get("definitions").asInt()).isEqualTo(1);

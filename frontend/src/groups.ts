@@ -17,6 +17,17 @@ export function groupName(
   return zone ? `${category} · ${zone}` : category
 }
 
+/** Default interzonal pairs: the zones of each category two by two; with single-zone categories, the first two */
+export function defaultPairs(categories: Category[]): { zoneA: number; zoneB: number }[] {
+  const out: { zoneA: number; zoneB: number }[] = []
+  for (const c of categories) {
+    for (let i = 0; i + 1 < c.zones.length; i += 2) out.push({ zoneA: c.zones[i].id, zoneB: c.zones[i + 1].id })
+  }
+  const all = categories.flatMap((c) => c.zones)
+  if (!out.length && all.length > 1) out.push({ zoneA: all[0].id, zoneB: all[1].id })
+  return out
+}
+
 /** Every zone of the edition in order, with its label */
 export function zoneOptions(categories: Category[], short = false) {
   return categories.flatMap((c) => c.zones.map((z) => ({

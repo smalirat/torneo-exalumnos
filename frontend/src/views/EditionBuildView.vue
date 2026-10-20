@@ -5,6 +5,7 @@ import TournamentLayout from '../layouts/TournamentLayout.vue'
 import BaseModal from '../components/BaseModal.vue'
 import TeamBadge from '../components/TeamBadge.vue'
 import AppIcon from '../components/AppIcon.vue'
+import InterzonalFields from '../components/InterzonalFields.vue'
 import { tournamentApi } from '../api/endpoints'
 import type { BuildDefinition, BuildProposal, BuildTeam, Tournament } from '../api/types'
 import { editionBySlug, loadEditions, sortEditions } from '../editions'
@@ -82,9 +83,25 @@ const minutes = ref(70)
 const confirming = ref(false)
 const applying = ref(false)
 const done = ref<{ teams: number; matches: number; definitions: number } | null>(null)
+// Interzonal / intercategory match days crossed by seeding (same fields as the Interzonales button of the fixture)
 const interzonal = ref(false)
-/** An interzonal day only makes sense in a category with several zones */
-const severalZones = computed(() => (proposal.value?.categories ?? []).some((c) => c.zoneCount > 1))
+const severalZones = computed(() => (proposal.value?.zones.length ?? 0) > 1)
+const izPairs = ref<{ zoneA: number; zoneB: number }[]>([])
+const izRounds = ref(1)
+const izCrossing = ref<'SAME' | 'INVERSE'>('SAME')
+watch(proposal, (p) => {
+  if (!p) return
+  // Same default as the fixture: zones of each category two by two (zones come in category order)
+  const byCategory = new Map<number, number[]>()
+  const out: { zoneA: number; zoneB: number }[] = []
+  for (const z of p.zones) {
+    if (!byCategory.has(z.categoryId)) byCategory.set(z.categoryId, [])
+    byCategory.get(z.categoryId)!.push(z.id)
+  }
+  for (const ids of byCategory.values()) for (let i = 0; i + 1 < ids.length; i += 2) out.push({ zoneA: ids[i], zoneB: ids[i + 1] })
+  if (!out.length && p.zones.length > 1) out.push({ zoneA: p.zones[0].id, zoneB: p.zones[1].id })
+  izPairs.value = out
+})
 
 // --- definitions (promotions / finals) by positions of the new tables; copied from the source when they map
 const definitions = ref<BuildDefinition[]>([])
@@ -118,7 +135,8 @@ async function apply() {
       assignments, zoneMode: zoneMode.value,
       fixtureStart: withFixture.value && fixtureStart.value ? `${fixtureStart.value}:00` : null,
       minutesBetween: minutes.value,
-      interzonal: severalZones.value && interzonal.value,
+      interzonal: severalZones.value && interzonal.value && izPairs.value.length
+        ? { pairs: izPairs.value, rounds: izRounds.value, crossing: izCrossing.value } : null,
       definitions: definitions.value,
     })
     confirming.value = false
@@ -228,7 +246,14 @@ const homePath = computed(() => (edition.value ? panelEditionPath(edition.value)
           <label>{{ t('standings.start') }}<input v-model="fixtureStart" class="input" type="datetime-local" required /></label>
           <label>{{ t('standings.minutesBetween') }}<input v-model.number="minutes" class="input" type="number" min="0" /></label>
         </div>
-        <label v-if="severalZones" class="radio"><input v-model="interzonal" type="checkbox" /> {{ t('build.interzonal') }}</label>
+        <template v-if="severalZones">
+          <h2 class="small-title">{{ t('interzonal.title') }}</h2>
+          <label class="radio"><input v-model="interzonal" type="checkbox" /> {{ t('build.interzonal') }}</label>
+          <div v-if="interzonal" class="iz">
+            <InterzonalFields v-model:pairs="izPairs" v-model:rounds="izRounds" v-model:crossing="izCrossing" :zones="proposal.zones" />
+            <p class="muted tiny">{{ t('build.interzonalHelp') }}</p>
+          </div>
+        </template>
 
         <h2 class="small-title">{{ t('build.definitionsTitle') }}</h2>
         <p class="muted tiny">{{ proposal.definitions.length ? t('build.definitionsCopied', { name: proposal.sourceName }) : t('build.definitionsHelp') }}</p>
@@ -324,5 +349,6 @@ a { color: var(--navy); font-weight: 500; text-decoration: underline; }
   align-self: flex-start; display: inline-flex; align-items: center; gap: 4px; padding: 6px 12px; border-radius: 999px; cursor: pointer;
   border: 1px dashed var(--border); background: none; color: var(--navy); font: inherit; font-size: 13px; font-weight: 500; margin-top: 4px;
 }
+.iz { margin: 4px 0 6px 26px; }
 .summary { margin: 0 0 10px; padding-left: 18px; }
 </style>

@@ -181,10 +181,17 @@ public class AdminDtos {
         @Min(0) @Max(600) private int minutesBetween = 70;
         /** Promotions/finals by positions of the new tables (they follow the tables until played) */
         private List<@Valid BuildDefinitionReq> definitions = new ArrayList<>();
-        /** One interzonal match day in every category with several zones (zone 1 vs zone 2, by seeding) */
-        private boolean interzonal;
+        /** Interzonal / intercategory match days crossed by seeding (the tables are empty yet); null = none */
+        @Valid private InterzonalPlan interzonal;
 
         public enum ZoneMode { BALANCED, RANDOM }
+    }
+
+    @Data
+    public static class InterzonalPlan {
+        @NotEmpty private List<@Valid ZonePair> pairs;
+        @NotNull @Min(1) @Max(30) private Integer rounds;
+        @NotNull private InterzonalReq.Crossing crossing = InterzonalReq.Crossing.SAME;
     }
 
     @Data

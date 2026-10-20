@@ -250,7 +250,7 @@ public class ResponseDtos {
                                 List<BuildZone> zones, List<BuildDefinition> definitions) {}
 
     /** A zone of the new edition, with its label (same naming rule as the UI) */
-    public record BuildZone(Long id, String label) {}
+    public record BuildZone(Long id, Long categoryId, String label) {}
 
     /** A promotion/final by positions ("5º Zona 1 vs 6º Zona 2"), copied from the source edition when it maps */
     public record BuildDefinition(String type, Long homeZoneId, int homePosition, Long awayZoneId, int awayPosition) {}

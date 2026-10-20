@@ -42,7 +42,7 @@ export interface BuildProposal {
   categories: { id: number; name: string; zoneCount: number }[]
   teams: BuildTeam[]
   /** Zones of the new edition with their label, and the definitions of the source copied onto them */
-  zones: { id: number; label: string }[]
+  zones: { id: number; categoryId: number; label: string }[]
   definitions: BuildDefinition[]
 }
 export interface BuildDefinition {
