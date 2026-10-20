@@ -29,6 +29,9 @@ const pageTitle = computed(() => (route.meta.title as string | undefined) ?? '')
 <template>
   <div class="shell">
     <aside class="sidebar">
+      <RouterLink :to="PANEL.editions" class="back">
+        <AppIcon name="chevron" :size="18" class="flip" /> {{ t('nav.backToEditions') }}
+      </RouterLink>
       <div class="brand">
         <span class="logo">
           <img v-if="tournament && editionImage(tournament, 'logo')" :src="editionImage(tournament, 'logo')!" alt="" />
@@ -93,6 +96,13 @@ const pageTitle = computed(() => (route.meta.title as string | undefined) ?? '')
   gap: 6px;
   border-radius: 0 20px 20px 0;
 }
+.back {
+  display: inline-flex; align-items: center; gap: 4px; align-self: flex-start;
+  margin: -8px 8px 18px; padding: 6px 10px 6px 4px; border-radius: 8px;
+  font-size: 14px; font-weight: 500; color: rgba(255, 255, 255, 0.85);
+}
+.back:hover { background: rgba(255, 255, 255, 0.08); color: #fff; }
+.flip { transform: rotate(180deg); }
 .brand { display: flex; align-items: center; gap: 12px; margin: 0 12px 28px; }
 .logo {
   width: 46px; height: 46px; background: #fff; color: var(--navy); flex-shrink: 0;
