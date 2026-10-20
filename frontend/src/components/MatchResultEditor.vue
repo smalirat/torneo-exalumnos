@@ -139,13 +139,12 @@ async function save() {
         <strong class="score">{{ score.home }} - {{ score.away }}</strong>
         <span class="team right">{{ teams.away.name }} <TeamBadge :team="teams.away" :size="40" /></span>
       </div>
-      <p v-if="walkover" class="hint">{{ t('results.walkoverHint') }}</p>
+      <p v-if="walkover" class="hint">{{ present.home || present.away ? t('results.walkoverHint') : t('results.noShowHint') }}</p>
       <div v-else class="typed">
         <span>{{ t('results.score') }}</span>
         <input v-model.number="goals.home" class="input" type="number" min="0" :aria-label="`${t('results.score')} ${teams.home.name}`" />
         <span>-</span>
         <input v-model.number="goals.away" class="input" type="number" min="0" :aria-label="`${t('results.score')} ${teams.away.name}`" />
-        <small class="muted">{{ t('results.scoreHelp') }}</small>
       </div>
 
       <div class="sides">

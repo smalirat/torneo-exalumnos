@@ -179,8 +179,24 @@ public class AdminDtos {
         /** When given, a round-robin fixture is generated in every zone from this date */
         private LocalDateTime fixtureStart;
         @Min(0) @Max(600) private int minutesBetween = 70;
+        /** Promotions/finals by positions of the new tables (they follow the tables until played) */
+        private List<@Valid BuildDefinitionReq> definitions = new ArrayList<>();
+        /** One interzonal match day in every category with several zones (zone 1 vs zone 2, by seeding) */
+        private boolean interzonal;
 
         public enum ZoneMode { BALANCED, RANDOM }
+    }
+
+    @Data
+    public static class BuildDefinitionReq {
+        @NotNull private MatchGame.Type type;
+        @NotNull private Long homeZoneId;
+        @NotNull @Min(1) private Integer homePosition;
+        @NotNull private Long awayZoneId;
+        @NotNull @Min(1) private Integer awayPosition;
+
+        @AssertTrue(message = "debe ser PROMOTION o FINAL")
+        public boolean isSpecialType() { return type == null || type != MatchGame.Type.REGULAR; }
     }
 
     @Data

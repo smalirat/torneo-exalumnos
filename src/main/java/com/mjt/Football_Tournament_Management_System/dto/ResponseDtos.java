@@ -246,7 +246,14 @@ public class ResponseDtos {
     /** One line of a zone table. fairPlay is a penalty (1 per yellow, 3 per red): lower is better. */
     /** Proposal of the automatic build: the target categories and where every team would play */
     public record BuildProposal(Long sourceId, String sourceName, boolean targetHasMatches,
-                                List<BuildCategory> categories, List<BuildTeam> teams) {}
+                                List<BuildCategory> categories, List<BuildTeam> teams,
+                                List<BuildZone> zones, List<BuildDefinition> definitions) {}
+
+    /** A zone of the new edition, with its label (same naming rule as the UI) */
+    public record BuildZone(Long id, String label) {}
+
+    /** A promotion/final by positions ("5º Zona 1 vs 6º Zona 2"), copied from the source edition when it maps */
+    public record BuildDefinition(String type, Long homeZoneId, int homePosition, Long awayZoneId, int awayPosition) {}
 
     public record BuildCategory(Long id, String name, int zoneCount) {}
 
@@ -258,7 +265,7 @@ public class ResponseDtos {
     public record BuildTeam(TeamRef team, String sourceGroup, Integer position, Long categoryId, String reason,
                             String detail, boolean included, boolean question) {}
 
-    public record BuildResult(int teams, int matches) {}
+    public record BuildResult(int teams, int matches, int definitions) {}
 
     public record StandingRow(int position, TeamRef team, int points, int played, int won, int drawn, int lost,
                               int goalsFor, int goalsAgainst, int goalDiff, int presencePoints, int fairPlay) {}

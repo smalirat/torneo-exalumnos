@@ -369,7 +369,7 @@ public class ExcelImporter {
             if (!m.isFinished()) return "sin jugar";
             var s = m.getHomeGoals() + "-" + m.getAwayGoals();
             if (m.getHomePenalties() != null) s += " (" + m.getHomePenalties() + "-" + m.getAwayPenalties() + " pen.)";
-            if (!m.present(true) || !m.present(false)) s += " W.O.";
+            if (!m.present(true) || !m.present(false)) s += " (abandono)";
             return s;
         }
 

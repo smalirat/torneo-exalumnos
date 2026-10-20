@@ -24,6 +24,12 @@ public interface MatchRepository extends JpaRepository<MatchGame, Long> {
             + " and (m.homeTeam = :team or m.awayTeam = :team)")
     boolean existsByZoneAndTeam(@Param("zone") Zone zone, @Param("team") Team team);
 
+    /** Unplayed promotions/finals with a side given by a rule ("Nº of zone X") on a zone of this tournament */
+    @Query("select m from MatchGame m left join m.homeSourceZone hz left join hz.category hc"
+            + " left join m.awaySourceZone az left join az.category ac"
+            + " where m.status = :scheduled and (hc.tournament = :tournament or ac.tournament = :tournament)")
+    List<MatchGame> findUnplayedByRuleOn(@Param("tournament") Tournament tournament, @Param("scheduled") MatchGame.Status scheduled);
+
     /** Matches of a team (home or away) within a single tournament. */
     @Query("select m from MatchGame m where m.tournament = :tournament"
             + " and (m.homeTeam = :team or m.awayTeam = :team) order by m.scheduledAt")

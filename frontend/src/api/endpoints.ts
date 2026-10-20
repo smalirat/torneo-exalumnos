@@ -1,6 +1,6 @@
 import { api, del, download, get, patch, post, put, upload } from './client'
 import type {
-  BuildProposal, CardRow, Category, CategoryHistory, CollageItem, CollagePhoto, InviteRes, MyRequests, RequestItem, RequestType, ImportHistory, ImportPreview, Match, MatchDetails, MatchEvent, Me, Player,
+  BuildDefinition, BuildProposal, CardRow, Category, CategoryHistory, CollageItem, CollagePhoto, InviteRes, MyRequests, RequestItem, RequestType, ImportHistory, ImportPreview, Match, MatchDetails, MatchEvent, Me, Player,
   Registration, Sanction, ScoreReq, ScorerRow, Season, SeasonStatRow, SlotReq, StandingRow, TeamRef, TeamRegistration,
   TeamSummary, TokenRes, Tournament, TournamentStatus, YellowTally, Zone,
 } from './types'
@@ -80,7 +80,9 @@ export const tournamentApi = {
     zoneMode: 'BALANCED' | 'RANDOM'
     fixtureStart: string | null
     minutesBetween: number
-  }) => post<{ teams: number; matches: number }>(`/api/admin/tournaments/${id}/build`, body),
+    interzonal: boolean
+    definitions: BuildDefinition[]
+  }) => post<{ teams: number; matches: number; definitions: number }>(`/api/admin/tournaments/${id}/build`, body),
 }
 
 /** URL of an edition's banner / logo, or null when it has none (the version busts the cache) */

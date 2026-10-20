@@ -4,6 +4,7 @@ import com.mjt.Football_Tournament_Management_System.dto.AdminDtos;
 import com.mjt.Football_Tournament_Management_System.dto.ResponseDtos;
 import com.mjt.Football_Tournament_Management_System.entire.MatchGame;
 import com.mjt.Football_Tournament_Management_System.entire.Team;
+import com.mjt.Football_Tournament_Management_System.entire.Tournament;
 import com.mjt.Football_Tournament_Management_System.entire.Zone;
 import com.mjt.Football_Tournament_Management_System.exception.BadRequestException;
 import com.mjt.Football_Tournament_Management_System.exception.ConflictException;
@@ -54,6 +55,26 @@ public class PlayoffService {
         if (m.getAwaySourceZone() != null) m.setAwayTeam(teamAt(m.getAwaySourceZone(), m.getAwaySourcePosition()));
         checkDifferentTeams(m);
         return ResponseDtos.MatchRes.from(m);
+    }
+
+    /**
+     * After a result of the tournament changes the tables: every unplayed promotion/final whose sides come from
+     * a table of it follows the new positions (the "Recalcular" button, done for the admin). Sides that cannot be
+     * resolved yet (the zone has fewer teams, or both sides would be the same team) stay as they were.
+     */
+    @Transactional
+    public void refreshRules(Tournament t) {
+        for (var m : matchRepo.findUnplayedByRuleOn(t, MatchGame.Status.SCHEDULED)) {
+            try {
+                var home = m.getHomeSourceZone() != null ? teamAt(m.getHomeSourceZone(), m.getHomeSourcePosition()) : m.getHomeTeam();
+                var away = m.getAwaySourceZone() != null ? teamAt(m.getAwaySourceZone(), m.getAwaySourcePosition()) : m.getAwayTeam();
+                if (home.getId().equals(away.getId())) continue;
+                m.setHomeTeam(home);
+                m.setAwayTeam(away);
+            } catch (ConflictException e) {
+                // not resolvable yet: keep the current teams
+            }
+        }
     }
 
     public List<ResponseDtos.MatchRes> list(Long tournamentId) {

@@ -41,6 +41,16 @@ export interface BuildProposal {
   targetHasMatches: boolean
   categories: { id: number; name: string; zoneCount: number }[]
   teams: BuildTeam[]
+  /** Zones of the new edition with their label, and the definitions of the source copied onto them */
+  zones: { id: number; label: string }[]
+  definitions: BuildDefinition[]
+}
+export interface BuildDefinition {
+  type: 'PROMOTION' | 'FINAL'
+  homeZoneId: number
+  homePosition: number
+  awayZoneId: number
+  awayPosition: number
 }
 
 export interface Season {

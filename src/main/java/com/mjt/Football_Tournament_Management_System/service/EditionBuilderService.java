@@ -40,10 +40,11 @@ public class EditionBuilderService {
     private final TeamRepository teamRepo;
     private final StandingsService standings;
     private final TournamentService tournaments;
+    private final PlayoffService playoffs;
     private final Random random = new Random();
 
     /** A team in the final table of the source edition */
-    private record Entry(Team team, int level, String group, int position, int groupKey, boolean withdrawn) {}
+    private record Entry(Team team, int level, String group, int position, int groupKey, boolean withdrawn, Long zoneId) {}
 
     /** A promotion of the source edition, seen from one of its sides */
     private record Promo(int upper, int lower, Team winner, String opponent) {}
@@ -71,7 +72,7 @@ public class EditionBuilderService {
                 String group = groupLabel(sourceCats.size(), c, zones.size(), z);
                 for (var row : standings.zoneStandings(z.getId())) {
                     var team = teamRepo.findById(row.team().id()).orElseThrow();
-                    entries.put(team.getId(), new Entry(team, level, group, row.position(), groupKey, withdrawn.contains(team.getId())));
+                    entries.put(team.getId(), new Entry(team, level, group, row.position(), groupKey, withdrawn.contains(team.getId()), z.getId()));
                 }
                 groupKey++;
             }
@@ -169,8 +170,36 @@ public class EditionBuilderService {
         var cats = targetCats.stream()
                 .map(c -> new ResponseDtos.BuildCategory(c.getId(), c.getName(), (int) zoneRepo.countByCategory(c)))
                 .toList();
+
+        // ---- zones of the new edition, and the definitions of the source copied onto them
+        var zones = new ArrayList<ResponseDtos.BuildZone>();
+        var targetZoneByKey = new HashMap<String, Zone>();
+        for (var c : targetCats) {
+            var list = zoneRepo.findByCategoryOrderByDisplayOrderAscIdAsc(c);
+            for (int i = 0; i < list.size(); i++) {
+                zones.add(new ResponseDtos.BuildZone(list.get(i).getId(), groupLabel(targetCats.size(), c, list.size(), list.get(i))));
+                targetZoneByKey.put(zoneKey(c, i), list.get(i));
+            }
+        }
+        var sourceZoneKey = new HashMap<Long, String>();
+        for (var c : sourceCats) {
+            var list = zoneRepo.findByCategoryOrderByDisplayOrderAscIdAsc(c);
+            for (int i = 0; i < list.size(); i++) sourceZoneKey.put(list.get(i).getId(), zoneKey(c, i));
+        }
+        var definitions = new ArrayList<ResponseDtos.BuildDefinition>();
+        var seenDefs = new HashSet<String>();
+        for (var m : matchRepo.findByTournamentAndTypeInOrderByScheduledAtAsc(source, List.of(MatchGame.Type.PROMOTION, MatchGame.Type.FINAL))) {
+            var home = slotOf(m.getHomeSourceZone(), m.getHomeSourcePosition(), m.getHomeTeam(), entries);
+            var away = slotOf(m.getAwaySourceZone(), m.getAwaySourcePosition(), m.getAwayTeam(), entries);
+            if (home == null || away == null) continue;
+            var hz = targetZoneByKey.get(sourceZoneKey.get(home.zoneId()));
+            var az = targetZoneByKey.get(sourceZoneKey.get(away.zoneId()));
+            if (hz == null || az == null) continue; // the structure changed: nothing to copy onto
+            var def = new ResponseDtos.BuildDefinition(m.typeOrRegular().name(), hz.getId(), home.position(), az.getId(), away.position());
+            if (seenDefs.add(def.toString())) definitions.add(def);
+        }
         return new ResponseDtos.BuildProposal(source.getId(), source.getName(), matchRepo.existsByTournament(target),
-                cats, drafts.stream().map(Draft::row).toList());
+                cats, drafts.stream().map(Draft::row).toList(), zones, definitions);
     }
 
     /**
@@ -206,6 +235,7 @@ public class EditionBuilderService {
         }
 
         // Zones: balanced = snake order of the seeding (1º→Z1, 2º→Z2, 3º→Z2, 4º→Z1…); random = shuffled
+        var seeded = new LinkedHashMap<Long, List<Team>>(); // zone -> its teams in seeding order
         for (var e : byCategory.entrySet()) {
             var zones = zoneRepo.findByCategoryOrderByDisplayOrderAscIdAsc(cats.get(e.getKey()));
             var list = new ArrayList<>(e.getValue());
@@ -213,7 +243,9 @@ public class EditionBuilderService {
             int n = zones.size();
             for (int i = 0; i < list.size(); i++) {
                 int lap = i / n, k = i % n;
-                list.get(i).setZone(zones.get(req.getZoneMode() == AdminDtos.BuildReq.ZoneMode.RANDOM || lap % 2 == 0 ? k : n - 1 - k));
+                var zone = zones.get(req.getZoneMode() == AdminDtos.BuildReq.ZoneMode.RANDOM || lap % 2 == 0 ? k : n - 1 - k);
+                list.get(i).setZone(zone);
+                seeded.computeIfAbsent(zone.getId(), z -> new ArrayList<>()).add(list.get(i).getTeam());
             }
             regRepo.saveAll(list);
         }
@@ -227,7 +259,88 @@ public class EditionBuilderService {
                 }
             }
         }
-        return new ResponseDtos.BuildResult(seen.size(), matches);
+        if (req.isInterzonal()) {
+            var items = new ArrayList<AdminDtos.FixtureItem>();
+            for (var c : cats.values()) items.addAll(interzonal(zoneRepo.findByCategoryOrderByDisplayOrderAscIdAsc(c), seeded));
+            matches += createInterzonalDay(target, items, req);
+        }
+        int definitions = 0;
+        for (var d : req.getDefinitions()) {
+            for (var zoneId : List.of(d.getHomeZoneId(), d.getAwayZoneId())) {
+                var z = zoneRepo.findById(zoneId).orElseThrow(() -> NotFoundException.of("Zona", zoneId));
+                if (!cats.containsKey(z.getCategory().getId())) throw new BadRequestException("La zona no es de esta edición");
+            }
+            var s = new AdminDtos.SpecialMatchReq();
+            s.setType(d.getType());
+            s.setHome(slot(d.getHomeZoneId(), d.getHomePosition()));
+            s.setAway(slot(d.getAwayZoneId(), d.getAwayPosition()));
+            playoffs.create(target.getId(), s);
+            definitions++;
+        }
+        return new ResponseDtos.BuildResult(seen.size(), matches, definitions);
+    }
+
+    private static AdminDtos.SlotReq slot(Long zoneId, int position) {
+        var s = new AdminDtos.SlotReq();
+        s.setZoneId(zoneId);
+        s.setPosition(position);
+        return s;
+    }
+
+    /**
+     * Interzonal matches of a category with several zones: zone 1 against zone 2 (3 against 4…), each team with
+     * the one of the same seed in the other zone.
+     */
+    private static List<AdminDtos.FixtureItem> interzonal(List<Zone> zones, Map<Long, List<Team>> seeded) {
+        var items = new ArrayList<AdminDtos.FixtureItem>();
+        for (int k = 0; k + 1 < zones.size(); k += 2) {
+            var a = seeded.getOrDefault(zones.get(k).getId(), List.of());
+            var b = seeded.getOrDefault(zones.get(k + 1).getId(), List.of());
+            for (int i = 0; i < Math.min(a.size(), b.size()); i++) {
+                var f = new AdminDtos.FixtureItem();
+                f.setHomeTeamId(a.get(i).getId());
+                f.setAwayTeamId(b.get(i).getId());
+                items.add(f);
+            }
+        }
+        return items;
+    }
+
+    /**
+     * Every interzonal match in one match day "Interzonal": match days are numbered for the whole edition, so it
+     * comes after the last one; with a fixture, a week after its last day, from the same time.
+     */
+    private int createInterzonalDay(Tournament target, List<AdminDtos.FixtureItem> items, AdminDtos.BuildReq req) {
+        if (items.isEmpty()) return 0;
+        var all = matchRepo.findByTournament(target);
+        int round = all.stream().map(MatchGame::getRound).filter(Objects::nonNull).max(Integer::compare).orElse(0) + 1;
+        var cursor = req.getFixtureStart() == null ? null : all.stream().map(MatchGame::getScheduledAt).filter(Objects::nonNull)
+                .max(Comparator.naturalOrder()).map(last -> last.toLocalDate().plusWeeks(1).atTime(req.getFixtureStart().toLocalTime()))
+                .orElse(req.getFixtureStart());
+        for (var f : items) {
+            f.setRound(round);
+            f.setRoundLabel("Interzonal");
+            f.setScheduledAt(cursor);
+            if (cursor != null) cursor = cursor.plusMinutes(req.getMinutesBetween());
+        }
+        var manual = new AdminDtos.ManualFixtureReq();
+        manual.setTournamentId(target.getId());
+        manual.setFixtures(items);
+        return tournaments.createManualFixtures(manual).size();
+    }
+
+    private record Slot(Long zoneId, int position) {}
+
+    /** A side of a source definition as "position of a zone": its rule, or where its team finished */
+    private static Slot slotOf(Zone ruleZone, Integer rulePosition, Team team, Map<Long, Entry> entries) {
+        if (ruleZone != null && rulePosition != null) return new Slot(ruleZone.getId(), rulePosition);
+        var e = team == null ? null : entries.get(team.getId());
+        return e == null ? null : new Slot(e.zoneId(), e.position());
+    }
+
+    /** A zone by its category name and its place in the category ("a#0"): how source zones map onto new ones */
+    private static String zoneKey(Category c, int index) {
+        return c.getName().trim().toLowerCase(Locale.ROOT) + "#" + index;
     }
 
     /** Level of a source category: the target category with the same name, else the same place in the list */

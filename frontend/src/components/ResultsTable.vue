@@ -67,7 +67,7 @@ const place = (m: Match) => [m.venue, m.pitch ? `${t('results.pitch')} ${m.pitch
                 <b :class="{ win: won(m, false) }">{{ m.awayGoals }}</b>
                 <small v-if="m.awayPenalties != null" class="pen">({{ m.awayPenalties }})</small>
               </span>
-              <small v-if="walkover(m)" class="wo">{{ t('standings.walkover') }}</small>
+              <small v-if="walkover(m)" class="wo">{{ m.homePresent || m.awayPresent ? t('standings.walkover') : t('standings.noShow') }}</small>
             </template>
             <template v-else>
               <span class="time">{{ time(m) || 'vs' }}</span>

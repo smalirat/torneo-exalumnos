@@ -26,7 +26,7 @@ Campeonato (Tournament)   etapa APERTURA / CLAUSURA
 
 - Victoria 3, empate 1, derrota 0.
 - **Punto de presencia:** +1 al equipo que se presenta a un partido (el admin lo marca al cargar el resultado).
-- **Walkover:** si un equipo no se presenta, el que se presentó gana 3-0 y suma presencia; el ausente no suma nada.
+- **Abandono** (en el código, *walkover*): si un equipo no se presenta, el que se presentó gana 3-0 y suma presencia; el ausente no suma nada. Si no se presenta ninguno: 0-0, sin ganador y nadie suma (ni presencia). En la UI no se usa "walkover" ni "W.O.".
 - **Walkover anticipado:** si un walkover ya está cargado pero su fecha todavía no se jugó (p. ej. un equipo que se retiró y el Excel trae los 3-0 de las próximas fechas), se guarda pero **no cuenta en la tabla hasta que se juegue algún otro partido de esa fecha** (misma zona y número de fecha). El día del calendario no alcanza porque las fechas se postergan. Solo si la fecha no tiene otros partidos se usa el día (hora de Argentina). La UI lo marca con "Cuenta en la tabla cuando se juegue la fecha" y no lo toma como fecha jugada.
 - **Desempate:** PTS → diferencia de gol → goles a favor → resultado entre ellos → fair play → puntos de presencia → orden alfabético.
 - **Fair play:** penalización de 1 por amarilla y 3 por roja (menos es mejor), a partir de las tarjetas cargadas por jugador.
@@ -125,6 +125,9 @@ Campeonato (Tournament)   etapa APERTURA / CLAUSURA
   - Promociones jugadas: el ganador juega en la categoría de arriba y el perdedor en la de abajo. Entre zonas de una misma categoría (5º Zona 1 vs 6º Zona 2), arriba es esa categoría y abajo la siguiente.
   - Los puestos de promoción parten cada tabla: en el grupo que defiende la categoría de arriba, los de abajo de esos puestos bajan; en el que la desafía, los de arriba suben. El resto se mantiene.
   - Son **preguntas** para el admin: promoción sin jugar, equipo nuevo (inscripto en la edición nueva y no en la base), equipo que se dio de baja, y grupos sin ninguna regla cuando cambió la estructura. Hay que responderlas antes de aplicar.
-  - Al aplicar: inscribe (aprobados) a todos en su categoría, los reparte en las zonas — balanceado en serpentina por posición (1º→Z1, 2º→Z2, 3º→Z2, 4º→Z1…) o por sorteo — y opcionalmente genera todos contra todos en cada zona. Solo para una edición **sin partidos** (409).
+  - Al aplicar: inscribe (aprobados) a todos en su categoría, los reparte en las zonas — balanceado en serpentina por posición (1º→Z1, 2º→Z2, 3º→Z2, 4º→Z1…) o por sorteo — y opcionalmente genera todos contra todos en cada zona (una fecha por semana). Solo para una edición **sin partidos** (409).
+  - **Fecha interzonal** (opcional): en cada categoría con varias zonas, Zona 1 contra Zona 2 (3 contra 4…), cada equipo con el de su mismo puesto de siembra. Partidos regulares sin zona (suman en la tabla de cada uno), etiqueta "Interzonal", numerada después de la última fecha de la edición y una semana después.
+  - **Definiciones** (opcional): promociones y finales por posición de las tablas nuevas. La propuesta copia las de la edición base cuando las zonas se corresponden (misma categoría por nombre y mismo orden de zona; si un lado era un equipo fijo, se usa la posición en la que terminó). El admin las cambia o agrega.
+  - Las definiciones por posición **siguen a la tabla**: cada vez que se carga un resultado regular, las promociones/finales sin jugar que dependen de una zona de esa edición se recalculan solas (`PlayoffService.refreshRules`; antes había que tocar "Recalcular").
   - Reproduce el pase Apertura 2026 → Clausura 2026: 1º–4º de cada zona a la A, 5º vs 6º cruzados en promoción, del 7º para abajo a la B.
 

@@ -27,7 +27,7 @@ const when = computed(() => {
       </span>
     </div>
     <footer class="meta">
-      <span v-if="walkover" class="wo">{{ t('standings.walkover') }}</span>
+      <span v-if="walkover" class="wo">{{ match.homePresent || match.awayPresent ? t('standings.walkover') : t('standings.noShow') }}</span>
       <span v-if="!played || match.advanceWalkover">{{ when }}</span>
       <span v-if="match.pitch || match.venue" class="place">{{ [match.venue, match.pitch ? `${t('results.pitch')} ${match.pitch}` : null].filter(Boolean).join(' · ') }}</span>
     </footer>

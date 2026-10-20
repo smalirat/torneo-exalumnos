@@ -4,8 +4,9 @@ import { useRoute } from 'vue-router'
 import TournamentLayout from '../layouts/TournamentLayout.vue'
 import BaseModal from '../components/BaseModal.vue'
 import TeamBadge from '../components/TeamBadge.vue'
+import AppIcon from '../components/AppIcon.vue'
 import { tournamentApi } from '../api/endpoints'
-import type { BuildProposal, BuildTeam, Tournament } from '../api/types'
+import type { BuildDefinition, BuildProposal, BuildTeam, Tournament } from '../api/types'
 import { editionBySlug, loadEditions, sortEditions } from '../editions'
 import { panelEditionPath, PANEL } from '../paths'
 import { t } from '../i18n'
@@ -44,6 +45,7 @@ watch(sourceId, async (id) => {
     const p = await tournamentApi.buildProposal(edition.value.id, id)
     proposal.value = p
     rows.value = p.teams.map((r, seed) => ({ ...r, seed, target: r.included ? r.categoryId : null, answered: !r.question }))
+    definitions.value = p.definitions.map((d) => ({ ...d }))
   } catch (e) {
     error.value = e instanceof Error ? e.message : t('common.genericError')
   } finally {
@@ -79,7 +81,22 @@ const fixtureStart = ref(nextSunday())
 const minutes = ref(70)
 const confirming = ref(false)
 const applying = ref(false)
-const done = ref<{ teams: number; matches: number } | null>(null)
+const done = ref<{ teams: number; matches: number; definitions: number } | null>(null)
+const interzonal = ref(false)
+/** An interzonal day only makes sense in a category with several zones */
+const severalZones = computed(() => (proposal.value?.categories ?? []).some((c) => c.zoneCount > 1))
+
+// --- definitions (promotions / finals) by positions of the new tables; copied from the source when they map
+const definitions = ref<BuildDefinition[]>([])
+function addDefinition() {
+  const zones = proposal.value?.zones ?? []
+  if (!zones.length) return
+  definitions.value.push({
+    type: 'PROMOTION', homeZoneId: zones[0].id, homePosition: 1,
+    awayZoneId: zones[Math.min(1, zones.length - 1)].id, awayPosition: zones.length > 1 ? 1 : 2,
+  })
+}
+const removeDefinition = (i: number) => definitions.value.splice(i, 1)
 
 function nextSunday() {
   const d = new Date()
@@ -101,6 +118,8 @@ async function apply() {
       assignments, zoneMode: zoneMode.value,
       fixtureStart: withFixture.value && fixtureStart.value ? `${fixtureStart.value}:00` : null,
       minutesBetween: minutes.value,
+      interzonal: severalZones.value && interzonal.value,
+      definitions: definitions.value,
     })
     confirming.value = false
     if (proposal.value) proposal.value.targetHasMatches = done.value.matches > 0
@@ -132,7 +151,7 @@ const homePath = computed(() => (edition.value ? panelEditionPath(edition.value)
     <p v-if="loading" class="muted">{{ t('common.loading') }}</p>
 
     <div v-if="done" class="card notice-card">
-      <p>{{ t('build.done', { teams: done.teams, matches: done.matches }) }}</p>
+      <p>{{ t('build.done', { teams: done.teams, matches: done.matches, definitions: done.definitions }) }}</p>
       <RouterLink :to="standingsPath" class="btn">{{ t('build.goStandings') }}</RouterLink>
     </div>
 
@@ -209,6 +228,36 @@ const homePath = computed(() => (edition.value ? panelEditionPath(edition.value)
           <label>{{ t('standings.start') }}<input v-model="fixtureStart" class="input" type="datetime-local" required /></label>
           <label>{{ t('standings.minutesBetween') }}<input v-model.number="minutes" class="input" type="number" min="0" /></label>
         </div>
+        <label v-if="severalZones" class="radio"><input v-model="interzonal" type="checkbox" /> {{ t('build.interzonal') }}</label>
+
+        <h2 class="small-title">{{ t('build.definitionsTitle') }}</h2>
+        <p class="muted tiny">{{ proposal.definitions.length ? t('build.definitionsCopied', { name: proposal.sourceName }) : t('build.definitionsHelp') }}</p>
+        <div v-for="(d, i) in definitions" :key="i" class="def">
+          <select v-model="d.type" class="select compact" :aria-label="t('build.definitionType')">
+            <option value="PROMOTION">{{ t('playoffs.types.PROMOTION') }}</option>
+            <option value="FINAL">{{ t('playoffs.types.FINAL') }}</option>
+          </select>
+          <span class="side">
+            <input v-model.number="d.homePosition" class="input pos" type="number" min="1" :aria-label="t('build.position')" />
+            <span class="muted">º</span>
+            <select v-model="d.homeZoneId" class="select compact" :aria-label="t('build.zone')">
+              <option v-for="z in proposal.zones" :key="z.id" :value="z.id">{{ z.label }}</option>
+            </select>
+          </span>
+          <span class="muted">vs</span>
+          <span class="side">
+            <input v-model.number="d.awayPosition" class="input pos" type="number" min="1" :aria-label="t('build.position')" />
+            <span class="muted">º</span>
+            <select v-model="d.awayZoneId" class="select compact" :aria-label="t('build.zone')">
+              <option v-for="z in proposal.zones" :key="z.id" :value="z.id">{{ z.label }}</option>
+            </select>
+          </span>
+          <button type="button" class="icon-btn" :title="t('build.removeDefinition')" :aria-label="t('build.removeDefinition')" @click="removeDefinition(i)">
+            <AppIcon name="close" :size="18" />
+          </button>
+        </div>
+        <button type="button" class="add-def" @click="addDefinition"><AppIcon name="plus" :size="16" /> {{ t('build.addDefinition') }}</button>
+
         <div class="apply">
           <p v-if="unanswered" class="muted small">{{ t('build.answerFirst', { n: unanswered }) }}</p>
           <button class="btn" :disabled="!canApply" @click="confirming = true">{{ t('build.apply') }}</button>
@@ -221,6 +270,8 @@ const homePath = computed(() => (edition.value ? panelEditionPath(edition.value)
         <li v-for="c in columns" :key="c.id">{{ t('build.summaryRow', { name: c.name, n: c.rows.length, zones: zonesText(c.zoneCount) }) }}</li>
       </ul>
       <p class="muted small">{{ withFixture ? t('build.confirmWithFixture') : t('build.confirmNoFixture') }}</p>
+      <p v-if="severalZones && interzonal" class="muted small">{{ t('build.confirmInterzonal') }}</p>
+      <p v-if="definitions.length" class="muted small">{{ t('build.confirmDefinitions', { n: definitions.length }) }}</p>
       <template #footer>
         <button type="button" class="btn secondary" @click="confirming = false">{{ t('tournaments.cancel') }}</button>
         <button type="button" class="btn" :disabled="applying" @click="apply">{{ t('build.apply') }}</button>
@@ -266,5 +317,12 @@ const homePath = computed(() => (edition.value ? panelEditionPath(edition.value)
 a { color: var(--navy); font-weight: 500; text-decoration: underline; }
 .link { background: none; border: 0; color: var(--navy); font: inherit; font-weight: 500; cursor: pointer; padding: 0; text-decoration: underline; }
 .small-btn { padding: 6px 12px; font-size: 13px; }
+.def { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 6px 0; border-bottom: 1px solid var(--border); }
+.def .side { display: inline-flex; align-items: center; gap: 4px; }
+.input.pos { width: 64px; padding: 4px 8px; }
+.add-def {
+  align-self: flex-start; display: inline-flex; align-items: center; gap: 4px; padding: 6px 12px; border-radius: 999px; cursor: pointer;
+  border: 1px dashed var(--border); background: none; color: var(--navy); font: inherit; font-size: 13px; font-weight: 500; margin-top: 4px;
+}
 .summary { margin: 0 0 10px; padding-left: 18px; }
 </style>

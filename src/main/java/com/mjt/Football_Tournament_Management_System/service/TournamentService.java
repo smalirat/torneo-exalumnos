@@ -126,9 +126,10 @@ public class TournamentService {
         var list = new ArrayList<>(teams);
         if (list.size() % 2 == 1) list.add(null); // null slot = BYE (team rests that round)
         int n = list.size(), rounds = n - 1;
-        var cursor = start;
 
+        // One match day a week: round r is played r weeks after the start, its matches one after another
         for (int r = 0; r < rounds; r++) {
+            var cursor = start.plusWeeks(r);
             for (int i = 0; i < n/2; i++) {
                 var home = list.get(i); var away = list.get(n-1-i);
                 if (home == null || away == null) continue;

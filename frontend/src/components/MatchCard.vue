@@ -49,7 +49,7 @@ const place = computed(() => [
       </span>
     </div>
     <span v-if="walkover && match.status === 'FINISHED'" class="wo">
-      {{ t('standings.walkover') }}<span v-if="hints && match.advanceWalkover" class="muted pending"> · {{ t('standings.advanceWalkover') }}</span>
+      {{ match.homePresent || match.awayPresent ? t('standings.walkover') : t('standings.noShow') }}<span v-if="hints && match.advanceWalkover" class="muted pending"> · {{ t('standings.advanceWalkover') }}</span>
     </span>
     <p v-if="match.notes" class="note">{{ match.notes }}</p>
   </div>

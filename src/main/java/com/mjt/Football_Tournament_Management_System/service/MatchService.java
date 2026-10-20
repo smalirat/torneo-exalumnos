@@ -25,6 +25,7 @@ public class MatchService {
     private final MatchRepository matchRepo;
     private final MatchEventRepository eventRepo;
     private final PlayerRepository playerRepo;
+    private final PlayoffService playoffs;
 
     /**
      * Loads the result from per-player events (goals, own goals, cards); the score is derived from them.
@@ -37,7 +38,7 @@ public class MatchService {
         boolean home = req.isHomePresent(), away = req.isAwayPresent();
         var events = toEvents(m, req.getEvents());
         if ((!home || !away) && !events.isEmpty()) {
-            throw new BadRequestException("En un walkover no se cargan goles ni tarjetas");
+            throw new BadRequestException("En un abandono no se cargan goles ni tarjetas");
         }
 
         eventRepo.deleteByMatch(m);
@@ -57,7 +58,7 @@ public class MatchService {
             m.setHomeGoals(explicit ? req.getHomeGoals() : homeFromEvents);
             m.setAwayGoals(explicit ? req.getAwayGoals() : awayFromEvents);
         } else {
-            // Walkover: whoever showed up wins 3-0; if neither did, 0-0 and nobody scores points
+            // Abandono: whoever showed up wins 3-0; if neither did, 0-0 and nobody scores points
             m.setHomeGoals(home ? MatchGame.WALKOVER_GOALS : 0);
             m.setAwayGoals(away ? MatchGame.WALKOVER_GOALS : 0);
         }
@@ -70,6 +71,8 @@ public class MatchService {
         m.setStatus(MatchGame.Status.FINISHED);
         m.setSource(DataSource.WEB);
         var saved = matchRepo.save(m);
+        // The tables changed: definitions by position follow them
+        if (!saved.isSpecial()) playoffs.refreshRules(saved.getTournament());
         return ResponseDtos.MatchRes.from(saved, MatchGame.pendingWalkovers(matchRepo.findByTournament(saved.getTournament())));
     }
 
