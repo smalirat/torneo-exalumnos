@@ -228,7 +228,7 @@ public class ResponseDtos {
                     m.getStatus().name(), m.getHomeGoals(), m.getAwayGoals(),
                     m.getHomePenalties(), m.getAwayPenalties(),
                     m.winner() == null ? null : TeamRef.from(m.winner()),
-                    m.present(true), m.present(false), pendingWalkovers.contains(m.getId()), m.isWithdrawal());
+                    m.present(true), m.present(false), m.getId() != null && pendingWalkovers.contains(m.getId()), m.isWithdrawal());
         }
     }
 

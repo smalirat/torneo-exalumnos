@@ -74,6 +74,16 @@ export const tournamentApi = {
   addZoneTeam: (zoneId: number, team: { teamId: number } | { teamName: string }) =>
     post<Registration>(`/api/admin/zones/${zoneId}/teams`, team),
   removeRegistration: (registrationId: number) => del(`/api/admin/registrations/${registrationId}`),
+  /** Interzonal / intercategory match days crossed by the current table positions (preview saves nothing) */
+  interzonal: (id: number, preview: boolean, body: {
+    pairs: { zoneA: number; zoneB: number }[]
+    rounds: number
+    firstRound: number | null
+    start: string | null
+    minutesBetween: number
+    crossing: 'SAME' | 'INVERSE'
+    venue: string | null
+  }) => post<Match[]>(`/api/admin/tournaments/${id}/interzonal?preview=${preview}`, body),
   buildProposal: (id: number, sourceId: number) => get<BuildProposal>(`/api/admin/tournaments/${id}/build/proposal?from=${sourceId}`),
   build: (id: number, body: {
     assignments: { teamId: number; categoryId: number }[]

@@ -47,7 +47,7 @@ const groups = computed(() => {
   for (const m of round.value?.matches ?? []) {
     if (onlyPending.value && isDone(m)) continue
     const key = m.type !== 'REGULAR' ? t(`results.matchTypes.${m.type}`)
-      : m.zoneId !== null ? labels.value.get(m.zoneId) ?? '' : t('results.interzonal')
+      : m.zoneId !== null ? labels.value.get(m.zoneId) ?? '' : m.roundLabel ?? t('results.interzonal')
     if (!out.has(key)) out.set(key, [])
     out.get(key)!.push(m)
   }

@@ -44,7 +44,7 @@ Todas las URLs se arman en `src/paths.ts` (slugs en `src/slugs.ts`). Criterio: p
 | `/panel/ediciones` | logueado | Ediciones del torneo; el admin crea ediciones (FAB +) |
 | `/panel/ediciones/:edicion` | logueado | Inicio de la edición: portada y logo, estado, inscripción, categorías con sus zonas; admin edita/elimina |
 | `/panel/ediciones/:edicion/clasificacion` | logueado | Tabla por zona + Juegos; admin agrega/quita equipos de la zona, genera fixture, agrega partidos y carga resultados |
-| `/panel/ediciones/:edicion/fixture` | logueado | Fixture por fecha (‹ Fecha N ›); admin arma una fecha entera (Nueva fecha) o todos contra todos y carga resultados |
+| `/panel/ediciones/:edicion/fixture` | logueado | Fixture por fecha (‹ Fecha N ›); admin arma una fecha entera (Nueva fecha), todos contra todos o interzonales/intercategorías por posición, y carga resultados |
 | `/panel/ediciones/:edicion/rankings` | logueado | Goleadores y amonestados |
 | `/panel/ediciones/:edicion/definiciones` | logueado | Promociones y finales; admin las crea, recalcula y carga resultados |
 | `/panel/ediciones/:edicion/equipos` | admin | Asignar equipos a zonas (a mano o por sorteo), crear zonas, bajas |

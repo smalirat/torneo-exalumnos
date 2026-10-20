@@ -594,5 +594,22 @@
       "NEW": "es nuevo en el torneo. ¿En qué categoría juega?",
       "WITHDRAWN": "se dio de baja en esa edición. ¿Juega esta?"
     }
+  },
+  "interzonal": {
+    "open": "Interzonales",
+    "title": "Interzonales e intercategorías",
+    "pairs": "Qué zonas juegan entre sí",
+    "zone": "Zona",
+    "addPair": "Agregar cruce",
+    "removePair": "Quitar cruce",
+    "rounds": "Cantidad de fechas",
+    "firstRound": "Desde la fecha N°",
+    "auto": "Automático",
+    "crossing": "Cómo se cruzan",
+    "same": "Misma posición: 1º contra 1º, 2º contra 2º… (en cada fecha siguiente rota uno: 1º contra 2º…)",
+    "inverse": "Cruzado: 1º contra último, 2º contra anteúltimo… (en cada fecha siguiente rota uno)",
+    "help": "Se cruzan según la tabla de cada zona en este momento, sin repetir rival. Una fecha por semana desde el primer partido; si una zona tiene más equipos, los que sobran quedan libres. Suman en la tabla de la zona de cada equipo.",
+    "preview": "Ver cruces",
+    "create": "Crear {n} partidos"
   }
 }

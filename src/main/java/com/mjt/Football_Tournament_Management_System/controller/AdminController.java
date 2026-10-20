@@ -5,6 +5,7 @@ import com.mjt.Football_Tournament_Management_System.dto.AdminDtos;
 import com.mjt.Football_Tournament_Management_System.dto.ResponseDtos;
 import com.mjt.Football_Tournament_Management_System.service.CategoryService;
 import com.mjt.Football_Tournament_Management_System.service.EditionBuilderService;
+import com.mjt.Football_Tournament_Management_System.service.InterzonalService;
 import com.mjt.Football_Tournament_Management_System.service.TournamentImageService;
 import com.mjt.Football_Tournament_Management_System.service.MatchService;
 import com.mjt.Football_Tournament_Management_System.service.PlayoffService;
@@ -33,6 +34,7 @@ public class AdminController {
     private final PlayoffService pService;
     private final TournamentImageService imageService;
     private final EditionBuilderService builder;
+    private final InterzonalService interzonal;
 
     @PostMapping("/tournaments")
     public ResponseDtos.TournamentRes create(@Valid @RequestBody AdminDtos.CreateTournamentReq req) {
@@ -94,6 +96,13 @@ public class AdminController {
     @Operation(summary = "Automatic build: register the teams in their categories, spread them into zones and optionally generate the fixture (409 if the edition has matches)")
     public ResponseDtos.BuildResult build(@PathVariable Long id, @Valid @RequestBody AdminDtos.BuildReq req) {
         return builder.apply(id, req);
+    }
+
+    @PostMapping("/tournaments/{id}/interzonal")
+    @Operation(summary = "Interzonal / intercategory match days crossed by the current table positions; preview=true saves nothing")
+    public List<ResponseDtos.MatchRes> interzonal(@PathVariable Long id, @RequestParam(defaultValue = "false") boolean preview,
+                                                  @Valid @RequestBody AdminDtos.InterzonalReq req) {
+        return interzonal.generate(id, req, !preview);
     }
 
     @PostMapping("/zones/{id}/teams")

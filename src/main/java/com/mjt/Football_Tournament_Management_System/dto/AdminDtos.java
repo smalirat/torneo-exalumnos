@@ -205,6 +205,32 @@ public class AdminDtos {
         @NotNull private Long categoryId;
     }
 
+    /**
+     * Interzonal (or intercategory) match days: which zones play each other, how many match days, and how the
+     * positions of their tables are crossed. Teams come from the tables at the moment of generating.
+     */
+    @Data
+    public static class InterzonalReq {
+        @NotEmpty private List<@Valid ZonePair> pairs;
+        @NotNull @Min(1) @Max(30) private Integer rounds;
+        /** Number of the first match day; default: after the last one of the edition */
+        @Min(1) private Integer firstRound;
+        /** First match; every next match day a week later. Null = no date */
+        private LocalDateTime start;
+        @Min(0) @Max(600) private int minutesBetween = 70;
+        @NotNull private Crossing crossing = Crossing.SAME;
+        @Size(max = 60) private String venue;
+
+        /** SAME: 1º vs 1º, 2º vs 2º (then 1º vs 2º…); INVERSE: 1º vs último, 2º vs anteúltimo (then shifted) */
+        public enum Crossing { SAME, INVERSE }
+    }
+
+    @Data
+    public static class ZonePair {
+        @NotNull private Long zoneA;
+        @NotNull private Long zoneB;
+    }
+
     @Data
     public static class ZoneDrawReq {
         /** Unassigned registrations of the tournament to draw into the category's zones. */

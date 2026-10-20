@@ -7,6 +7,7 @@ import MatchCard from '../components/MatchCard.vue'
 import MatchResultEditor from '../components/MatchResultEditor.vue'
 import ZonePicker from '../components/ZonePicker.vue'
 import RoundBuilder from '../components/RoundBuilder.vue'
+import InterzonalBuilder from '../components/InterzonalBuilder.vue'
 import BaseModal from '../components/BaseModal.vue'
 import AppIcon from '../components/AppIcon.vue'
 import { tournamentApi, zoneApi } from '../api/endpoints'
@@ -57,6 +58,16 @@ async function onRoundSaved(roundNumber: number) {
   if (i >= 0) index.value = i
 }
 
+// Interzonal / intercategory match days (the whole edition)
+const crossing = ref(false)
+const zoneCount = computed(() => (categories.value ?? []).reduce((n, c) => n + c.zones.length, 0))
+async function onCrossSaved(roundNumber: number | null) {
+  crossing.value = false
+  await load()
+  const i = rounds.value.findIndex((r) => r.number === roundNumber)
+  if (i >= 0) index.value = i
+}
+
 const generating = ref(false)
 const gen = ref({ start: '', minutes: 70 })
 const genError = ref('')
@@ -89,6 +100,7 @@ async function generate() {
         <ZonePicker v-model="zoneId" :categories="categories" />
         <div v-if="isAdmin && zoneId" class="tools">
           <button class="btn secondary" :disabled="teams.length < 2" @click="openGenerate">{{ t('standings.generate') }}</button>
+          <button v-if="zoneCount > 1" class="btn secondary" @click="crossing = true">{{ t('interzonal.open') }}</button>
           <button class="btn" :disabled="teams.length < 2" @click="building = true">
             <AppIcon name="plus" :size="18" /> {{ t('newRound.open') }}
           </button>
@@ -111,6 +123,7 @@ async function generate() {
     </section>
 
     <MatchResultEditor v-if="editing" :match="editing" @saved="onSaved" @close="editing = null" />
+    <InterzonalBuilder v-if="crossing && categories" :tournament-id="tournamentId" :categories="categories" @saved="onCrossSaved" @close="crossing = false" />
     <RoundBuilder v-if="building && zoneId" :zone-id="zoneId" :teams="teams" :matches="matches" @saved="onRoundSaved" @close="building = false" />
     <BaseModal v-if="generating" :title="t('standings.generate')" width="440px" @close="generating = false">
       <p class="muted">{{ t('fixture.generateHelp', { n: teams.length }) }}</p>
