@@ -15,6 +15,32 @@ export interface Tournament {
   seasonId: number | null
   seasonYear: number | null
   stage: 'APERTURA' | 'CLAUSURA' | null
+  /** Version of the banner / logo image (null = none); see editionImage() */
+  bannerVersion: number | null
+  logoVersion: number | null
+}
+
+/** Automatic build of an edition from another one */
+export type BuildReason = 'STAYS' | 'ASCENDS' | 'DESCENDS' | 'PROMO_WON' | 'PROMO_LOST' | 'PROMO_PENDING' | 'NO_RULE' | 'NEW' | 'WITHDRAWN' | 'PLACED'
+export interface BuildTeam {
+  team: TeamRef
+  /** Where it played in the source edition ("Zona 1", "A") and its final position; null for a new team */
+  sourceGroup: string | null
+  position: number | null
+  categoryId: number
+  reason: BuildReason
+  /** Promotion rival, when the reason is a promotion */
+  detail: string | null
+  included: boolean
+  /** The proposal is a guess: the admin has to answer */
+  question: boolean
+}
+export interface BuildProposal {
+  sourceId: number
+  sourceName: string
+  targetHasMatches: boolean
+  categories: { id: number; name: string; zoneCount: number }[]
+  teams: BuildTeam[]
 }
 
 export interface Season {

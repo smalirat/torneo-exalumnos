@@ -20,7 +20,9 @@
     "history": "Historia",
     "season": "Temporada",
     "publicPage": "Página pública",
-    "leagueHome": "Inicio del torneo"
+    "leagueHome": "Inicio del torneo",
+    "results": "Cargar resultados",
+    "build": "Armado automático"
   },
   "auth": {
     "loginTitle": "Iniciar sesión",
@@ -81,6 +83,8 @@
     "namePlaceholder": "Nombre de la categoría (A, B, Libres…)",
     "empty": "Todavía no hay categorías.",
     "zones": "{n} zonas",
+    "zoneCount": "Zonas",
+    "singleZone": "Una sola zona",
     "delete": "Eliminar categoría",
     "deleteConfirm": "Se eliminará la categoría \"{name}\" y sus zonas. Solo es posible si no tiene equipos ni partidos."
   },
@@ -264,6 +268,13 @@
     "venue": "Campo",
     "pitch": "Cancha",
     "notes": "Nota",
+    "matchTypes": { "PROMOTION": "Promociones", "FINAL": "Finales" },
+    "interzonal": "Interzonal",
+    "noMatches": "Esta edición todavía no tiene partidos.",
+    "progress": "Cargados {loaded} de {total}",
+    "onlyPending": "Solo los que faltan",
+    "openNext": "Al guardar, abrir el siguiente",
+    "allLoaded": "Todos los partidos de esta fecha están cargados.",
     "saveDetails": "Guardar datos"
   },
   "rankings": {
@@ -309,6 +320,7 @@
     "next": "Fecha siguiente",
     "noDate": "Sin fecha asignada",
     "progress": "{played} de {total} partidos jugados",
+    "generateHelp": "Todos contra todos entre los {n} equipos de la zona, una fecha por ronda.",
     "roundLabelOnly": "{label}"
   },
   "teamPage": {
@@ -482,5 +494,92 @@
     "title": "Página no encontrada",
     "text": "El link puede estar mal escrito o la página ya no existe.",
     "home": "Ir al inicio"
+  },
+  "editionImages": {
+    "addBanner": "Agregar portada",
+    "changeBanner": "Cambiar portada",
+    "removeBanner": "Quitar portada",
+    "changeLogo": "Cambiar logo",
+    "removeLogo": "Quitar logo"
+  },
+  "zoneTeams": {
+    "open": "Equipos de la zona",
+    "title": "Equipos · {name}",
+    "empty": "Todavía no hay equipos en esta zona.",
+    "remove": "Quitar de la edición",
+    "removeConfirm": "Se quitará a {name} de esta edición. Si ya tiene partidos, hay que darlo de baja desde Equipos.",
+    "addTitle": "Agregar un equipo",
+    "existing": "Equipo del torneo",
+    "new": "Equipo nuevo",
+    "search": "Buscar equipo",
+    "noCandidates": "No hay más equipos para agregar.",
+    "newHint": "Se crea con capitán pendiente; lo podés invitar desde Registro de equipos.",
+    "add": "Agregar a la zona"
+  },
+  "newRound": {
+    "open": "Nueva fecha",
+    "title": "Nueva fecha",
+    "round": "Fecha N°",
+    "start": "Primer partido",
+    "minutes": "Minutos entre partidos",
+    "venue": "Campo",
+    "pitch": "Cancha",
+    "matches": "Partidos",
+    "autoPair": "Armar cruces",
+    "addRow": "Agregar partido",
+    "removeRow": "Quitar partido",
+    "resting": "Libre: {names}",
+    "sameTeam": "Un equipo no puede jugar contra sí mismo",
+    "save": "Crear fecha"
+  },
+  "build": {
+    "open": "Armado automático",
+    "source": "Basado en",
+    "help": "Propone en qué categoría juega cada equipo según las posiciones y promociones de esa edición. Revisá y cambiá lo que haga falta; nada se guarda hasta aplicar.",
+    "notInSource": "No jugó",
+    "category": "Categoría",
+    "out": "No juega",
+    "ok": "Confirmar",
+    "acceptAll": "Aceptar todo lo propuesto",
+    "questionsTitle": "Preguntas para responder ({n})",
+    "count": "{n} equipos · {zones}",
+    "emptyCategory": "Sin equipos.",
+    "oneZone": "1 zona",
+    "zones": "{n} zonas",
+    "outTitle": "No juegan ({n})",
+    "zonesTitle": "Zonas",
+    "balanced": "Balanceadas por posición (1º a la Zona 1, 2º a la Zona 2…)",
+    "random": "Sorteo",
+    "zonesHelp": "Las zonas de cada categoría se definen en el Inicio de la edición.",
+    "editZones": "Editar categorías y zonas",
+    "fixtureTitle": "Fixture",
+    "withFixture": "Generar todos contra todos en cada zona",
+    "answerFirst": "Faltan responder {n} preguntas",
+    "apply": "Armar edición",
+    "confirmTitle": "Armar la edición",
+    "summaryRow": "{name}: {n} equipos en {zones}",
+    "confirmWithFixture": "Se inscriben los equipos, se reparten en las zonas y se genera el fixture de cada zona.",
+    "confirmNoFixture": "Se inscriben los equipos y se reparten en las zonas.",
+    "done": "Edición armada: {teams} equipos ubicados y {matches} partidos creados.",
+    "goStandings": "Ver clasificación",
+    "hasMatches": "Esta edición ya tiene partidos: el armado automático solo se usa en una edición sin partidos.",
+    "reasons": {
+      "STAYS": "Se mantiene",
+      "ASCENDS": "Sube",
+      "DESCENDS": "Baja",
+      "PROMO_WON": "Ganó la promoción vs {rival}",
+      "PROMO_LOST": "Perdió la promoción vs {rival}",
+      "PROMO_PENDING": "Promoción sin jugar vs {rival}",
+      "NO_RULE": "Sin regla",
+      "NEW": "Nuevo inscripto",
+      "WITHDRAWN": "Se dio de baja",
+      "PLACED": "Ya ubicado"
+    },
+    "questions": {
+      "PROMO_PENDING": "la promoción con {rival} no se jugó. ¿En qué categoría juega?",
+      "NO_RULE": "no hay promociones que digan a dónde va. ¿En qué categoría juega?",
+      "NEW": "es nuevo en el torneo. ¿En qué categoría juega?",
+      "WITHDRAWN": "se dio de baja en esa edición. ¿Juega esta?"
+    }
   }
 }

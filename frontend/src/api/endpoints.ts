@@ -1,6 +1,6 @@
 import { api, del, download, get, patch, post, put, upload } from './client'
 import type {
-  CardRow, Category, CategoryHistory, CollageItem, CollagePhoto, InviteRes, MyRequests, RequestItem, RequestType, ImportHistory, ImportPreview, Match, MatchDetails, MatchEvent, Me, Player,
+  BuildProposal, CardRow, Category, CategoryHistory, CollageItem, CollagePhoto, InviteRes, MyRequests, RequestItem, RequestType, ImportHistory, ImportPreview, Match, MatchDetails, MatchEvent, Me, Player,
   Registration, Sanction, ScoreReq, ScorerRow, Season, SeasonStatRow, SlotReq, StandingRow, TeamRef, TeamRegistration,
   TeamSummary, TokenRes, Tournament, TournamentStatus, YellowTally, Zone,
 } from './types'
@@ -63,6 +63,30 @@ export const tournamentApi = {
   createZone: (categoryId: number, name: string) => post<Zone>(`/api/admin/categories/${categoryId}/zones`, { name }),
   drawZones: (categoryId: number, registrationIds: number[]) =>
     post<Registration[]>(`/api/admin/categories/${categoryId}/zone-draw`, { registrationIds }),
+  /** Banner (cover) or logo of the edition */
+  setImage: (id: number, kind: 'banner' | 'logo', file: Blob) => {
+    const form = new FormData()
+    form.append('file', file, kind === 'banner' ? 'banner.jpg' : 'logo.png')
+    return upload<Tournament>(`/api/admin/tournaments/${id}/images/${kind}`, form, 'PUT')
+  },
+  removeImage: (id: number, kind: 'banner' | 'logo') => api<Tournament>('DELETE', `/api/admin/tournaments/${id}/images/${kind}`),
+  /** Admin: a team straight into a zone (an existing one, or a new one by name) and out of the edition */
+  addZoneTeam: (zoneId: number, team: { teamId: number } | { teamName: string }) =>
+    post<Registration>(`/api/admin/zones/${zoneId}/teams`, team),
+  removeRegistration: (registrationId: number) => del(`/api/admin/registrations/${registrationId}`),
+  buildProposal: (id: number, sourceId: number) => get<BuildProposal>(`/api/admin/tournaments/${id}/build/proposal?from=${sourceId}`),
+  build: (id: number, body: {
+    assignments: { teamId: number; categoryId: number }[]
+    zoneMode: 'BALANCED' | 'RANDOM'
+    fixtureStart: string | null
+    minutesBetween: number
+  }) => post<{ teams: number; matches: number }>(`/api/admin/tournaments/${id}/build`, body),
+}
+
+/** URL of an edition's banner / logo, or null when it has none (the version busts the cache) */
+export function editionImage(t: Pick<Tournament, 'id' | 'bannerVersion' | 'logoVersion'>, kind: 'banner' | 'logo') {
+  const v = kind === 'banner' ? t.bannerVersion : t.logoVersion
+  return v == null ? null : `/api/public/tournaments/${t.id}/images/${kind}?v=${v}`
 }
 
 export const teamApi = {
@@ -151,10 +175,14 @@ export const importApi = {
 export const zoneApi = {
   standings: (zoneId: number) => get<StandingRow[]>(`/api/public/zones/${zoneId}/standings`),
   fixtures: (zoneId: number) => get<Match[]>(`/api/public/zones/${zoneId}/fixtures`),
+  registrations: (zoneId: number) => get<Registration[]>(`/api/public/zones/${zoneId}/registrations`),
   roundRobin: (zoneId: number, start: string, minutesBetween: number) =>
     post<Match[]>(`/api/admin/zones/${zoneId}/fixtures/round-robin?start=${encodeURIComponent(start)}&minutesBetween=${minutesBetween}`),
   addMatch: (zoneId: number, homeTeamId: number, awayTeamId: number, scheduledAt: string | null) =>
     post<Match[]>('/api/admin/fixtures/manual', { zoneId, fixtures: [{ homeTeamId, awayTeamId, scheduledAt }] }),
+  /** A whole match day at once: every pair with its time, the same round number and field */
+  addRound: (zoneId: number, fixtures: { homeTeamId: number; awayTeamId: number; scheduledAt: string | null; round: number | null; venue: string | null; pitch: string | null }[]) =>
+    post<Match[]>('/api/admin/fixtures/manual', { zoneId, fixtures }),
 }
 
 /** Captains' changes waiting for the admin */

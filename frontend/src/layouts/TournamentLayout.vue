@@ -4,6 +4,7 @@ import { useRoute } from 'vue-router'
 import AppIcon from '../components/AppIcon.vue'
 import UserFooter from './UserFooter.vue'
 import type { Tournament } from '../api/types'
+import { editionImage } from '../api/endpoints'
 import { editionBySlug, loadEditions } from '../editions'
 import { PANEL, panelEditionPath, publicPath, type PanelEditionPage } from '../paths'
 import { t } from '../i18n'
@@ -29,7 +30,10 @@ const pageTitle = computed(() => (route.meta.title as string | undefined) ?? '')
   <div class="shell">
     <aside class="sidebar">
       <div class="brand">
-        <span class="logo"><AppIcon name="trophy" :size="26" /></span>
+        <span class="logo">
+          <img v-if="tournament && editionImage(tournament, 'logo')" :src="editionImage(tournament, 'logo')!" alt="" />
+          <AppIcon v-else name="trophy" :size="26" />
+        </span>
         <span class="name">{{ tournament?.name }}</span>
       </div>
       <RouterLink :to="page('inicio')" class="item" exact-active-class="active">
@@ -41,6 +45,9 @@ const pageTitle = computed(() => (route.meta.title as string | undefined) ?? '')
       <RouterLink :to="page('fixture')" class="item" active-class="active">
         <AppIcon name="calendar" /> {{ t('nav.fixture') }}
       </RouterLink>
+      <RouterLink v-if="isAdmin" :to="page('resultados')" class="item" active-class="active">
+        <AppIcon name="results" /> {{ t('nav.results') }}
+      </RouterLink>
       <RouterLink :to="page('rankings')" class="item" active-class="active">
         <AppIcon name="star" /> {{ t('nav.rankings') }}
       </RouterLink>
@@ -49,6 +56,9 @@ const pageTitle = computed(() => (route.meta.title as string | undefined) ?? '')
       </RouterLink>
       <RouterLink v-if="isAdmin" :to="page('equipos')" class="item" active-class="active">
         <AppIcon name="shield" /> {{ t('nav.tournamentTeams') }}
+      </RouterLink>
+      <RouterLink v-if="isAdmin" :to="page('armado')" class="item" active-class="active">
+        <AppIcon name="auto" /> {{ t('nav.build') }}
       </RouterLink>
       <UserFooter />
     </aside>
@@ -85,9 +95,10 @@ const pageTitle = computed(() => (route.meta.title as string | undefined) ?? '')
 }
 .brand { display: flex; align-items: center; gap: 12px; margin: 0 12px 28px; }
 .logo {
-  width: 46px; height: 46px; background: #fff; color: var(--navy);
-  display: inline-flex; align-items: center; justify-content: center;
+  width: 46px; height: 46px; background: #fff; color: var(--navy); flex-shrink: 0;
+  display: inline-flex; align-items: center; justify-content: center; overflow: hidden;
 }
+.logo img { width: 100%; height: 100%; object-fit: cover; }
 .name { font-size: 26px; font-weight: 500; overflow-wrap: anywhere; }
 .item {
   display: flex; align-items: center; gap: 14px;

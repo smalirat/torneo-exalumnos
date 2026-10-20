@@ -6,6 +6,9 @@ import MatchCard from '../components/MatchCard.vue'
 import MatchResultEditor from '../components/MatchResultEditor.vue'
 import StandingsTable from '../components/StandingsTable.vue'
 import ZonePicker from '../components/ZonePicker.vue'
+import ZoneTeamsModal from '../components/ZoneTeamsModal.vue'
+import AppIcon from '../components/AppIcon.vue'
+import { zoneOptions } from '../groups'
 import { tournamentApi, zoneApi } from '../api/endpoints'
 import type { Category, Match, StandingRow } from '../api/types'
 import { editionBySlug } from '../editions'
@@ -30,6 +33,10 @@ async function reloadZone() {
   ;[rows.value, matches.value] = await Promise.all([zoneApi.standings(id), zoneApi.fixtures(id)])
 }
 watch(zoneId, reloadZone)
+
+// --- admin: teams of the zone (add / take out) ---
+const managingTeams = ref(false)
+const zoneLabel = computed(() => zoneOptions(categories.value ?? []).find((o) => o.id === zoneId.value)?.label ?? '')
 
 // --- admin: result editor ---
 const editing = ref<Match | null>(null)
@@ -78,7 +85,12 @@ const addMatch = () => runTool(() =>
 
     <div v-else class="layout">
       <section class="card table-card">
-        <ZonePicker v-model="zoneId" :categories="categories" class="selectors" />
+        <div class="table-head">
+          <ZonePicker v-model="zoneId" :categories="categories" class="selectors" />
+          <button v-if="isAdmin && zoneId" class="btn secondary" @click="managingTeams = true">
+            <AppIcon name="group" :size="18" /> {{ t('zoneTeams.open') }}
+          </button>
+        </div>
         <StandingsTable :rows="rows" />
       </section>
 
@@ -120,12 +132,17 @@ const addMatch = () => runTool(() =>
       </aside>
     </div>
     <MatchResultEditor v-if="editing" :match="editing" @saved="onSaved" @close="editing = null" />
+    <ZoneTeamsModal
+      v-if="managingTeams && zoneId" :tournament-id="tournamentId" :zone-id="zoneId"
+      :title="t('zoneTeams.title', { name: zoneLabel })" @changed="reloadZone" @close="managingTeams = false"
+    />
   </TournamentLayout>
 </template>
 
 <style scoped>
 .layout { display: grid; grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr); gap: 20px; align-items: start; }
-.selectors { margin-bottom: 14px; }
+.table-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+.table-head .btn { white-space: nowrap; }
 .games { background: #fff; border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); }
 .games header { background: var(--navy); color: #fff; font-size: 20px; padding: 18px; text-align: center; }
 .games-body { padding: 12px 16px; }

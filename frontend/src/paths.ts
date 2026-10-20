@@ -23,8 +23,8 @@ export function publicPath(section: PublicSection, edition?: Tournament | null, 
 /** Public page of a team: /equipos/41-gulp */
 export const teamPath = (team: Pick<TeamRef, 'id' | 'name'>) => `/equipos/${teamSlug(team)}`
 
-/** Pages of an edition in the panel: /panel/ediciones/2026-clausura[/clasificacion|fixture|rankings|definiciones|equipos] */
-export type PanelEditionPage = 'inicio' | 'clasificacion' | 'fixture' | 'rankings' | 'definiciones' | 'equipos'
+/** Pages of an edition in the panel: /panel/ediciones/2026-clausura[/clasificacion|fixture|resultados|…] */
+export type PanelEditionPage = 'inicio' | 'clasificacion' | 'fixture' | 'resultados' | 'rankings' | 'definiciones' | 'equipos' | 'armado'
 export function panelEditionPath(edition: Pick<Tournament, 'id' | 'seasonYear' | 'stage'>, page: PanelEditionPage = 'inicio') {
   const base = `/panel/ediciones/${editionSlug(edition)}`
   return page === 'inicio' ? base : `${base}/${page}`
