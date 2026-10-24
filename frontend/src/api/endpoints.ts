@@ -111,13 +111,14 @@ export const teamApi = {
   get: (teamId: number) => get<TeamRef>(`/api/public/teams/${teamId}`),
   registrations: (teamId: number) => get<TeamRegistration[]>(`/api/public/teams/${teamId}/registrations`),
   players: (teamId: number) => get<Player[]>(`/api/public/teams/${teamId}/players`),
-  addPlayer: (teamId: number, fullName: string, jerseyNo: number) =>
-    post<Player[]>(`/api/teams/${teamId}/players`, { players: [{ fullName, jerseyNo }] }),
+  addPlayer: (teamId: number, fullName: string, jerseyNo: number, dni: string | null) =>
+    post<Player[]>(`/api/teams/${teamId}/players`, { players: [{ fullName, jerseyNo, dni }] }),
   deletePlayer: (teamId: number, playerId: number) => del(`/api/teams/${teamId}/players/${playerId}`),
   /** Full roster for its captain or the admin, players waiting for approval included */
   roster: (teamId: number) => get<Player[]>(`/api/teams/${teamId}/roster`),
-  setJersey: (teamId: number, playerId: number, jerseyNo: number) =>
-    patch<Player>(`/api/teams/${teamId}/players/${playerId}`, { jerseyNo }),
+  /** Jersey number and/or DNI, saved directly (blank DNI = none) */
+  updatePlayer: (teamId: number, playerId: number, change: { jerseyNo?: number; dni?: string }) =>
+    patch<Player>(`/api/teams/${teamId}/players/${playerId}`, change),
   setCrest: (teamId: number, image: Blob) => {
     const form = new FormData()
     form.append('file', image, 'escudo.png')

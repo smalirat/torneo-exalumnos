@@ -129,10 +129,19 @@ public class ResponseDtos {
     public record CardRow(PlayerRef player, TeamRef team, int yellowCards, int redCards) {}
 
     /** approved: false while the admin has not approved its addition; removalRequested: the captain asked to remove it */
-    public record PlayerRes(Long id, String fullName, int jerseyNo, Long teamId, boolean approved, boolean removalRequested) {
+    /** A player. dni is personal data: only in the private roster (withDni), left out of public lists */
+    public record PlayerRes(Long id, String fullName, int jerseyNo, Long teamId, boolean approved, boolean removalRequested,
+                            @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
+                            String dni) {
         public static PlayerRes from(Player p) {
             return new PlayerRes(p.getId(), p.getFullName(), p.getJerseyNo(), p.getTeam().getId(), p.isApproved(),
-                    p.getRemovalRequestedAt() != null);
+                    p.getRemovalRequestedAt() != null, null);
+        }
+
+        /** For the team's captain or the admin; "" when the player has no DNI yet */
+        public static PlayerRes withDni(Player p) {
+            return new PlayerRes(p.getId(), p.getFullName(), p.getJerseyNo(), p.getTeam().getId(), p.isApproved(),
+                    p.getRemovalRequestedAt() != null, p.getDni() == null ? "" : p.getDni());
         }
     }
 

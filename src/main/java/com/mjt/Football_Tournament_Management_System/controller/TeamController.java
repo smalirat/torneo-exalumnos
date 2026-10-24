@@ -69,10 +69,10 @@ public class TeamController {
     }
 
     @PatchMapping("/{teamId}/players/{playerId}")
-    @Operation(summary = "Change a player's jersey number (cosmetic: no approval needed)")
-    public ResponseDtos.PlayerRes setJersey(@PathVariable Long teamId, @PathVariable Long playerId,
-                                            @Valid @RequestBody TeamDtos.JerseyReq req, Authentication auth) {
-        return teamService.setJersey(teamId, playerId, req.getJerseyNo(), auth);
+    @Operation(summary = "Change a player's jersey number and/or DNI (no approval needed); the DNI is unique (409)")
+    public ResponseDtos.PlayerRes updatePlayer(@PathVariable Long teamId, @PathVariable Long playerId,
+                                               @Valid @RequestBody TeamDtos.PlayerUpdateReq req, Authentication auth) {
+        return teamService.updatePlayer(teamId, playerId, req, auth);
     }
 
     @PostMapping("/register")

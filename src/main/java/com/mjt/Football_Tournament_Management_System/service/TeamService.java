@@ -221,14 +221,30 @@ public class TeamService {
         playerRepo.delete(player);
     }
 
-    /** Jersey number: cosmetic, the captain changes it directly. */
+    /** Jersey number and DNI: the captain changes them directly. */
     @Transactional
-    public ResponseDtos.PlayerRes setJersey(Long teamId, Long playerId, int jerseyNo, Authentication auth) {
+    public ResponseDtos.PlayerRes updatePlayer(Long teamId, Long playerId, TeamDtos.PlayerUpdateReq req, Authentication auth) {
         var team = ownedTeam(teamId, auth);
         var player = playerRepo.findById(playerId).orElseThrow(() -> NotFoundException.of("Jugador", playerId));
         if (player.getTeam() == null || !player.getTeam().getId().equals(team.getId())) throw NotFoundException.of("Jugador", playerId);
-        player.setJerseyNo(jerseyNo);
-        return ResponseDtos.PlayerRes.from(player);
+        if (req.getJerseyNo() != null) player.setJerseyNo(req.getJerseyNo());
+        if (req.getDni() != null) player.setDni(checkDni(req.getDni(), player.getId()));
+        return ResponseDtos.PlayerRes.withDni(player);
+    }
+
+    /**
+     * A DNI as stored: only its digits ("30.123.456" -> "30123456"), 7 or 8 of them, and nobody else's: the same DNI
+     * is the same person. Blank = no DNI. playerId is the player being edited (null for a new one).
+     */
+    private String checkDni(String raw, Long playerId) {
+        var dni = raw.replaceAll("[\\s.\\-]", "");
+        if (dni.isEmpty()) return null;
+        if (!dni.matches("\\d{7,8}")) throw new BadRequestException("El DNI tiene que tener 7 u 8 números");
+        playerRepo.findByDni(dni).filter(other -> !other.getId().equals(playerId)).ifPresent(other -> {
+            throw new ConflictException("El DNI " + dni + " ya es de " + other.getFullName()
+                    + (other.getTeam() == null ? "" : " (" + other.getTeam().getName() + ")"));
+        });
+        return dni;
     }
 
     /** A team in review is only visible to its captain and the admin. */
@@ -262,7 +278,7 @@ public class TeamService {
     @Transactional(readOnly = true)
     public List<ResponseDtos.PlayerRes> roster(Long teamId, Authentication auth) {
         return playerRepo.findByTeamOrderByJerseyNoAscFullNameAsc(ownedTeam(teamId, auth)).stream()
-                .map(ResponseDtos.PlayerRes::from).toList();
+                .map(ResponseDtos.PlayerRes::withDni).toList();
     }
 
     @Transactional
@@ -270,12 +286,15 @@ public class TeamService {
         var team = ownedTeam(teamId, auth);
         List<Player> list = new ArrayList<>();
         boolean needsApproval = !isAdmin(auth);
+        var dnis = new HashSet<String>();
         for (var p : req.getPlayers()) {
             var pl = new Player(); pl.setTeam(team); pl.setFullName(p.getFullName()); pl.setJerseyNo(p.getJerseyNo());
+            pl.setDni(p.getDni() == null ? null : checkDni(p.getDni(), null));
+            if (pl.getDni() != null && !dnis.add(pl.getDni())) throw new ConflictException("El DNI " + pl.getDni() + " está repetido");
             if (needsApproval) { pl.setApproved(false); pl.setRequestedAt(LocalDateTime.now()); }
             list.add(pl);
         }
-        return playerRepo.saveAll(list).stream().map(ResponseDtos.PlayerRes::from).toList();
+        return playerRepo.saveAll(list).stream().map(ResponseDtos.PlayerRes::withDni).toList();
     }
 
     @Transactional

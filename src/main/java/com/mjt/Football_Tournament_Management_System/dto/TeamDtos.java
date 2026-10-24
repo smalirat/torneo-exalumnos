@@ -13,10 +13,11 @@ public class TeamDtos {
         @Email private String email;
     }
 
-    /** Jersey number: cosmetic, changed directly (no approval) */
+    /** Jersey number and/or DNI of a player, changed directly (no approval). Missing field = unchanged; blank DNI = none */
     @Data
-    public static class JerseyReq {
-        @Min(0) @Max(999) private int jerseyNo;
+    public static class PlayerUpdateReq {
+        @Min(0) @Max(999) private Integer jerseyNo;
+        @Size(max = 20) private String dni;
     }
 
     @Data
@@ -27,5 +28,7 @@ public class TeamDtos {
     public static class PlayerItem {
         @NotBlank private String fullName;
         @Min(0) private int jerseyNo;
+        /** Optional for now ("30.123.456" or "30123456") */
+        @Size(max = 20) private String dni;
     }
 }

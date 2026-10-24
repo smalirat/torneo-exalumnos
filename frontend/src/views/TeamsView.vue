@@ -26,6 +26,7 @@ const openTeamId = ref<number | null>(null)
 const players = ref<Player[]>([])
 const playerName = ref('')
 const jerseyNo = ref<number | null>(null)
+const playerDni = ref('')
 
 
 async function loadTeams() {
@@ -80,9 +81,10 @@ async function refreshRoster(teamId: number) {
 }
 
 const addPlayer = (teamId: number) => run(async () => {
-  await teamApi.addPlayer(teamId, playerName.value, jerseyNo.value ?? 0)
+  await teamApi.addPlayer(teamId, playerName.value, jerseyNo.value ?? 0, playerDni.value.trim() || null)
   playerName.value = ''
   jerseyNo.value = null
+  playerDni.value = ''
   await refreshRoster(teamId)
   sentForApproval()
 })
@@ -97,7 +99,19 @@ const removePlayer = (teamId: number, p: Player) => run(async () => {
 const setJersey = (teamId: number, p: Player, event: Event) => run(async () => {
   const value = Number((event.target as HTMLInputElement).value)
   if (!Number.isInteger(value) || value < 0 || value === p.jerseyNo) return
-  Object.assign(p, await teamApi.setJersey(teamId, p.id, value))
+  Object.assign(p, await teamApi.updatePlayer(teamId, p.id, { jerseyNo: value }))
+})
+
+/** DNI: saved right away (it identifies the player, so it cannot be someone else's) */
+const setDni = (teamId: number, p: Player, event: Event) => run(async () => {
+  const input = event.target as HTMLInputElement
+  const value = input.value.trim()
+  if (value === (p.dni ?? '')) return
+  try {
+    Object.assign(p, await teamApi.updatePlayer(teamId, p.id, { dni: value }))
+  } finally {
+    input.value = p.dni ?? '' // a rejected DNI goes back to the saved one
+  }
 })
 
 
@@ -215,6 +229,11 @@ const countLabel = (n: number) => (n === 1 ? t('teams.onePlayer') : t('teams.pla
                 >
                 <span class="pname">
                   {{ p.fullName }}
+                  <input
+                    :class="['dni', { missing: !p.dni }]" :value="p.dni" inputmode="numeric" maxlength="12"
+                    :placeholder="t('teams.dniMissing')" :aria-label="t('teams.dniOf', { name: p.fullName })"
+                    @change="setDni(team.id, p, $event)"
+                  >
                   <small v-if="!p.approved" class="state">{{ t('teams.playerPending') }}</small>
                   <small v-else-if="p.removalRequested" class="state">{{ t('teams.playerRemovalPending') }}</small>
                 </span>
@@ -228,6 +247,7 @@ const countLabel = (n: number) => (n === 1 ? t('teams.onePlayer') : t('teams.pla
             <form class="add-player" @submit.prevent="addPlayer(team.id)">
               <input v-model.number="jerseyNo" class="input num" type="number" min="0" :placeholder="t('teams.jerseyNo')" />
               <input v-model="playerName" class="input" :placeholder="t('teams.playerName')" required />
+              <input v-model="playerDni" class="input dni-input" inputmode="numeric" maxlength="12" :placeholder="t('teams.dni')" />
               <button class="btn secondary">{{ t('teams.addPlayer') }}</button>
             </form>
           </div>
@@ -265,6 +285,14 @@ const countLabel = (n: number) => (n === 1 ? t('teams.onePlayer') : t('teams.pla
 }
 .jersey:hover, .jersey:focus { border-color: var(--border); background: #fff; outline: none; }
 .waiting .pname { color: var(--muted); }
+.pname { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+.dni {
+  width: 110px; margin-left: 8px; font: inherit; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums;
+  border: 1px solid transparent; border-radius: 6px; background: transparent; padding: 2px 6px;
+}
+.dni.missing::placeholder { color: #b26a00; }
+.dni:hover, .dni:focus { border-color: var(--border); background: #fff; outline: none; color: var(--text); }
+.dni-input { width: 130px; flex-shrink: 0; }
 .state { margin-left: 6px; font-size: 12px; font-weight: 700; color: #b26a00; }
 .review { color: #b26a00; font-weight: 700; display: flex; gap: 10px; flex-wrap: wrap; }
 .notice { color: #8a6500; background: #fff6d6; border-radius: 8px; padding: 8px 12px; font-size: 14px; }

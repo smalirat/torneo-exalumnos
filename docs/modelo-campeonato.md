@@ -132,3 +132,11 @@ Campeonato (Tournament)   etapa APERTURA / CLAUSURA
   - Las definiciones por posición **siguen a la tabla**: cada vez que se carga un resultado regular, las promociones/finales sin jugar que dependen de una zona de esa edición se recalculan solas (`PlayoffService.refreshRules`; antes había que tocar "Recalcular").
   - Reproduce el pase Apertura 2026 → Clausura 2026: 1º–4º de cada zona a la A, 5º vs 6º cruzados en promoción, del 7º para abajo a la B.
 
+## DNI de los jugadores
+
+- `players.dni` (`V15`): identifica a la persona, así que es **único** (índice único; el mismo DNI dos veces es el mismo jugador). Se guarda solo con números (7 u 8; "30.123.456" → "30123456").
+- **Opcional por ahora**: los jugadores importados del Excel no lo tienen (la UI muestra "Falta DNI"); más adelante será obligatorio. La importación no lo toca.
+- Se carga al agregar un jugador o después en el plantel (`PATCH /api/teams/{teamId}/players/{id}` con `dni` y/o `jerseyNo`), directo, sin aprobación. En blanco lo borra. Repetido → 409 con el nombre y el equipo de quien lo tiene.
+- Es dato personal: solo va en el plantel privado (`GET /api/teams/{id}/roster`, capitán del equipo o admin) y en la solicitud de alta de jugador que ve el admin. Las listas públicas no lo incluyen.
+- Pendiente: qué pasa cuando el mismo jugador quiere estar en dos equipos (validación sobre los equipos, a definir).
+

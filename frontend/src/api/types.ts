@@ -193,6 +193,8 @@ export interface Player {
   approved: boolean
   /** the captain asked to remove the player */
   removalRequested: boolean
+  /** Only in the private roster (captain / admin): "" while it has none; absent in public lists */
+  dni?: string
 }
 
 export interface TeamRegistration {

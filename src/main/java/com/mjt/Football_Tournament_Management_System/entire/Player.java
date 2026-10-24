@@ -12,6 +12,10 @@ public class Player {
     private String fullName;
     private int jerseyNo;
 
+    /** Documento (only digits). Unique: it identifies the person. Optional while old players have none */
+    @Column(length = 10)
+    private String dni;
+
     @ManyToOne(fetch = FetchType.LAZY)
     private Team team;
 

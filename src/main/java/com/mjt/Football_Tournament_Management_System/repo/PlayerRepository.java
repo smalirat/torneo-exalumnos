@@ -13,5 +13,6 @@ public interface PlayerRepository extends JpaRepository<Player, Long> {
     List<Player> findByTeamAndApprovedTrueOrderByJerseyNoAscFullNameAsc(Team team);
     List<Player> findByApprovedFalseAndTeam_ApprovedTrue();
     List<Player> findByRemovalRequestedAtNotNull();
+    java.util.Optional<Player> findByDni(String dni);
 }
 
