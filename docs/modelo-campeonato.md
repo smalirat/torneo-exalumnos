@@ -138,3 +138,15 @@ Campeonato (Tournament)   etapa APERTURA / CLAUSURA
   - Las definiciones por posición **siguen a la tabla**: cada vez que se carga un resultado regular, las promociones/finales sin jugar que dependen de una zona de esa edición se recalculan solas (`PlayoffService.refreshRules`; antes había que tocar "Recalcular").
   - Reproduce el pase Apertura 2026 → Clausura 2026: 1º–4º de cada zona a la A, 5º vs 6º cruzados en promoción, del 7º para abajo a la B.
 
+## Personas, fichas y pases
+
+- **Persona** (`people`, `V17`): quién es (nombre y DNI). El DNI es **único** (el mismo DNI es la misma persona), solo números, 7 u 8 ("30.123.456" → "30123456"); **opcional por ahora** (los jugadores del Excel no lo tienen; la UI muestra "Falta DNI"). La importación del Excel crea una persona por cada jugador nuevo y no toca los DNI.
+- **Ficha** (`players`): la persona en el plantel de un equipo, con número, alta (`joined_at`) y baja (`left_at`). Goles, tarjetas, sanciones y estadísticas apuntan a la ficha, así que quedan con el equipo para el que se hicieron.
+- El DNI y el número se cambian directo, sin aprobación (`PATCH /api/teams/{teamId}/players/{id}` con `dni` y/o `jerseyNo`; DNI en blanco lo borra).
+- Una persona tiene **una sola ficha activa a la vez**. Agregar a un plantel un DNI que ya está en otro equipo es un **pase**: el del capitán queda pendiente en Solicitudes ("pase desde X"; sigue jugando en el equipo viejo hasta que se apruebe); el del admin es directo. Al aprobarse se cierra la ficha vieja.
+- **Regla**: nadie juega la misma edición para dos equipos. No hay pase a un equipo inscripto en una edición en la que la persona ya jugó (tiene goles o tarjetas) para otro equipo. Se controla al pedir y al aprobar. Limitación: "jugó" se sabe por goles y tarjetas (no se cargan formaciones).
+- **Baja**: un jugador sin historial se borra; con goles, tarjetas, estadísticas o sanciones se **cierra la ficha** (deja el plantel y conserva el historial). Antes no se podía dar de baja.
+- **Mismo DNI en dos fichas**: cargarle a una ficha el DNI de otra persona las **une** (p. ej. el mismo jugador importado en dos temporadas sin DNI), salvo que quedaría en dos planteles a la vez (409: "agregalo con su DNI, queda como pase") o repetido en el mismo plantel.
+- El DNI es dato personal: solo en el plantel privado (`GET /api/teams/{id}/roster`, capitán o admin) y en la solicitud de alta que ve el admin. `GET /api/public/teams/{id}/players?former=true` incluye a los que se fueron (el editor de resultados los muestra al final: "ya no está en el equipo").
+- Pendiente: que las sanciones pendientes sigan a la persona cuando cambia de equipo (hoy se muestran con el equipo donde se recibieron; no hay control de suspensiones al cargar partidos). Los totales anuales del Excel siguen siendo por ficha.
+
