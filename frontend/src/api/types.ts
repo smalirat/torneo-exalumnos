@@ -198,6 +198,10 @@ export interface Player {
   removalRequested: boolean
   /** Only in the private roster (captain / admin): "" while it has none; absent in public lists */
   dni?: string
+  /** A pending addition that is a transfer: the team the person is leaving */
+  transferFrom?: string
+  /** Left the team (transfer or removal with history); only in lists that include former players */
+  gone: boolean
 }
 
 export interface TeamRegistration {

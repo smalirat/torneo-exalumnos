@@ -14,6 +14,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Captains' changes waiting for the admin: a new team, a rename, deleting the team, adding / removing a player
@@ -40,7 +41,8 @@ public class RequestService {
         }
         for (var t : teamRepo.findByPendingNameNotNull()) out.add(req(Type.RENAME, t.getId(), t, t.getPendingName(), t.getPendingNameAt()));
         for (var t : teamRepo.findByDeletionRequestedAtNotNull()) out.add(req(Type.DELETE_TEAM, t.getId(), t, t.getName(), t.getDeletionRequestedAt()));
-        for (var p : playerRepo.findByApprovedFalseAndTeam_ApprovedTrue()) out.add(req(Type.PLAYER_ADD, p.getId(), p.getTeam(), playerName(p) + (p.getDni() == null ? "" : " · DNI " + p.getDni()), p.getRequestedAt()));
+        for (var p : playerRepo.findByApprovedFalseAndTeam_ApprovedTrue()) out.add(req(Type.PLAYER_ADD, p.getId(), p.getTeam(), playerName(p) + (p.getDni() == null ? "" : " · DNI " + p.getDni())
+                + Optional.ofNullable(teamService.transferFrom(p)).map(from -> " · pase desde " + from).orElse(""), p.getRequestedAt()));
         for (var p : playerRepo.findByRemovalRequestedAtNotNull()) out.add(req(Type.PLAYER_REMOVE, p.getId(), p.getTeam(), playerName(p), p.getRemovalRequestedAt()));
         for (var r : regRepo.findByApprovedFalse()) out.add(req(Type.REGISTRATION, r.getId(), r.getTeam(), r.getTournament().getName(), r.getRequestedAt()));
         // The one asking is the "captain" of a claim (so it shows among their own requests)
@@ -94,7 +96,7 @@ public class RequestService {
             case PLAYER_ADD -> {
                 var p = player(id);
                 if (p.isApproved()) throw done();
-                p.setApproved(true); p.setRequestedAt(null);
+                teamService.approveAddition(p);
                 log(p.getTeam(), type, playerName(p), true, null);
             }
             case PLAYER_REMOVE -> {
@@ -149,7 +151,7 @@ public class RequestService {
                 var p = player(id);
                 if (p.isApproved()) throw done();
                 log(p.getTeam(), type, playerName(p), false, why);
-                playerRepo.delete(p);
+                teamService.deleteFile(p);
             }
             case PLAYER_REMOVE -> {
                 var p = player(id);

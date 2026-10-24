@@ -26,8 +26,8 @@ class PlayerDniApiTests extends ApiTestSupport {
         long noDni = added.get(1).get("id").asLong();
         assertThat(added.get(1).get("dni").asText()).isEmpty();
 
-        // The same DNI is the same person: not again, in this team or another
-        post("/api/teams/" + other + "/players", "{\"players\":[{\"fullName\":\"Otro\",\"jerseyNo\":1,\"dni\":\"" + dni + "\"}]}", admin)
+        // The same DNI is the same person: not twice in the same roster (in another team it is a transfer: TransferApiTests)
+        post("/api/teams/" + team + "/players", "{\"players\":[{\"fullName\":\"Otro\",\"jerseyNo\":1,\"dni\":\"" + dni + "\"}]}", admin)
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.detail").value(org.hamcrest.Matchers.containsString("Pérez, Juan")));
         post("/api/teams/" + other + "/players", "{\"players\":[{\"fullName\":\"Corto\",\"jerseyNo\":1,\"dni\":\"123\"}]}", admin)

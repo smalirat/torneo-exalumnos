@@ -132,8 +132,8 @@ public class PublicApiController {
     }
 
     @GetMapping("/teams/{id}/players")
-    public List<ResponseDtos.PlayerRes> players(@PathVariable Long id) {
-        return teamService.players(id);
+    public List<ResponseDtos.PlayerRes> players(@PathVariable Long id, @RequestParam(defaultValue = "false") boolean former) {
+        return teamService.players(id, former);
     }
 
     @GetMapping("/zones/{id}/registrations")

@@ -246,7 +246,8 @@ const countLabel = (n: number) => (n === 1 ? t('teams.onePlayer') : t('teams.pla
                     :placeholder="t('teams.dniMissing')" :aria-label="t('teams.dniOf', { name: p.fullName })"
                     @change="setDni(team.id, p, $event)"
                   >
-                  <small v-if="!p.approved" class="state">{{ t('teams.playerPending') }}</small>
+                  <small v-if="!p.approved && p.transferFrom" class="state">{{ t('teams.transferPending', { team: p.transferFrom }) }}</small>
+                  <small v-else-if="!p.approved" class="state">{{ t('teams.playerPending') }}</small>
                   <small v-else-if="p.removalRequested" class="state">{{ t('teams.playerRemovalPending') }}</small>
                 </span>
                 <button

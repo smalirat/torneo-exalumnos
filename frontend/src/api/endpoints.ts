@@ -115,7 +115,8 @@ export const teamApi = {
   remove: (teamId: number) => del(`/api/teams/${teamId}`),
   get: (teamId: number) => get<TeamRef>(`/api/public/teams/${teamId}`),
   registrations: (teamId: number) => get<TeamRegistration[]>(`/api/public/teams/${teamId}/registrations`),
-  players: (teamId: number) => get<Player[]>(`/api/public/teams/${teamId}/players`),
+  /** Public roster; former = also the ones that left (to edit old results) */
+  players: (teamId: number, former = false) => get<Player[]>(`/api/public/teams/${teamId}/players${former ? '?former=true' : ''}`),
   addPlayer: (teamId: number, fullName: string, jerseyNo: number, dni: string | null) =>
     post<Player[]>(`/api/teams/${teamId}/players`, { players: [{ fullName, jerseyNo, dni }] }),
   deletePlayer: (teamId: number, playerId: number) => del(`/api/teams/${teamId}/players/${playerId}`),

@@ -153,6 +153,7 @@
     "pendingName": "Nombre pedido: {name}",
     "deletionRequested": "Baja del equipo pedida",
     "playerPending": "(pendiente)",
+    "transferPending": "(pase desde {team}, pendiente)",
     "dni": "DNI",
     "dniMissing": "Falta DNI",
     "dniOf": "DNI de {name}",
@@ -280,6 +281,7 @@
     "onlyPending": "Solo los que faltan",
     "openNext": "Al guardar, abrir el siguiente",
     "allLoaded": "Todos los partidos de esta fecha están cargados.",
+    "gonePlayer": "(ya no está en el equipo)",
     "saveDetails": "Guardar datos"
   },
   "rankings": {

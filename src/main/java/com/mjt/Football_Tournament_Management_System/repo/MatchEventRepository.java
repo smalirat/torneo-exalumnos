@@ -14,4 +14,5 @@ public interface MatchEventRepository extends JpaRepository<MatchEvent, Long> {
     List<MatchEvent> findByMatch_TournamentAndTypeIn(Tournament tournament, Collection<MatchEvent.Type> types);
     void deleteByMatch(MatchGame match);
     boolean existsByPlayer(Player player);
+    boolean existsByPlayerAndMatch_Tournament(Player player, Tournament tournament);
 }

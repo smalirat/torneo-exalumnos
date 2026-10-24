@@ -6,6 +6,7 @@ import com.mjt.Football_Tournament_Management_System.dto.TeamDtos;
 import com.mjt.Football_Tournament_Management_System.dto.ViewDtos;
 import com.mjt.Football_Tournament_Management_System.entire.AppUser;
 import com.mjt.Football_Tournament_Management_System.entire.MatchGame;
+import com.mjt.Football_Tournament_Management_System.entire.Person;
 import com.mjt.Football_Tournament_Management_System.entire.Player;
 import com.mjt.Football_Tournament_Management_System.entire.Registration;
 import com.mjt.Football_Tournament_Management_System.entire.Team;
@@ -25,6 +26,7 @@ import org.springframework.web.multipart.MultipartFile;
 import javax.imageio.ImageIO;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
 
@@ -33,6 +35,7 @@ import java.util.*;
 public class TeamService {
     private final TeamRepository teamRepo;
     private final PlayerRepository playerRepo;
+    private final PersonRepository personRepo;
     private final TournamentRepository tournamentRepo;
     private final RegistrationRepository regRepo;
     private final MatchRepository matchRepo;
@@ -110,7 +113,7 @@ public class TeamService {
     public List<ResponseDtos.TeamSummaryRes> listFor(Authentication auth) {
         var teams = isAdmin(auth) ? teamRepo.findAllByOrderByNameAsc()
                 : teamRepo.findByCaptain_UsernameOrderByNameAsc(auth.getName());
-        return teams.stream().map(t -> ResponseDtos.TeamSummaryRes.of(t, playerRepo.countByTeam(t))).toList();
+        return teams.stream().map(t -> ResponseDtos.TeamSummaryRes.of(t, playerRepo.countByTeamAndLeftAtIsNullAndApprovedTrue(t))).toList();
     }
 
     @Transactional
@@ -149,7 +152,11 @@ public class TeamService {
     @Transactional
     public void removeTeam(Team t) {
         checkDeletable(t);
-        playerRepo.deleteAll(playerRepo.findByTeamOrderByJerseyNoAscFullNameAsc(t));
+        var files = playerRepo.findByTeamOrderByJerseyNoAscFullNameAsc(t);
+        var people = files.stream().map(Player::getPerson).distinct().toList();
+        playerRepo.deleteAll(files);
+        playerRepo.flush();
+        for (var person : people) if (playerRepo.findByPerson(person).isEmpty()) personRepo.delete(person);
         var captain = t.getCaptain();
         teamRepo.delete(t);
         // A pending captain only existed for this team; a real account stays (it may register another team)
@@ -196,29 +203,42 @@ public class TeamService {
     public void deletePlayer(Long teamId, Long playerId, Authentication auth) {
         var team = ownedTeam(teamId, auth);
         var player = playerRepo.findById(playerId).orElseThrow(() -> NotFoundException.of("Jugador", playerId));
-        if (player.getTeam() == null || !player.getTeam().getId().equals(team.getId())) {
+        if (player.getTeam() == null || !player.getTeam().getId().equals(team.getId()) || player.getLeftAt() != null) {
             throw NotFoundException.of("Jugador", playerId);
         }
-        checkRemovable(player);
-        if (!isAdmin(auth) && player.isApproved() && team.isApproved()) {
+        if (!player.isApproved()) { // withdrawing an addition that was waiting for the admin
+            deleteFile(player);
+            return;
+        }
+        if (!isAdmin(auth) && team.isApproved()) {
             player.setRemovalRequestedAt(LocalDateTime.now()); // the admin decides
             return;
         }
-        playerRepo.delete(player);
+        removePlayer(player);
     }
 
-    private void checkRemovable(Player player) {
+    /**
+     * The player leaves the team (removal approved or done by the admin). With goals, cards, stats or sanctions the
+     * file is closed and kept (that history belongs to the team); without any, it is deleted.
+     */
+    @Transactional
+    public void removePlayer(Player player) {
         if (eventRepo.existsByPlayer(player) || statRepo.existsByPlayer(player)
                 || sanctionRepo.existsByPlayer(player) || yellowRepo.existsByPlayer(player)) {
-            throw new ConflictException("El jugador tiene goles, tarjetas, estadísticas o sanciones cargadas; no se puede eliminar");
+            player.setLeftAt(LocalDate.now());
+            player.setRemovalRequestedAt(null);
+        } else {
+            deleteFile(player);
         }
     }
 
-    /** Removes a player (used when approving a removal request). */
+    /** Deletes a file without history; the person goes too if it has no other file */
     @Transactional
-    public void removePlayer(Player player) {
-        checkRemovable(player);
+    public void deleteFile(Player player) {
+        var person = player.getPerson();
         playerRepo.delete(player);
+        playerRepo.flush();
+        if (playerRepo.findByPerson(person).isEmpty()) personRepo.delete(person);
     }
 
     /** Jersey number and DNI: the captain changes them directly. */
@@ -228,22 +248,43 @@ public class TeamService {
         var player = playerRepo.findById(playerId).orElseThrow(() -> NotFoundException.of("Jugador", playerId));
         if (player.getTeam() == null || !player.getTeam().getId().equals(team.getId())) throw NotFoundException.of("Jugador", playerId);
         if (req.getJerseyNo() != null) player.setJerseyNo(req.getJerseyNo());
-        if (req.getDni() != null) player.setDni(checkDni(req.getDni(), player.getId()));
-        return ResponseDtos.PlayerRes.withDni(player);
+        if (req.getDni() != null) setDni(player, req.getDni());
+        return ResponseDtos.PlayerRes.withDni(player, transferFrom(player));
     }
 
     /**
-     * A DNI as stored: only its digits ("30.123.456" -> "30123456"), 7 or 8 of them, and nobody else's: the same DNI
-     * is the same person. Blank = no DNI. playerId is the player being edited (null for a new one).
+     * The DNI is the person's. If another person already has it, it is the same person: both are merged (e.g. the
+     * same player imported in two seasons without DNI), unless that leaves them in two rosters at once.
      */
-    private String checkDni(String raw, Long playerId) {
+    private void setDni(Player player, String raw) {
+        var dni = normalizeDni(raw);
+        var person = player.getPerson();
+        if (Objects.equals(dni, person.getDni())) return;
+        var other = dni == null ? null : personRepo.findByDni(dni).orElse(null);
+        if (other == null) {
+            person.setDni(dni);
+            return;
+        }
+        for (var o : playerRepo.findByPerson(other)) {
+            if (o.getLeftAt() != null || !o.isApproved()) continue;
+            if (o.getTeam().getId().equals(player.getTeam().getId())) {
+                throw new ConflictException("El DNI " + dni + " es de " + o.getFullName() + ", que ya está en este plantel");
+            }
+            if (player.getLeftAt() == null) {
+                throw new ConflictException("El DNI " + dni + " es de " + o.getFullName() + ", que está en el plantel de "
+                        + o.getTeam().getName() + ". Para pasarlo, agregalo con su DNI (queda como pase)");
+            }
+        }
+        for (var mine : playerRepo.findByPerson(person)) mine.setPerson(other);
+        playerRepo.flush();
+        personRepo.delete(person);
+    }
+
+    /** Only its digits ("30.123.456" -> "30123456"), 7 or 8 of them; blank = no DNI */
+    private static String normalizeDni(String raw) {
         var dni = raw.replaceAll("[\\s.\\-]", "");
         if (dni.isEmpty()) return null;
         if (!dni.matches("\\d{7,8}")) throw new BadRequestException("El DNI tiene que tener 7 u 8 números");
-        playerRepo.findByDni(dni).filter(other -> !other.getId().equals(playerId)).ifPresent(other -> {
-            throw new ConflictException("El DNI " + dni + " ya es de " + other.getFullName()
-                    + (other.getTeam() == null ? "" : " (" + other.getTeam().getName() + ")"));
-        });
         return dni;
     }
 
@@ -266,35 +307,103 @@ public class TeamService {
                 .map(ResponseDtos.TeamRegistrationRes::from).toList();
     }
 
-    /** Public roster: approved players only (one with a removal request still plays until approved). */
-    public List<ResponseDtos.PlayerRes> players(Long teamId) {
+    /**
+     * Public roster: approved players still in the team (one with a removal request still plays until approved).
+     * formerToo adds the ones that left, to edit old results.
+     */
+    public List<ResponseDtos.PlayerRes> players(Long teamId, boolean formerToo) {
         var t = findTeam(teamId);
         if (!t.isApproved()) throw NotFoundException.of("Equipo", teamId);
-        return playerRepo.findByTeamAndApprovedTrueOrderByJerseyNoAscFullNameAsc(t).stream()
-                .map(ResponseDtos.PlayerRes::from).toList();
+        var list = formerToo
+                ? playerRepo.findByTeamOrderByJerseyNoAscFullNameAsc(t).stream().filter(Player::isApproved).toList()
+                : playerRepo.findByTeamAndApprovedTrueAndLeftAtIsNullOrderByJerseyNoAscFullNameAsc(t);
+        return list.stream().map(ResponseDtos.PlayerRes::from).toList();
     }
 
-    /** Full roster for its captain or the admin, pending players included. */
+    /** Roster now for its captain or the admin: pending additions (and transfers) included, the ones that left not. */
     @Transactional(readOnly = true)
     public List<ResponseDtos.PlayerRes> roster(Long teamId, Authentication auth) {
-        return playerRepo.findByTeamOrderByJerseyNoAscFullNameAsc(ownedTeam(teamId, auth)).stream()
-                .map(ResponseDtos.PlayerRes::withDni).toList();
+        return playerRepo.findByTeamAndLeftAtIsNullOrderByJerseyNoAscFullNameAsc(ownedTeam(teamId, auth)).stream()
+                .map(p -> ResponseDtos.PlayerRes.withDni(p, transferFrom(p))).toList();
     }
 
+    /**
+     * New files in the roster. A DNI that is already someone's is that person: if they are in another team it is a
+     * transfer, allowed while they did not play for that team in an edition this one is registered in. A captain's
+     * additions (transfers included) wait for the admin; the admin's apply right away and close the old file.
+     */
     @Transactional
     public List<ResponseDtos.PlayerRes> addPlayers(Long teamId, TeamDtos.AddPlayersReq req, Authentication auth) {
         var team = ownedTeam(teamId, auth);
-        List<Player> list = new ArrayList<>();
-        boolean needsApproval = !isAdmin(auth);
+        boolean admin = isAdmin(auth);
         var dnis = new HashSet<String>();
-        for (var p : req.getPlayers()) {
-            var pl = new Player(); pl.setTeam(team); pl.setFullName(p.getFullName()); pl.setJerseyNo(p.getJerseyNo());
-            pl.setDni(p.getDni() == null ? null : checkDni(p.getDni(), null));
-            if (pl.getDni() != null && !dnis.add(pl.getDni())) throw new ConflictException("El DNI " + pl.getDni() + " está repetido");
-            if (needsApproval) { pl.setApproved(false); pl.setRequestedAt(LocalDateTime.now()); }
-            list.add(pl);
+        var out = new ArrayList<ResponseDtos.PlayerRes>();
+        for (var item : req.getPlayers()) {
+            var dni = item.getDni() == null ? null : normalizeDni(item.getDni());
+            if (dni != null && !dnis.add(dni)) throw new ConflictException("El DNI " + dni + " está repetido");
+            var person = dni == null ? null : personRepo.findByDni(dni).orElse(null);
+            if (person != null) {
+                for (var f : playerRepo.findByPerson(person)) {
+                    if (f.getLeftAt() == null && f.getTeam().getId().equals(team.getId())) {
+                        throw new ConflictException(f.getFullName() + " (DNI " + dni + ") ya está en el plantel");
+                    }
+                }
+            } else {
+                person = personRepo.save(new Person(null, item.getFullName().trim(), dni));
+            }
+            var pl = new Player();
+            pl.setTeam(team); pl.setPerson(person); pl.setJerseyNo(item.getJerseyNo());
+            pl.setFullName(dni != null && person.getFullName() != null ? person.getFullName() : item.getFullName().trim());
+            pl.setJoinedAt(LocalDate.now());
+            checkTransfer(pl);
+            if (!admin) { pl.setApproved(false); pl.setRequestedAt(LocalDateTime.now()); }
+            playerRepo.save(pl);
+            if (admin) closeOtherFiles(pl);
+            out.add(ResponseDtos.PlayerRes.withDni(pl, transferFrom(pl)));
         }
-        return playerRepo.saveAll(list).stream().map(ResponseDtos.PlayerRes::withDni).toList();
+        return out;
+    }
+
+    /** The admin approves an addition: if it is a transfer it is checked again and the old file is closed */
+    @Transactional
+    public void approveAddition(Player p) {
+        checkTransfer(p);
+        p.setApproved(true);
+        p.setRequestedAt(null);
+        p.setJoinedAt(LocalDate.now());
+        closeOtherFiles(p);
+    }
+
+    /** For an addition still waiting: the team the person would leave (their file in another roster), else null */
+    public String transferFrom(Player p) {
+        if (p.isApproved()) return null;
+        return playerRepo.findByPerson(p.getPerson()).stream()
+                .filter(o -> !Objects.equals(o.getId(), p.getId()) && o.isActive() && !o.getTeam().getId().equals(p.getTeam().getId()))
+                .map(o -> o.getTeam().getName()).findFirst().orElse(null);
+    }
+
+    /** Nobody plays the same edition for two teams: no transfer if they already played it for another team */
+    private void checkTransfer(Player newFile) {
+        var editions = regRepo.findByTeamOrderByIdDesc(newFile.getTeam()).stream().map(Registration::getTournament).toList();
+        for (var other : playerRepo.findByPerson(newFile.getPerson())) {
+            if (Objects.equals(other.getId(), newFile.getId()) || other.getTeam().getId().equals(newFile.getTeam().getId())) continue;
+            for (var edition : editions) {
+                if (eventRepo.existsByPlayerAndMatch_Tournament(other, edition)) {
+                    throw new ConflictException(newFile.getFullName() + " ya jugó el " + edition.getName() + " con "
+                            + other.getTeam().getName() + ": esa edición no puede jugarla en otro equipo");
+                }
+            }
+        }
+    }
+
+    /** The person keeps a single file in a roster: the others (another team's) are closed */
+    private void closeOtherFiles(Player kept) {
+        for (var o : playerRepo.findByPerson(kept.getPerson())) {
+            if (!Objects.equals(o.getId(), kept.getId()) && o.getLeftAt() == null && o.isApproved()) {
+                o.setLeftAt(LocalDate.now());
+                o.setRemovalRequestedAt(null);
+            }
+        }
     }
 
     @Transactional

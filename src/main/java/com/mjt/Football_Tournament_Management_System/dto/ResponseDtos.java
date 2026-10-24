@@ -133,16 +133,21 @@ public class ResponseDtos {
     /** A player. dni is personal data: only in the private roster (withDni), left out of public lists */
     public record PlayerRes(Long id, String fullName, int jerseyNo, Long teamId, boolean approved, boolean removalRequested,
                             @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
-                            String dni) {
+                            String dni,
+                            /** A pending addition that is a transfer: the team the person is leaving */
+                            @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
+                            String transferFrom,
+                            /** The file is closed (the person left the team); only in lists that include former players */
+                            boolean gone) {
         public static PlayerRes from(Player p) {
             return new PlayerRes(p.getId(), p.getFullName(), p.getJerseyNo(), p.getTeam().getId(), p.isApproved(),
-                    p.getRemovalRequestedAt() != null, null);
+                    p.getRemovalRequestedAt() != null, null, null, p.getLeftAt() != null);
         }
 
-        /** For the team's captain or the admin; "" when the player has no DNI yet */
-        public static PlayerRes withDni(Player p) {
+        /** For the team's captain or the admin; dni "" when the player has none yet */
+        public static PlayerRes withDni(Player p, String transferFrom) {
             return new PlayerRes(p.getId(), p.getFullName(), p.getJerseyNo(), p.getTeam().getId(), p.isApproved(),
-                    p.getRemovalRequestedAt() != null, p.getDni() == null ? "" : p.getDni());
+                    p.getRemovalRequestedAt() != null, p.getDni() == null ? "" : p.getDni(), transferFrom, p.getLeftAt() != null);
         }
     }
 

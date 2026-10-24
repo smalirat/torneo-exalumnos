@@ -288,7 +288,6 @@ class AuthAndTeamApiTests {
         assignToZone(admin, zone, mine, rival);
         score(admin, scheduleMatch(admin, zone, mine, rival), "{\"events\":[" + event(scorer, "GOAL") + "]}");
 
-        delete("/api/teams/" + mine + "/players/" + scorer, captain).andExpect(status().isConflict());
         delete("/api/teams/" + mine + "/players/" + bench, register(uniqueUser())).andExpect(status().isForbidden());
         delete("/api/teams/" + mine + "/players/" + bench, captain).andExpect(status().isNoContent());
         // A captain's removal waits for the admin
@@ -297,6 +296,14 @@ class AuthAndTeamApiTests {
         post("/api/admin/requests/PLAYER_REMOVE/" + bench + "/approve", "", admin).andExpect(status().isNoContent());
         mvc.perform(get("/api/teams").header("Authorization", "Bearer " + captain))
                 .andExpect(jsonPath("$[0].playerCount").value(1));
+
+        // With a goal the player can leave too: the file is closed, the goal stays with the team
+        delete("/api/teams/" + mine + "/players/" + scorer, admin).andExpect(status().isNoContent());
+        mvc.perform(get("/api/teams").header("Authorization", "Bearer " + captain))
+                .andExpect(jsonPath("$[0].playerCount").value(0));
+        mvc.perform(get("/api/public/teams/" + mine + "/players")).andExpect(jsonPath("$.length()").value(0));
+        mvc.perform(get("/api/public/teams/" + mine + "/players?former=true"))
+                .andExpect(jsonPath("$[0].id").value(scorer)).andExpect(jsonPath("$[0].gone").value(true));
     }
 
     @Test
@@ -519,8 +526,9 @@ class AuthAndTeamApiTests {
                 .andExpect(jsonPath("$.length()").value(1))
                 .andExpect(jsonPath("$[0].value").value(10));
 
-        // A player with stats cannot be removed from the roster
-        delete("/api/teams/" + team + "/players/" + cubela, admin).andExpect(status().isConflict());
+        // A player with stats leaves the roster but keeps them (the file is closed, not deleted)
+        delete("/api/teams/" + team + "/players/" + cubela, admin).andExpect(status().isNoContent());
+        mvc.perform(get("/api/public/seasons/" + season + "/goalkeepers")).andExpect(jsonPath("$.length()").value(1));
     }
 
     @Test

@@ -53,11 +53,13 @@ const needsPenalties = computed(() =>
 
 onMounted(async () => {
   const [home, away, existing] = await Promise.all([
-    teamApi.players(props.match.homeTeam.id),
-    teamApi.players(props.match.awayTeam.id),
+    teamApi.players(props.match.homeTeam.id, true),
+    teamApi.players(props.match.awayTeam.id, true),
     props.match.status === 'FINISHED' ? matchApi.events(props.match.id) : Promise.resolve([]),
   ])
-  rosters.value = { home, away }
+  // Current players first; the ones that left the team after (they may have played this match)
+  const order = (list: Player[]) => [...list.filter((p) => !p.gone), ...list.filter((p) => p.gone)]
+  rosters.value = { home: order(home), away: order(away) }
   picked.value = { home: home[0]?.id ?? null, away: away[0]?.id ?? null }
   events.value = existing.map((e) => ({
     side: e.team.id === props.match.homeTeam.id ? 'home' : 'away', playerId: e.player.id, type: e.type,
@@ -166,7 +168,7 @@ async function save() {
             <p v-if="rosters[side].length === 0" class="muted small">{{ t('results.noRoster') }}</p>
             <template v-else>
               <select v-model="picked[side]" class="select" :aria-label="t('results.player')">
-                <option v-for="p in rosters[side]" :key="p.id" :value="p.id">{{ p.jerseyNo }} · {{ p.fullName }}</option>
+                <option v-for="p in rosters[side]" :key="p.id" :value="p.id">{{ p.jerseyNo }} · {{ p.fullName }}<template v-if="p.gone"> {{ t('results.gonePlayer') }}</template></option>
               </select>
               <div class="type-buttons">
                 <button v-for="type in EVENT_TYPES" :key="type" type="button" :class="['btn', 'secondary', 'small-btn', type]"

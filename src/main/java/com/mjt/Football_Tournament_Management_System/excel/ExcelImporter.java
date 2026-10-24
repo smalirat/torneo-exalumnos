@@ -32,6 +32,7 @@ public class ExcelImporter {
     private final ZoneRepository zoneRepo;
     private final TeamRepository teamRepo;
     private final PlayerRepository playerRepo;
+    private final PersonRepository personRepo;
     private final RegistrationRepository regRepo;
     private final MatchRepository matchRepo;
     private final MatchEventRepository eventRepo;
@@ -636,6 +637,7 @@ public class ExcelImporter {
                 var p = new Player();
                 p.setFullName(name.trim());
                 p.setTeam(team);
+                p.setPerson(personRepo.save(new Person(null, name.trim(), null)));
                 report.created(PLAYERS, p.getFullName() + " (" + team.getName() + ")");
                 return playerRepo.save(p);
             });
