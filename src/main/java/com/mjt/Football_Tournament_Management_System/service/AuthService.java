@@ -57,7 +57,10 @@ public class AuthService {
             throw new BadRequestException("Elegí crear un equipo nuevo o pedir ser capitán de uno que ya está en el torneo");
         }
         checkUsernameFree(req.getUsername());
-        var user = userRepo.save(new AppUser(null, req.getUsername(), encoder.encode(req.getPassword()), AppUser.Role.CAPTAIN));
+        var newUser = new AppUser(null, req.getUsername(), encoder.encode(req.getPassword()), AppUser.Role.CAPTAIN);
+        newUser.setEmail(req.getEmail().trim());
+        newUser.setPhone(req.getPhone().trim());
+        var user = userRepo.save(newUser);
         // Both wait for the admin; if they fail (e.g. the team name exists) the user is not created either
         if (newTeam) teamService.createTeamFor(user, req.getTeamName().trim());
         else teamService.requestClaim(user, req.getClaimTeamId());
@@ -87,6 +90,8 @@ public class AuthService {
         captain.setPasswordHash(encoder.encode(req.getPassword()));
         captain.setPending(false);
         captain.setInviteToken(null);
+        captain.setEmail(req.getEmail().trim());
+        captain.setPhone(req.getPhone().trim());
         userRepo.flush();
         return token(req.getUsername());
     }
@@ -125,7 +130,16 @@ public class AuthService {
     public AuthDtos.UserRes me(String username) {
         var u = userRepo.findByUsername(username).orElseThrow(() -> NotFoundException.of("Usuario", username));
         var teamIds = teamRepo.findByCaptain(u).stream().map(Team::getId).toList();
-        return new AuthDtos.UserRes(u.getId(), u.getUsername(), u.getRole().name(), teamIds);
+        return new AuthDtos.UserRes(u.getId(), u.getUsername(), u.getRole().name(), teamIds, u.getEmail(), u.getPhone());
+    }
+
+    /** The user's own contact ("Mis datos") */
+    @Transactional
+    public AuthDtos.UserRes updateContact(String username, AuthDtos.ContactReq req) {
+        var u = userRepo.findByUsername(username).orElseThrow(() -> NotFoundException.of("Usuario", username));
+        u.setEmail(req.getEmail().trim());
+        u.setPhone(req.getPhone().trim());
+        return me(username);
     }
 
     private AuthDtos.TokenRes token(String username) {

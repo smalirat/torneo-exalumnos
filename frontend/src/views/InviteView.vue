@@ -20,6 +20,8 @@ const password = ref('')
 const error = ref('')
 const fieldErrors = ref<Record<string, string>>({})
 const busy = ref(false)
+const email = ref('')
+const phone = ref('')
 
 /** Logged-in user who can take the team with their own account (a captain without a team) */
 const canAccept = computed(() => currentUser.value?.role === 'CAPTAIN' && currentUser.value.teamIds.length === 0)
@@ -47,7 +49,7 @@ async function run(action: () => Promise<void>) {
   }
 }
 
-const claim = () => run(() => claimInvite(token, username.value, password.value))
+const claim = () => run(() => claimInvite(token, username.value, password.value, { email: email.value.trim(), phone: phone.value.trim() }))
 const accept = () => run(() => acceptInvite(token))
 </script>
 
@@ -81,6 +83,16 @@ const accept = () => run(() => acceptInvite(token))
             <label for="password">{{ t('auth.password') }}</label>
             <input id="password" v-model="password" class="input" type="password" autocomplete="new-password" required />
             <span v-if="fieldErrors.password" class="error">{{ fieldErrors.password }}</span>
+          </div>
+          <div class="field">
+            <label for="email">{{ t('contact.email') }}</label>
+            <input id="email" v-model="email" class="input" type="email" autocomplete="email" maxlength="120" required />
+            <span v-if="fieldErrors.email" class="error">{{ fieldErrors.email }}</span>
+          </div>
+          <div class="field">
+            <label for="phone">{{ t('contact.phone') }}</label>
+            <input id="phone" v-model="phone" class="input" type="tel" autocomplete="tel" maxlength="30" required :placeholder="t('contact.phonePlaceholder')" />
+            <span v-if="fieldErrors.phone" class="error">{{ fieldErrors.phone }}</span>
           </div>
           <p v-if="error" class="error">{{ error }}</p>
           <button class="btn" :disabled="busy">{{ t('invite.submit') }}</button>

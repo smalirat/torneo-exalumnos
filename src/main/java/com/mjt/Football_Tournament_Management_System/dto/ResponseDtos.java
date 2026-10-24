@@ -36,11 +36,12 @@ public class ResponseDtos {
      */
     public record TeamSummaryRes(Long id, String name, String crest, Long captainId, String captainUsername,
                                  boolean captainPending, int playerCount, boolean approved, String pendingName,
-                                 boolean deletionRequested) {
+                                 boolean deletionRequested, String captainEmail, String captainPhone) {
         public static TeamSummaryRes of(Team t, int playerCount) {
             var c = t.getCaptain();
             return new TeamSummaryRes(t.getId(), t.getName(), crestUrl(t), c.getId(), c.isPending() ? null : c.getUsername(),
-                    c.isPending(), playerCount, t.isApproved(), t.getPendingName(), t.getDeletionRequestedAt() != null);
+                    c.isPending(), playerCount, t.isApproved(), t.getPendingName(), t.getDeletionRequestedAt() != null,
+                    c.isPending() ? null : c.getEmail(), c.isPending() ? null : c.getPhone());
         }
     }
 

@@ -80,6 +80,12 @@ Campeonato (Tournament)   etapa APERTURA / CLAUSURA
 - Un capitán que se registra solo (`/registro`) puede crear **un** equipo. Nadie puede elegir un usuario que empiece con `pendiente-`.
 - Un equipo que se da de baja conserva su capitán (por si vuelve). Al **borrar** un equipo se borra su capitán solo si seguía pendiente.
 
+## Contacto del capitán
+
+- `users.email` y `users.phone` (`V16`). **Obligatorios al registrarse** (`POST /api/auth/register`) y al reclamar un equipo por link de invitación (`POST /api/auth/claim`); mail válido y teléfono con números, espacios, guiones, paréntesis y `+`.
+- Los usuarios de antes quedan sin datos: en Registro de equipos ven un aviso "Te falta cargar tu mail y teléfono" y los completan en **Mis datos** (tocando su usuario en la barra lateral; `PUT /api/auth/me`). `GET /api/auth/me` los devuelve.
+- Privados: solo el propio usuario y el admin, que los ve junto al capitán de cada equipo en Registro de equipos (`GET /api/teams`: `captainEmail`, `captainPhone`, con links mailto/tel). Nunca en endpoints públicos.
+
 ## Escudos
 
 - Cada equipo puede tener un escudo (PNG/JPG hasta 2 MB; el navegador lo achica a 256 px PNG antes de subirlo). La imagen va en `team_crests` y `teams.crest_version` cambia en cada subida.

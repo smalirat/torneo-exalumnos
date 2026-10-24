@@ -72,7 +72,7 @@ class AuthAndTeamApiTests {
 
         String user = uniqueUser();
         register(user);
-        post("/api/auth/register", "{\"username\":\"" + user + "\",\"password\":\"password123\",\"teamName\":\"Otro "
+        post("/api/auth/register", "{\"username\":\"" + user + "\",\"password\":\"password123\",\"email\":\"capi@mail.com\",\"phone\":\"11 5555-1234\",\"teamName\":\"Otro "
                 + UUID.randomUUID() + "\"}", null).andExpect(status().isConflict());
         // Signing up goes with a team: a new one or one without captain
         post("/api/auth/register", creds(uniqueUser()), null).andExpect(status().isBadRequest());
@@ -1075,12 +1075,12 @@ class AuthAndTeamApiTests {
     private String uniqueUser() { return "u" + UUID.randomUUID().toString().substring(0, 8); }
 
     private String creds(String user) {
-        return "{\"username\":\"" + user + "\",\"password\":\"password123\"}";
+        return "{\"username\":\"" + user + "\",\"password\":\"password123\",\"email\":\"capi@mail.com\",\"phone\":\"11 5555-1234\"}";
     }
 
     /** Signing up goes with a new team (in review) */
     private String register(String user) throws Exception {
-        return read(post("/api/auth/register", "{\"username\":\"" + user + "\",\"password\":\"password123\",\"teamName\":\"Team "
+        return read(post("/api/auth/register", "{\"username\":\"" + user + "\",\"password\":\"password123\",\"email\":\"capi@mail.com\",\"phone\":\"11 5555-1234\",\"teamName\":\"Team "
                 + UUID.randomUUID() + "\"}", null).andExpect(status().isCreated())).get("token").asText();
     }
 

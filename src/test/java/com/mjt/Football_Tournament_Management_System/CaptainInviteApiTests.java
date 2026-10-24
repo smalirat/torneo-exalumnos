@@ -66,13 +66,13 @@ class CaptainInviteApiTests extends ApiTestSupport {
 
     @Test
     void signUpCannotUseThePendingPrefixAndCaptainsHaveASingleTeam() throws Exception {
-        post("/api/auth/register", "{\"username\":\"pendiente-99\",\"password\":\"password123\"}", null)
+        post("/api/auth/register", "{\"username\":\"pendiente-99\",\"password\":\"password123\",\"email\":\"capi@mail.com\",\"phone\":\"11 5555-1234\"}", null)
                 .andExpect(status().isBadRequest());
         String captain = newUser(); // signs up with their team
         post("/api/teams/register", "{\"name\":\"Dos " + UUID.randomUUID() + "\"}", captain).andExpect(status().isConflict());
     }
 
     private static String claim(String token, String username) {
-        return "{\"token\":\"" + token + "\",\"username\":\"" + username + "\",\"password\":\"password123\"}";
+        return "{\"token\":\"" + token + "\",\"username\":\"" + username + "\",\"password\":\"password123\",\"email\":\"capi@mail.com\",\"phone\":\"11 5555-1234\"}";
     }
 }

@@ -148,6 +148,9 @@ export interface TeamSummary {
   captainId: number
   /** null while the captain is pending (nobody claimed the team yet) */
   captainUsername: string | null
+  /** The captain's contact (null while pending or not completed yet) */
+  captainEmail: string | null
+  captainPhone: string | null
   captainPending: boolean
   playerCount: number
   /** false while a captain's new team waits for the admin */
@@ -370,4 +373,7 @@ export interface Me {
   username: string
   role: 'ADMIN' | 'CAPTAIN'
   teamIds: number[]
+  /** null for users from before they were asked */
+  email: string | null
+  phone: string | null
 }

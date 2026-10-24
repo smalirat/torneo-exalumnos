@@ -36,7 +36,7 @@ abstract class ApiTestSupport {
     /** Registers a fresh captain user and returns its token. */
     String newUser() throws Exception {
         String user = "u" + UUID.randomUUID().toString().substring(0, 8);
-        return read(post("/api/auth/register", "{\"username\":\"" + user + "\",\"password\":\"password123\",\"teamName\":\"Team "
+        return read(post("/api/auth/register", "{\"username\":\"" + user + "\",\"password\":\"password123\",\"email\":\"capi@mail.com\",\"phone\":\"11 5555-1234\",\"teamName\":\"Team "
                 + UUID.randomUUID() + "\"}", null).andExpect(status().isCreated())).get("token").asText();
     }
 

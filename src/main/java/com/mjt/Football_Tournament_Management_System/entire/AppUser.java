@@ -31,15 +31,21 @@ public class AppUser {
     @Column(unique = true, length = 64)
     private String inviteToken;
 
+    /** Contact (private: the user and the admin). Asked when signing up; null for older users until they complete it */
+    @Column(length = 120)
+    private String email;
+    @Column(length = 30)
+    private String phone;
+
     // ADMIN manages everything; CAPTAIN can only edit the team they own
     public enum Role { ADMIN, CAPTAIN }
 
     public AppUser(Long id, String username, String passwordHash, Role role) {
-        this(id, username, passwordHash, role, false, null);
+        this(id, username, passwordHash, role, false, null, null, null);
     }
 
     /** Placeholder captain for a team created without one; "!" is not a valid hash, so no password matches. */
     public static AppUser pendingCaptain() {
-        return new AppUser(null, PENDING_PREFIX + UUID.randomUUID().toString().substring(0, 12), "!", Role.CAPTAIN, true, null);
+        return new AppUser(null, PENDING_PREFIX + UUID.randomUUID().toString().substring(0, 12), "!", Role.CAPTAIN, true, null, null, null);
     }
 }

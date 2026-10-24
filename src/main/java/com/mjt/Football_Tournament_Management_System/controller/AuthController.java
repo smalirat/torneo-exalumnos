@@ -36,4 +36,10 @@ public class AuthController {
     public AuthDtos.UserRes me(Authentication auth) {
         return authService.me(auth.getName());
     }
+
+    @PutMapping("/me")
+    @Operation(summary = "Update the current user's contact (email and phone)")
+    public AuthDtos.UserRes updateMe(@Valid @RequestBody AuthDtos.ContactReq req, Authentication auth) {
+        return authService.updateContact(auth.getName(), req);
+    }
 }

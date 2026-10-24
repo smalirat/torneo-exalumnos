@@ -12,18 +12,23 @@ export const leagueApi = {
 export const authApi = {
   login: (username: string, password: string) => post<TokenRes>('/api/auth/login', { username, password }),
   /** Signing up goes with a team: a new one (teamName) or one without captain (claimTeamId); both need approval */
-  register: (username: string, password: string, team: SignUpTeam) =>
-    post<TokenRes>('/api/auth/register', { username, password, ...team }),
+  register: (username: string, password: string, team: SignUpTeam, contact: Contact) =>
+    post<TokenRes>('/api/auth/register', { username, password, ...team, ...contact }),
   me: () => get<Me>('/api/auth/me'),
+  /** "Mis datos": the user's own email and phone */
+  updateMe: (contact: Contact) => put<Me>('/api/auth/me', contact),
   /** Captain invitations: teams created by the Excel / an admin start with a pending captain */
   invite: (teamId: number) => post<InviteRes>(`/api/admin/teams/${teamId}/invite`),
   inviteInfo: (token: string) => get<{ teamName: string }>(`/api/auth/invites/${token}`),
-  claim: (token: string, username: string, password: string) =>
-    post<TokenRes>('/api/auth/claim', { token, username, password }),
+  claim: (token: string, username: string, password: string, contact: Contact) =>
+    post<TokenRes>('/api/auth/claim', { token, username, password, ...contact }),
   acceptInvite: (token: string) => post<Me>(`/api/me/invites/${token}/accept`),
 }
 
 export type SignUpTeam = { teamName: string } | { claimTeamId: number }
+
+/** A captain's contact, asked when signing up (private: the user and the admin) */
+export type Contact = { email: string; phone: string }
 
 /** Body for creating/updating a tournament (status is ignored on create). */
 export interface TournamentInput {

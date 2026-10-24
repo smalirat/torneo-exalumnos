@@ -25,7 +25,7 @@ class CaptainClaimApiTests extends ApiTestSupport {
         // One request per team: someone else cannot ask for it (and their user is not created)
         String late = "late" + UUID.randomUUID().toString().substring(0, 6);
         post("/api/auth/register", signUp(late, team), null).andExpect(status().isConflict());
-        post("/api/auth/login", "{\"username\":\"" + late + "\",\"password\":\"password123\"}", null).andExpect(status().isUnauthorized());
+        post("/api/auth/login", "{\"username\":\"" + late + "\",\"password\":\"password123\",\"email\":\"capi@mail.com\",\"phone\":\"11 5555-1234\"}", null).andExpect(status().isUnauthorized());
 
         post("/api/admin/requests/CLAIM/" + team + "/approve", "", admin).andExpect(status().isNoContent());
         get("/api/auth/me", token).andExpect(jsonPath("$.teamIds[0]").value(team));
@@ -58,6 +58,6 @@ class CaptainClaimApiTests extends ApiTestSupport {
     }
 
     private static String signUp(String user, long claimTeamId) {
-        return "{\"username\":\"" + user + "\",\"password\":\"password123\",\"claimTeamId\":" + claimTeamId + "}";
+        return "{\"username\":\"" + user + "\",\"password\":\"password123\",\"email\":\"capi@mail.com\",\"phone\":\"11 5555-1234\",\"claimTeamId\":" + claimTeamId + "}";
     }
 }

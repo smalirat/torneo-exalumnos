@@ -615,5 +615,16 @@
     "help": "Se cruzan según la tabla de cada zona en este momento, sin repetir rival. Una fecha por semana desde el primer partido; si una zona tiene más equipos, los que sobran quedan libres. Suman en la tabla de la zona de cada equipo.",
     "preview": "Ver cruces",
     "create": "Crear {n} partidos"
+  },
+  "contact": {
+    "title": "Mis datos",
+    "help": "Tu mail y teléfono solo los ve el organizador, para contactarte.",
+    "email": "Mail",
+    "phone": "Teléfono",
+    "phonePlaceholder": "11 5555-1234",
+    "save": "Guardar",
+    "missing": "Te falta cargar tu mail y teléfono para que el organizador pueda contactarte.",
+    "complete": "Completar",
+    "missingShort": "sin mail ni teléfono"
   }
 }

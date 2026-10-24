@@ -19,6 +19,8 @@ const password = ref('')
 const error = ref('')
 const fieldErrors = ref<Record<string, string>>({})
 const busy = ref(false)
+const email = ref('')
+const phone = ref('')
 
 // Sign-up goes with a team: a new one, or one already in the league that has no captain (both need approval)
 const teamMode = ref<'new' | 'existing'>('new')
@@ -39,7 +41,8 @@ async function submit() {
   try {
     if (props.mode === 'login') await login(username.value, password.value)
     else await register(username.value, password.value,
-      teamMode.value === 'new' ? { teamName: teamName.value.trim() } : { claimTeamId: claimTeamId.value! })
+      teamMode.value === 'new' ? { teamName: teamName.value.trim() } : { claimTeamId: claimTeamId.value! },
+      { email: email.value.trim(), phone: phone.value.trim() })
     router.push(redirect.value)
   } catch (e) {
     error.value = e instanceof Error ? e.message : t('common.genericError')
@@ -67,6 +70,18 @@ async function submit() {
         />
         <span v-if="fieldErrors.password" class="error">{{ fieldErrors.password }}</span>
       </div>
+      <template v-if="mode === 'register'">
+        <div class="field">
+          <label for="email">{{ t('contact.email') }}</label>
+          <input id="email" v-model="email" class="input" type="email" autocomplete="email" maxlength="120" required />
+          <span v-if="fieldErrors.email" class="error">{{ fieldErrors.email }}</span>
+        </div>
+        <div class="field">
+          <label for="phone">{{ t('contact.phone') }}</label>
+          <input id="phone" v-model="phone" class="input" type="tel" autocomplete="tel" maxlength="30" required :placeholder="t('contact.phonePlaceholder')" />
+          <span v-if="fieldErrors.phone" class="error">{{ fieldErrors.phone }}</span>
+        </div>
+      </template>
       <fieldset v-if="mode === 'register'" class="team">
         <legend>{{ t('auth.yourTeam') }}</legend>
         <label class="choice"><input v-model="teamMode" type="radio" value="new"> {{ t('auth.newTeam') }}</label>

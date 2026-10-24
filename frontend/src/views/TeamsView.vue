@@ -4,9 +4,10 @@ import GlobalLayout from '../layouts/GlobalLayout.vue'
 import AppIcon from '../components/AppIcon.vue'
 import CrestPicker from '../components/CrestPicker.vue'
 import ConfirmButton from '../components/ConfirmButton.vue'
+import MyContactModal from '../components/MyContactModal.vue'
 import InlineEdit from '../components/InlineEdit.vue'
 import { authApi, requestApi, teamApi } from '../api/endpoints'
-import { isAdmin } from '../auth'
+import { isAdmin, missingContact } from '../auth'
 import type { Player, RequestItem, TeamRef, TeamSummary } from '../api/types'
 import { AUTH, teamPath } from '../paths'
 import { t } from '../i18n'
@@ -147,6 +148,7 @@ const whatsappUrl = computed(() => invite.value
 /** A captain has a single team: once it exists (or asked to captain one) the "add" forms go away */
 const canAdd = computed(() => isAdmin.value || ((teams.value?.length ?? 0) === 0 && !pendingClaim.value))
 
+const editingContact = ref(false)
 const countLabel = (n: number) => (n === 1 ? t('teams.onePlayer') : t('teams.players', { n }))
 </script>
 
@@ -166,6 +168,11 @@ const countLabel = (n: number) => (n === 1 ? t('teams.onePlayer') : t('teams.pla
         <button class="btn secondary">{{ t('teams.askCaptain') }}</button>
       </form>
       <p v-if="pendingClaim" class="review small">{{ t('teams.claimPending', { name: pendingClaim.teamName }) }}</p>
+      <p v-if="missingContact" class="notice contact-notice">
+        {{ t('contact.missing') }}
+        <button type="button" class="btn secondary small-btn" @click="editingContact = true">{{ t('contact.complete') }}</button>
+      </p>
+      <MyContactModal v-if="editingContact" @close="editingContact = false" />
       <p v-if="error" class="error">{{ error }}</p>
       <p v-if="notice" class="notice">{{ notice }}</p>
 
@@ -192,7 +199,12 @@ const countLabel = (n: number) => (n === 1 ? t('teams.onePlayer') : t('teams.pla
                 <template v-if="isAdmin">
                   ·
                   <span v-if="team.captainPending" class="pending">{{ t('teams.captainPending') }}</span>
-                  <span v-else>{{ t('teams.captain', { name: team.captainUsername ?? '' }) }}</span>
+                  <span v-else>
+                    {{ t('teams.captain', { name: team.captainUsername ?? '' }) }}
+                    <template v-if="team.captainEmail"> · <a :href="`mailto:${team.captainEmail}`">{{ team.captainEmail }}</a></template>
+                    <template v-if="team.captainPhone"> · <a :href="`tel:${team.captainPhone.replace(/[^+\d]/g, '')}`">{{ team.captainPhone }}</a></template>
+                    <template v-if="!team.captainEmail && !team.captainPhone"> · {{ t('contact.missingShort') }}</template>
+                  </span>
                 </template>
               </span>
             </div>
@@ -301,6 +313,7 @@ const countLabel = (n: number) => (n === 1 ? t('teams.onePlayer') : t('teams.pla
 .num { width: 80px; flex-shrink: 0; }
 .pending { font-weight: 700; color: #b26a00; }
 .small-btn { padding: 6px 12px; font-size: 13px; }
+.contact-notice { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
 .invite { margin: 0 6px 14px 76px; padding: 12px; border-radius: 10px; background: var(--bg); }
 .invite p { margin: 0 0 8px; }
 .invite-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
