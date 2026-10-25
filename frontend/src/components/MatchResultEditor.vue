@@ -52,11 +52,14 @@ const needsPenalties = computed(() =>
   props.match.type !== 'REGULAR' && !walkover.value && score.value.home === score.value.away)
 
 onMounted(async () => {
-  const [home, away, existing] = await Promise.all([
+  const finished = props.match.status === 'FINISHED'
+  const [home, away, existing, appeared] = await Promise.all([
     teamApi.players(props.match.homeTeam.id, true),
     teamApi.players(props.match.awayTeam.id, true),
-    props.match.status === 'FINISHED' ? matchApi.events(props.match.id) : Promise.resolve([]),
+    finished ? matchApi.events(props.match.id) : Promise.resolve([]),
+    finished ? matchApi.appearances(props.match.id) : Promise.resolve([]),
   ])
+  played.value = appeared.map((a) => a.playerId)
   // Current players first; the ones that left the team after (they may have played this match)
   const order = (list: Player[]) => [...list.filter((p) => !p.gone), ...list.filter((p) => p.gone)]
   rosters.value = { home: order(home), away: order(away) }
@@ -74,6 +77,21 @@ onMounted(async () => {
 function addEvent(side: Side, type: EventType) {
   const playerId = picked.value[side]
   if (playerId) events.value.push({ side, playerId, type })
+}
+
+// Who played, ticked from the match sheet. Players with goals or cards played anyway (ticked and locked).
+const played = ref<number[]>([])
+const withEvents = computed(() => new Set(events.value.map((e) => e.playerId)))
+const isPlayed = (id: number) => played.value.includes(id) || withEvents.value.has(id)
+function togglePlayed(id: number) {
+  played.value = played.value.includes(id) ? played.value.filter((x) => x !== id) : [...played.value, id]
+}
+/** The ones that left the team only show up if they played this match */
+const sheet = (side: Side) => rosters.value[side].filter((p) => !p.gone || isPlayed(p.id))
+const playedCount = (side: Side) => sheet(side).filter((p) => isPlayed(p.id)).length
+function setAll(side: Side, on: boolean) {
+  const ids = rosters.value[side].filter((p) => !p.gone).map((p) => p.id)
+  played.value = on ? [...new Set([...played.value, ...ids])] : played.value.filter((x) => !ids.includes(x))
 }
 
 const playerName = (side: Side, id: number) => rosters.value[side].find((p) => p.id === id)?.fullName ?? '?'
@@ -122,6 +140,7 @@ async function save() {
       awayGoals: !walkover.value && typedScore.value ? goals.value.away : null,
       homePenalties: needsPenalties.value ? penalties.value.home : null,
       awayPenalties: needsPenalties.value ? penalties.value.away : null,
+      played: walkover.value ? [] : [...new Set([...played.value, ...withEvents.value])],
     })
     emit('saved')
   } catch (e) {
@@ -175,6 +194,24 @@ async function save() {
                         @click="addEvent(side, type)">
                   + {{ t(`results.types.${type}`) }}
                 </button>
+              </div>
+
+              <div class="played">
+                <div class="played-head">
+                  <strong>{{ t('results.played', { n: playedCount(side) }) }}</strong>
+                  <button type="button" class="link" @click="setAll(side, true)">{{ t('results.playedAll') }}</button>
+                  <button type="button" class="link" @click="setAll(side, false)">{{ t('results.playedNone') }}</button>
+                </div>
+                <label
+                  v-for="p in sheet(side)" :key="p.id" :class="['chip', { on: isPlayed(p.id), locked: withEvents.has(p.id) }]"
+                  :title="withEvents.has(p.id) ? t('results.playedLocked') : undefined"
+                >
+                  <input
+                    type="checkbox" :checked="isPlayed(p.id)" :disabled="withEvents.has(p.id)"
+                    @change="togglePlayed(p.id)"
+                  >
+                  {{ p.jerseyNo }} · {{ p.fullName }}
+                </label>
               </div>
             </template>
           </template>
@@ -237,6 +274,16 @@ async function save() {
 .tag.RED_CARD { background: #e05a4f; color: #fff; }
 .tag.OWN_GOAL { background: #c9cfdb; }
 .type-buttons { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.played { margin-top: 12px; border-top: 1px solid var(--border); padding-top: 8px; display: flex; flex-wrap: wrap; gap: 6px; }
+.played-head { width: 100%; display: flex; align-items: center; gap: 12px; font-size: 13px; }
+.played-head .link { background: none; border: 0; padding: 0; color: var(--navy); font: inherit; font-size: 12px; text-decoration: underline; cursor: pointer; }
+.chip {
+  display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px 3px 6px; border-radius: 999px; cursor: pointer;
+  border: 1px solid var(--border); background: #fff; font-size: 13px; color: var(--muted);
+}
+.chip input { margin: 0; }
+.chip.on { border-color: var(--navy); color: var(--text); }
+.chip.locked { cursor: default; background: var(--bg); }
 .small-btn { padding: 4px 10px; font-size: 13px; }
 .small { font-size: 13px; }
 .penalties { display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 16px; font-weight: 500; }

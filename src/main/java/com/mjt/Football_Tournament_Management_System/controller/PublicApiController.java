@@ -69,6 +69,12 @@ public class PublicApiController {
         return sService.zoneStandings(id);
     }
 
+    @GetMapping("/matches/{id}/appearances")
+    @Operation(summary = "Who played a match (ticked from the match sheet, plus players with goals or cards)")
+    public List<ResponseDtos.AppearanceRes> appearances(@PathVariable Long id) {
+        return mService.appearances(id);
+    }
+
     @GetMapping("/matches/{id}/events")
     @Operation(summary = "Goals, own goals and cards of a match")
     public List<ResponseDtos.MatchEventRes> matchEvents(@PathVariable Long id) {

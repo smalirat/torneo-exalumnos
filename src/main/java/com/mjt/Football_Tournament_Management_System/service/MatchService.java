@@ -4,9 +4,11 @@ package com.mjt.Football_Tournament_Management_System.service;
 import com.mjt.Football_Tournament_Management_System.dto.AdminDtos;
 import com.mjt.Football_Tournament_Management_System.dto.ResponseDtos;
 import com.mjt.Football_Tournament_Management_System.entire.DataSource;
+import com.mjt.Football_Tournament_Management_System.entire.MatchAppearance;
 import com.mjt.Football_Tournament_Management_System.entire.MatchEvent;
 import com.mjt.Football_Tournament_Management_System.entire.MatchGame;
 import com.mjt.Football_Tournament_Management_System.entire.Player;
+import com.mjt.Football_Tournament_Management_System.repo.MatchAppearanceRepository;
 import com.mjt.Football_Tournament_Management_System.repo.MatchEventRepository;
 import com.mjt.Football_Tournament_Management_System.repo.MatchRepository;
 import com.mjt.Football_Tournament_Management_System.repo.PlayerRepository;
@@ -17,6 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 
 @Service
@@ -26,6 +29,7 @@ public class MatchService {
     private final MatchEventRepository eventRepo;
     private final PlayerRepository playerRepo;
     private final PlayoffService playoffs;
+    private final MatchAppearanceRepository appearanceRepo;
 
     /**
      * Loads the result from per-player events (goals, own goals, cards); the score is derived from them.
@@ -71,6 +75,7 @@ public class MatchService {
         m.setStatus(MatchGame.Status.FINISHED);
         m.setSource(DataSource.WEB);
         var saved = matchRepo.save(m);
+        saveAppearances(saved, req.getPlayed(), events, home && away);
         // The tables changed: definitions by position follow them
         if (!saved.isSpecial()) playoffs.refreshRules(saved.getTournament());
         return ResponseDtos.MatchRes.from(saved, MatchGame.pendingWalkovers(matchRepo.findByTournament(saved.getTournament())));
@@ -107,11 +112,41 @@ public class MatchService {
         return ResponseDtos.MatchRes.from(m, MatchGame.pendingWalkovers(matchRepo.findByTournament(m.getTournament())));
     }
 
-    /** Deletes a match together with its goals and cards. */
+    /**
+     * Who played: the ticked players (each must be of one of the two teams) plus everyone with a goal or card.
+     * An abandono has nobody. played null keeps the ones already saved.
+     */
+    private void saveAppearances(MatchGame m, List<Long> played, List<MatchEvent> events, boolean bothPresent) {
+        var ids = new LinkedHashSet<Long>();
+        if (bothPresent) {
+            if (played != null) ids.addAll(played);
+            else appearanceRepo.findByMatch(m).forEach(a -> ids.add(a.getPlayer().getId()));
+            events.forEach(e -> ids.add(e.getPlayer().getId()));
+        }
+        appearanceRepo.deleteByMatch(m);
+        appearanceRepo.flush();
+        for (var id : ids) {
+            var p = playerRepo.findById(id).orElseThrow(() -> NotFoundException.of("Jugador", id));
+            var team = p.getTeam();
+            if (team == null || !(team.getId().equals(m.getHomeTeam().getId()) || team.getId().equals(m.getAwayTeam().getId()))) {
+                throw new BadRequestException("El jugador " + p.getFullName() + " no pertenece a ninguno de los dos equipos");
+            }
+            appearanceRepo.save(new MatchAppearance(null, m, p, team));
+        }
+    }
+
+    public List<ResponseDtos.AppearanceRes> appearances(Long matchId) {
+        var m = matchRepo.findById(matchId).orElseThrow(() -> NotFoundException.of("Partido", matchId));
+        return appearanceRepo.findByMatch(m).stream()
+                .map(a -> new ResponseDtos.AppearanceRes(a.getPlayer().getId(), a.getTeam().getId())).toList();
+    }
+
+    /** Deletes a match together with its goals, cards and who played. */
     @Transactional
     public void delete(Long matchId) {
         var m = matchRepo.findById(matchId).orElseThrow(() -> NotFoundException.of("Partido", matchId));
         eventRepo.deleteByMatch(m);
+        appearanceRepo.deleteByMatch(m);
         matchRepo.delete(m);
     }
 

@@ -41,6 +41,7 @@ public class TeamService {
     private final MatchRepository matchRepo;
     private final AppUserRepository userRepo;
     private final MatchEventRepository eventRepo;
+    private final MatchAppearanceRepository appearanceRepo;
     private final PlayerSeasonStatRepository statRepo;
     private final SanctionRepository sanctionRepo;
     private final YellowCardTallyRepository yellowRepo;
@@ -223,7 +224,7 @@ public class TeamService {
      */
     @Transactional
     public void removePlayer(Player player) {
-        if (eventRepo.existsByPlayer(player) || statRepo.existsByPlayer(player)
+        if (eventRepo.existsByPlayer(player) || appearanceRepo.existsByPlayer(player) || statRepo.existsByPlayer(player)
                 || sanctionRepo.existsByPlayer(player) || yellowRepo.existsByPlayer(player)) {
             player.setLeftAt(LocalDate.now());
             player.setRemovalRequestedAt(null);
@@ -382,13 +383,16 @@ public class TeamService {
                 .map(o -> o.getTeam().getName()).findFirst().orElse(null);
     }
 
-    /** Nobody plays the same edition for two teams: no transfer if they already played it for another team */
+    /**
+     * Nobody plays the same edition for two teams: no transfer if they already played it for another team (ticked as
+     * played in a match sheet, or with a goal or card).
+     */
     private void checkTransfer(Player newFile) {
         var editions = regRepo.findByTeamOrderByIdDesc(newFile.getTeam()).stream().map(Registration::getTournament).toList();
         for (var other : playerRepo.findByPerson(newFile.getPerson())) {
             if (Objects.equals(other.getId(), newFile.getId()) || other.getTeam().getId().equals(newFile.getTeam().getId())) continue;
             for (var edition : editions) {
-                if (eventRepo.existsByPlayerAndMatch_Tournament(other, edition)) {
+                if (appearanceRepo.existsByPlayerAndMatch_Tournament(other, edition) || eventRepo.existsByPlayerAndMatch_Tournament(other, edition)) {
                     throw new ConflictException(newFile.getFullName() + " ya jugó el " + edition.getName() + " con "
                             + other.getTeam().getName() + ": esa edición no puede jugarla en otro equipo");
                 }

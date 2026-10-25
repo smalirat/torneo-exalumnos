@@ -290,6 +290,9 @@ public class ResponseDtos {
 
     public record BuildResult(int teams, int matches, int definitions) {}
 
+    /** A player who played a match */
+    public record AppearanceRes(Long playerId, Long teamId) {}
+
     public record StandingRow(int position, TeamRef team, int points, int played, int won, int drawn, int lost,
                               int goalsFor, int goalsAgainst, int goalDiff, int presencePoints, int fairPlay) {}
 }

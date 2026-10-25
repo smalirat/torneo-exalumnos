@@ -259,6 +259,11 @@ public class AdminDtos {
         @NotNull private List<@Valid EventItem> events = new ArrayList<>();
         /** Only for a promotion/final that ends in a draw; required then, and cannot be tied. */
         @Min(0) private Integer homePenalties, awayPenalties;
+        /**
+         * Who played (player ids of both teams, from the match sheet). Players with events are added anyway.
+         * Null = leave the current ones (plus the ones with events); an abandono has none.
+         */
+        private List<@NotNull Long> played;
     }
 
     /** Promotion or final; each side is a fixed team or "position N of zone X". */

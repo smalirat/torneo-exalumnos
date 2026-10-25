@@ -282,6 +282,10 @@
     "openNext": "Al guardar, abrir el siguiente",
     "allLoaded": "Todos los partidos de esta fecha están cargados.",
     "gonePlayer": "(ya no está en el equipo)",
+    "played": "Jugaron ({n})",
+    "playedAll": "Todos",
+    "playedNone": "Ninguno",
+    "playedLocked": "Tiene goles o tarjetas: jugó",
     "saveDetails": "Guardar datos"
   },
   "rankings": {

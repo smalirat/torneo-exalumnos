@@ -137,6 +137,8 @@ export const teamApi = {
 
 export const matchApi = {
   events: (matchId: number) => get<MatchEvent[]>(`/api/public/matches/${matchId}/events`),
+  /** Who played (ticked from the match sheet, plus players with goals or cards) */
+  appearances: (matchId: number) => get<{ playerId: number; teamId: number }[]>(`/api/public/matches/${matchId}/appearances`),
   score: (matchId: number, body: ScoreReq) => patch<Match>(`/api/admin/matches/${matchId}/score`, body),
   remove: (matchId: number) => del(`/api/admin/matches/${matchId}`),
   updateDetails: (matchId: number, body: MatchDetails) => patch<Match>(`/api/admin/matches/${matchId}`, body),

@@ -36,6 +36,7 @@ public class ExcelImporter {
     private final RegistrationRepository regRepo;
     private final MatchRepository matchRepo;
     private final MatchEventRepository eventRepo;
+    private final MatchAppearanceRepository appearanceRepo;
     private final PlayerSeasonStatRepository statRepo;
     private final SanctionRepository sanctionRepo;
     private final YellowCardTallyRepository yellowRepo;
@@ -198,6 +199,7 @@ public class ExcelImporter {
                             resultText(match), force);
                     if (!force) continue;
                     eventRepo.deleteByMatch(match); // the Excel result replaces the per-player detail
+                    appearanceRepo.deleteByMatch(match);
                 }
                 copyMatch(draft, match);
                 match.setSource(DataSource.EXCEL);

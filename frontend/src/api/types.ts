@@ -265,6 +265,8 @@ export interface ScoreReq {
   events: { playerId: number; type: EventType }[]
   homePenalties: number | null
   awayPenalties: number | null
+  /** Who played (player ids of both teams); null = leave the saved ones */
+  played?: number[] | null
 }
 
 export interface MatchDetails {

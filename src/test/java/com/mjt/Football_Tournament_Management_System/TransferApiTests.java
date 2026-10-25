@@ -62,6 +62,44 @@ class TransferApiTests extends ApiTestSupport {
                 .andExpect(jsonPath("$[0].team.id").value(gulp));
     }
 
+    /** Who played comes from the match sheet: ticked players count as having played that edition */
+    @Test
+    void tickedAsPlayedCountsForTransfers() throws Exception {
+        String admin = admin();
+        long t = newTournament(admin);
+        long zone = newCategory(admin, t, "A").get("zones").get(0).get("id").asLong();
+        long gulp = newTeam(admin), rival = newTeam(admin), doblas = newTeam(admin);
+        for (long team : new long[]{gulp, rival, doblas}) post("/api/admin/zones/" + zone + "/teams", "{\"teamId\":" + team + "}", admin);
+        String dni = freshDni();
+        var files = read(post("/api/teams/" + gulp + "/players", "{\"players\":[{\"fullName\":\"Suplente\",\"jerseyNo\":12,\"dni\":\"" + dni
+                + "\"},{\"fullName\":\"Goleador\",\"jerseyNo\":9},{\"fullName\":\"No vino\",\"jerseyNo\":3}]}", admin));
+        long sub = files.get(0).get("id").asLong(), scorer = files.get(1).get("id").asLong();
+        long match = read(post("/api/admin/fixtures/manual", "{\"zoneId\":" + zone + ",\"fixtures\":[{\"homeTeamId\":" + gulp
+                + ",\"awayTeamId\":" + rival + "}]}", admin)).get(0).get("id").asLong();
+
+        // The substitute is ticked, the scorer counts anyway, the third one did not play
+        patch("/api/admin/matches/" + match + "/score", "{\"played\":[" + sub + "],\"events\":[{\"playerId\":" + scorer
+                + ",\"type\":\"GOAL\"}]}", admin).andExpect(status().isOk());
+        get("/api/public/matches/" + match + "/appearances", null)
+                .andExpect(jsonPath("$.length()").value(2))
+                .andExpect(jsonPath("$[*].playerId").value(org.hamcrest.Matchers.containsInAnyOrder((int) sub, (int) scorer)));
+        // Saving again without "played" keeps them; a player of another team cannot be ticked
+        patch("/api/admin/matches/" + match + "/score", "{\"events\":[]}", admin).andExpect(status().isOk());
+        get("/api/public/matches/" + match + "/appearances", null).andExpect(jsonPath("$.length()").value(2));
+        long stranger = read(post("/api/teams/" + doblas + "/players", "{\"players\":[{\"fullName\":\"Ajeno\",\"jerseyNo\":1}]}", admin)).get(0).get("id").asLong();
+        patch("/api/admin/matches/" + match + "/score", "{\"played\":[" + stranger + "],\"events\":[]}", admin).andExpect(status().isBadRequest());
+
+        // He played this edition for GULP without scoring: no transfer to DOBLAS, which plays it too
+        post("/api/teams/" + doblas + "/players", "{\"players\":[{\"fullName\":\"Suplente\",\"jerseyNo\":4,\"dni\":\"" + dni + "\"}]}", admin)
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.detail").value(org.hamcrest.Matchers.containsString("ya jugó")));
+
+        // An abandono has nobody playing
+        patch("/api/admin/matches/" + match + "/score", "{\"homePresent\":true,\"awayPresent\":false,\"played\":[" + sub + "],\"events\":[]}", admin)
+                .andExpect(status().isOk());
+        get("/api/public/matches/" + match + "/appearances", null).andExpect(jsonPath("$.length()").value(0));
+    }
+
     /** A suspension is the person's: it follows them to the new team and into the next season until served */
     @Test
     void suspensionsFollowThePersonAcrossTeamsAndSeasons() throws Exception {
