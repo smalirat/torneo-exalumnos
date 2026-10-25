@@ -358,11 +358,11 @@ function changeEdition(event: Event) {
         <template v-if="tournament.seasonId">
           <div class="card">
             <h2 class="card-title">{{ t('publicSite.openSanctions') }} <span class="count">{{ split.open.length }}</span></h2>
-            <SanctionsTable :rows="split.open" />
+            <SanctionsTable :rows="split.open" :year="tournament?.seasonYear" />
           </div>
           <div class="card">
             <h2 class="card-title">{{ t('publicSite.servedSanctions') }} <span class="count">{{ split.served.length }}</span></h2>
-            <SanctionsTable :rows="split.served" served />
+            <SanctionsTable :rows="split.served" served :year="tournament?.seasonYear" />
           </div>
         </template>
         <div class="card">

@@ -55,9 +55,9 @@ const valueLabel = computed(() => ({
       <PlayerRankingTable v-if="tab !== 'sanctions'" :rows="rankings[tab] ?? []" :value-label="valueLabel" />
       <template v-else>
         <h3 class="sub">{{ t('season.openSanctions') }}</h3>
-        <SanctionsTable :rows="split.open" />
+        <SanctionsTable :rows="split.open" :year="year" />
         <h3 class="sub">{{ t('season.servedSanctions') }}</h3>
-        <SanctionsTable :rows="split.served" served />
+        <SanctionsTable :rows="split.served" served :year="year" />
       </template>
     </section>
   </GlobalLayout>

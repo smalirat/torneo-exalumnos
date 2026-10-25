@@ -66,15 +66,23 @@ public class ResponseDtos {
     /** Annual ranking line: `value` is goals, times chosen figure or goals conceded depending on the ranking. */
     public record SeasonStatRow(int position, PlayerRef player, TeamRef team, int value) {}
 
+    /**
+     * A suspension. It is the person's, not the team's: team is the one they play for now and receivedWith the one
+     * they got it with (only when it is another one). seasonYear says where it comes from when it carried over.
+     */
     public record SanctionRes(Long id, Long seasonId, Long tournamentId, PlayerRef player, TeamRef team, String type,
                               int matchesSuspended, int matchesServed, int pending, String status, String notes,
-                              String source) {
-        public static SanctionRes from(Sanction s) {
+                              String source, TeamRef receivedWith, int seasonYear) {
+        public static SanctionRes from(Sanction s) { return from(s, s.getTeam()); }
+
+        public static SanctionRes from(Sanction s, Team currentTeam) {
+            boolean moved = currentTeam != null && !currentTeam.getId().equals(s.getTeam().getId());
             return new SanctionRes(s.getId(), s.getSeason().getId(),
                     s.getTournament() == null ? null : s.getTournament().getId(),
-                    PlayerRef.from(s.getPlayer()), TeamRef.from(s.getTeam()), s.getType().name(),
+                    PlayerRef.from(s.getPlayer()), TeamRef.from(moved ? currentTeam : s.getTeam()), s.getType().name(),
                     s.getMatchesSuspended(), s.getMatchesServed(), s.pending(), s.getStatus().name(), s.getNotes(),
-                    s.getSource() == null ? null : s.getSource().name());
+                    s.getSource() == null ? null : s.getSource().name(),
+                    moved ? TeamRef.from(s.getTeam()) : null, s.getSeason().getYear());
         }
     }
 

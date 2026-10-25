@@ -9,5 +9,7 @@ import java.util.List;
 
 public interface SanctionRepository extends JpaRepository<Sanction, Long> {
     List<Sanction> findBySeasonOrderByIdAsc(Season season);
+    /** Suspensions not over yet (pending or in the tribunal), from any season */
+    List<Sanction> findByStatusInOrderByIdAsc(java.util.Collection<Sanction.Status> statuses);
     boolean existsByPlayer(Player player);
 }

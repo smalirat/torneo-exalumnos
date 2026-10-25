@@ -86,11 +86,37 @@ public class SeasonDataService {
 
     // ---------- sanctions ----------
 
+    /**
+     * The season's sanctions plus the suspensions of earlier seasons not served yet: a suspension is the person's and
+     * follows them across tournaments and teams (unlike accumulated yellow cards, which stay in each tournament).
+     * Each one shows the team the person plays for now.
+     */
+    @Transactional(readOnly = true)
     public List<ResponseDtos.SanctionRes> sanctions(Long seasonId) {
+        var season = findSeason(seasonId);
+        var list = new ArrayList<>(sanctionRepo.findBySeasonOrderByIdAsc(season));
+        for (var s : sanctionRepo.findByStatusInOrderByIdAsc(List.of(Sanction.Status.PENDING, Sanction.Status.TRIBUNAL))) {
+            if (s.getSeason().getYear() < season.getYear()) list.add(s);
+        }
+        return list.stream()
+                .sorted(Comparator.comparing((Sanction s) -> s.getStatus() == Sanction.Status.SERVED)
+                        .thenComparing((a, b) -> NAME_ORDER.compare(a.getPlayer().getFullName(), b.getPlayer().getFullName())))
+                .map(s -> ResponseDtos.SanctionRes.from(s, currentTeam(s.getPlayer()))).toList();
+    }
+
+    /** Only the season's own sanctions, each with the team it was received with: what its Excel sheet holds */
+    @Transactional(readOnly = true)
+    public List<ResponseDtos.SanctionRes> seasonSanctions(Long seasonId) {
         return sanctionRepo.findBySeasonOrderByIdAsc(findSeason(seasonId)).stream()
                 .sorted(Comparator.comparing((Sanction s) -> s.getStatus() == Sanction.Status.SERVED)
                         .thenComparing((a, b) -> NAME_ORDER.compare(a.getPlayer().getFullName(), b.getPlayer().getFullName())))
                 .map(ResponseDtos.SanctionRes::from).toList();
+    }
+
+    /** The team the person plays for now (their active file); the file's own team if they are in none */
+    private Team currentTeam(Player file) {
+        return playerRepo.findByPerson(file.getPerson()).stream().filter(Player::isActive).map(Player::getTeam)
+                .findFirst().orElse(file.getTeam());
     }
 
     @Transactional

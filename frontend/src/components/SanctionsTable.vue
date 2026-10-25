@@ -4,7 +4,9 @@ import type { Sanction } from '../api/types'
 import { t } from '../i18n'
 
 // One list of sanctions. Served ones drop the "pending" and "status" columns (always "—" / "Cumplida").
-defineProps<{ rows: Sanction[]; served?: boolean }>()
+// A suspension is the person's: it shows the team they play for now ("recibida en X" if they got it elsewhere) and,
+// when it comes from an earlier season than `year`, which one.
+defineProps<{ rows: Sanction[]; served?: boolean; year?: number | null }>()
 </script>
 
 <template>
@@ -28,8 +30,14 @@ defineProps<{ rows: Sanction[]; served?: boolean }>()
       <tbody>
         <tr v-for="s in rows" :key="s.id">
           <td class="left">{{ s.player.fullName }}</td>
-          <td class="left"><span class="team"><TeamBadge :team="s.team" :size="22" /> {{ s.team.name }}</span></td>
-          <td class="left">{{ t(`season.types.${s.type}`) }}</td>
+          <td class="left">
+            <span class="team"><TeamBadge :team="s.team" :size="22" /> {{ s.team.name }}</span>
+            <small v-if="s.receivedWith" class="from">{{ t('season.receivedWith', { team: s.receivedWith.name }) }}</small>
+          </td>
+          <td class="left">
+            {{ t(`season.types.${s.type}`) }}
+            <small v-if="year && s.seasonYear !== year" class="from">{{ t('season.fromSeason', { year: s.seasonYear }) }}</small>
+          </td>
           <td>{{ s.matchesSuspended }}</td>
           <td>{{ s.matchesServed }}</td>
           <template v-if="!served">
@@ -52,6 +60,7 @@ td { text-align: center; padding: 6px; }
 tbody tr:nth-child(even) td { background: var(--row-alt); }
 .team { display: inline-flex; align-items: center; gap: 8px; }
 .strong { font-weight: 700; }
+.from { display: block; font-size: 12px; color: var(--muted); }
 .small { font-size: 12px; color: var(--muted); }
 .status { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px; white-space: nowrap; }
 .status.PENDING { background: var(--danger); color: #fff; }

@@ -266,7 +266,7 @@ public class WorkbookExporter {
             String[] header = {"Jugador", "Equipo", "Tarjeta Roja", "Fechas sanción", "Cumplida", "Pendiente", "Observaciones"};
             for (int c = 0; c < header.length; c++) set(s, 7, c + 1, header[c], bold);
             int r = 8;
-            for (var x : seasonData.sanctions(season.getId())) {
+            for (var x : seasonData.seasonSanctions(season.getId())) {
                 set(s, r, 1, x.player().fullName(), null);
                 set(s, r, 2, x.team().name(), null);
                 set(s, r, 3, x.type().equals("YELLOW_ACCUMULATION") ? "-" : (Object) 1, null);

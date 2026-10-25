@@ -375,6 +375,8 @@
     "showLess": "Ver menos"
   },
   "season": {
+    "receivedWith": "recibida en {team}",
+    "fromSeason": "(de {year})",
     "title": "Temporada {year}",
     "scorers": "Goleadores",
     "figures": "Figuras",

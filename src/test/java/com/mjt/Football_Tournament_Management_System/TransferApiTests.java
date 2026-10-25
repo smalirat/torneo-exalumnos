@@ -62,6 +62,40 @@ class TransferApiTests extends ApiTestSupport {
                 .andExpect(jsonPath("$[0].team.id").value(gulp));
     }
 
+    /** A suspension is the person's: it follows them to the new team and into the next season until served */
+    @Test
+    void suspensionsFollowThePersonAcrossTeamsAndSeasons() throws Exception {
+        String admin = admin();
+        int year = 1900 + new Random().nextInt(90);
+        long season = read(post("/api/admin/tournaments", "{\"name\":\"Clausura " + year + "\",\"seasonYear\":" + year
+                + ",\"stage\":\"CLAUSURA\"}", admin)).get("seasonId").asLong();
+        long next = read(post("/api/admin/tournaments", "{\"name\":\"Apertura " + (year + 1) + "\",\"seasonYear\":" + (year + 1)
+                + ",\"stage\":\"APERTURA\"}", admin)).get("seasonId").asLong();
+        long gulp = newTeam(admin), vilma = newTeam(admin);
+        String dni = freshDni();
+        long juan = read(post("/api/teams/" + gulp + "/players", "{\"players\":[{\"fullName\":\"Pérez, Juan\",\"jerseyNo\":9,\"dni\":\""
+                + dni + "\"}]}", admin)).get(0).get("id").asLong();
+        long red = read(post("/api/admin/seasons/" + season + "/sanctions", "{\"playerId\":" + juan
+                + ",\"type\":\"DIRECT_RED\",\"matchesSuspended\":3,\"matchesServed\":1}", admin).andExpect(status().isOk())).get("id").asLong();
+        long served = read(post("/api/admin/seasons/" + season + "/sanctions", "{\"playerId\":" + juan
+                + ",\"type\":\"DOUBLE_YELLOW\",\"matchesSuspended\":1,\"matchesServed\":1}", admin)).get("id").asLong();
+
+        // Transfer to VILMA (by the admin: direct)
+        post("/api/teams/" + vilma + "/players", "{\"players\":[{\"fullName\":\"Juan\",\"jerseyNo\":4,\"dni\":\"" + dni + "\"}]}", admin)
+                .andExpect(status().isOk());
+
+        // In its season it shows the team he plays for now, and where he got it
+        get("/api/public/seasons/" + season + "/sanctions", null)
+                .andExpect(jsonPath("$[?(@.id == " + red + ")].team.id").value((int) vilma))
+                .andExpect(jsonPath("$[?(@.id == " + red + ")].receivedWith.id").value((int) gulp));
+        // Next season: the pending one carries over (2 matches left), the served one does not
+        get("/api/public/seasons/" + next + "/sanctions", null)
+                .andExpect(jsonPath("$[?(@.id == " + red + ")].pending").value(2))
+                .andExpect(jsonPath("$[?(@.id == " + red + ")].seasonYear").value(year))
+                .andExpect(jsonPath("$[?(@.id == " + red + ")].team.id").value((int) vilma))
+                .andExpect(jsonPath("$[?(@.id == " + served + ")]").isEmpty());
+    }
+
     @Test
     void theSameDniOnTwoPlayersWithoutOneMergesThem() throws Exception {
         String admin = admin();

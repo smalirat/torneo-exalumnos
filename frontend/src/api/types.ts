@@ -296,6 +296,10 @@ export interface Sanction {
   status: 'PENDING' | 'SERVED' | 'TRIBUNAL'
   notes: string | null
   source: 'EXCEL' | 'WEB' | null
+  /** The suspension is the person's: team is the one they play for now; receivedWith the one they got it with, if another */
+  receivedWith: TeamRef | null
+  /** Season it comes from (a pending one carries over to the next seasons) */
+  seasonYear: number
 }
 
 export interface YellowTally {
