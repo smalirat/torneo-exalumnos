@@ -1,5 +1,7 @@
 ## ⚽ Football Tournament Management System (Spring Boot + JWT + PostgreSQL)
 
+[![CI](https://github.com/smalirat/torneo-exalumnos/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/smalirat/torneo-exalumnos/actions/workflows/ci.yml)
+
 A complete **backend REST API** for managing football tournaments, built using **Spring Boot 3**, **JPA/Hibernate**, **PostgreSQL** (Flyway migrations), **JWT authentication**, and **Swagger API documentation**.
 
 This system allows **administrators** to create tournaments and manage fixtures, while **teams** can register, add players, join tournaments, and view performance dashboards.
@@ -111,7 +113,7 @@ docker compose up -d --build
 ```
 
 Open **http://localhost:8080** (log in with the admin of `.env`). Details, architecture and daily commands:
-[`docs/docker.md`](docs/docker.md).
+[`docs/docker.md`](docs/docker.md). CI (tests, build and images on every push): [`docs/ci.md`](docs/ci.md).
 
 ---
 
