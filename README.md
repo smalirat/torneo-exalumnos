@@ -101,7 +101,21 @@ Once the application is running, open:
 
 ---
 
-## 🛠 Installation & Setup
+## 🐳 Run everything with Docker Compose
+
+The whole app (PostgreSQL + backend + frontend served by nginx) starts with one command:
+
+```bash
+cp .env.example .env      # then edit .env: DB_PASSWORD, APP_JWT_SECRET (32+ chars), APP_ADMIN_PASSWORD
+docker compose up -d --build
+```
+
+Open **http://localhost:8080** (log in with the admin of `.env`). Details, architecture and daily commands:
+[`docs/docker.md`](docs/docker.md).
+
+---
+
+## 🛠 Installation & Setup (without Docker, for development)
 
 ### 1️⃣ Database (PostgreSQL)
 
@@ -215,5 +229,5 @@ Users are stored in the DB with BCrypt-hashed passwords.
 
 ✅ Email/SMS notifications
 ✅ Tournament leaderboard API
-✅ Docker & Kubernetes support
+✅ Docker Compose (database, backend and frontend)
 ✅ React frontend

@@ -42,3 +42,7 @@ desgin/
 ### Secrets ###
 .env
 .env.*
+
+### Docker
+.env
+!.env.example

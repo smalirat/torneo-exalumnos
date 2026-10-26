@@ -1,0 +1,5 @@
+# Only pom.xml and src/ go into the backend image
+*
+!pom.xml
+!src/
+src/test/

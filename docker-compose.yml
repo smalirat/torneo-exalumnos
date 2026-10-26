@@ -1,0 +1,51 @@
+# The whole app on one machine: `docker compose up -d --build`, then http://localhost:8080
+# Settings and secrets come from .env (copy .env.example; .env is never committed).
+name: torneo
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: football_tournament
+      POSTGRES_USER: ${DB_USERNAME:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d football_tournament"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    # No published port: only the backend reaches the database (inside the compose network)
+
+  api:
+    build: .
+    image: torneo-api
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DB_URL: jdbc:postgresql://db:5432/football_tournament
+      DB_USERNAME: ${DB_USERNAME:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD}
+      APP_JWT_SECRET: ${APP_JWT_SECRET:?Set APP_JWT_SECRET in .env (32+ characters)}
+      APP_ADMIN_USERNAME: ${APP_ADMIN_USERNAME:-admin}
+      APP_ADMIN_PASSWORD: ${APP_ADMIN_PASSWORD:-}
+      APP_CORS_ALLOWED_ORIGINS: ${PUBLIC_URL:-http://localhost:8080}
+      APP_SWAGGER_ENABLED: ${APP_SWAGGER_ENABLED:-false}
+    # No published port: the browser reaches it through the web container (/api)
+
+  web:
+    build: ./frontend
+    image: torneo-web
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "${WEB_PORT:-8080}:80"
+
+volumes:
+  db-data:
