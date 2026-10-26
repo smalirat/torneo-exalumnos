@@ -36,6 +36,7 @@ export const PANEL = {
   excel: '/panel/planilla',
   history: '/panel/historia',
   requests: '/panel/solicitudes',
+  banned: '/panel/inhabilitados',
   season: (year: number) => `/panel/temporadas/${year}`,
 }
 

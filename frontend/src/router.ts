@@ -100,6 +100,7 @@ export const router = createRouter({
     { path: PANEL.excel, component: () => import('./views/ExcelView.vue') },
     { path: PANEL.history, component: () => import('./views/HistoryView.vue') },
     { path: PANEL.requests, component: () => import('./views/RequestsView.vue') },
+    { path: PANEL.banned, component: () => import('./views/BannedView.vue') },
 
     ...legacy,
     { path: '/:pathMatch(.*)*', component: () => import('./views/NotFoundView.vue') },

@@ -54,6 +54,7 @@ Todas las URLs se arman en `src/paths.ts` (slugs en `src/slugs.ts`). Criterio: p
 | `/panel/equipos` | logueado | Registro de equipos: escudo, plantel, renombrar; el admin además invita capitán y elimina |
 | `/panel/planilla` | admin | Planilla Excel: importar con vista previa y conflictos, historial, exportar temporada |
 | `/panel/historia` | admin | Editar el collage de Historia (borrador con Guardar cambios / Descartar / Restablecer) |
-| `/panel/solicitudes` | admin | Aprobar o rechazar los cambios de los capitanes |
+| `/panel/solicitudes` | admin | Aprobar o rechazar los cambios de los capitanes; resolver protestas de partidos |
+| `/panel/inhabilitados` | admin | Lista de jugadores inhabilitados por la Asociación (por DNI) |
 
 El build de producción agrega una Content-Security-Policy (`vite.config.ts`): scripts y API solo del mismo origen, fuentes de Google Fonts, imágenes también `blob:`/`data:`.

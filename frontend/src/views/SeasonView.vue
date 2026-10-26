@@ -7,6 +7,7 @@ import TabsNav from '../components/TabsNav.vue'
 import SanctionsTable from '../components/SanctionsTable.vue'
 import { seasonApi } from '../api/endpoints'
 import type { Sanction, Season, SeasonStatRow } from '../api/types'
+import { isAdmin } from '../auth'
 import { splitSanctions } from '../sanctions'
 import { panelEditionPath } from '../paths'
 import { t } from '../i18n'
@@ -37,6 +38,23 @@ watch(year, async (y) => {
   sanctions.value = sanc
 }, { immediate: true })
 
+// Admin: match days served (one at a time) or the total the tribunal decided; done when all are served
+const sanctionError = ref('')
+async function changeSanction(s: Sanction, matchesSuspended: number, matchesServed: number) {
+  sanctionError.value = ''
+  if (!Number.isInteger(matchesSuspended) || matchesSuspended < 1) return
+  try {
+    const updated = await seasonApi.updateSanction(s.id, {
+      playerId: s.player.id, tournamentId: s.tournamentId, type: s.type, matchesSuspended,
+      matchesServed: Math.min(matchesServed, matchesSuspended),
+      status: s.status === 'TRIBUNAL' ? 'TRIBUNAL' : null, notes: s.notes,
+    })
+    sanctions.value = sanctions.value.map((x) => (x.id === s.id ? { ...updated, team: x.team, receivedWith: x.receivedWith } : x))
+  } catch (e) {
+    sanctionError.value = e instanceof Error ? e.message : String(e)
+  }
+}
+
 const valueLabel = computed(() => ({
   scorers: t('season.goals'), figures: t('season.times'), goalkeepers: t('season.conceded'),
 } as Record<string, string>)[tab.value])
@@ -55,7 +73,8 @@ const valueLabel = computed(() => ({
       <PlayerRankingTable v-if="tab !== 'sanctions'" :rows="rankings[tab] ?? []" :value-label="valueLabel" />
       <template v-else>
         <h3 class="sub">{{ t('season.openSanctions') }}</h3>
-        <SanctionsTable :rows="split.open" :year="year" />
+        <p v-if="sanctionError" class="error">{{ sanctionError }}</p>
+        <SanctionsTable :rows="split.open" :year="year" :admin="isAdmin" @change="changeSanction" />
         <h3 class="sub">{{ t('season.servedSanctions') }}</h3>
         <SanctionsTable :rows="split.served" served :year="year" />
       </template>

@@ -4,12 +4,14 @@ import TeamBadge from './TeamBadge.vue'
 import AppIcon from './AppIcon.vue'
 import BaseModal from './BaseModal.vue'
 import ConfirmButton from './ConfirmButton.vue'
-import { matchApi, teamApi } from '../api/endpoints'
-import type { EventType, Match, Player } from '../api/types'
+import { DEFAULT_SUSPENSION, matchApi, seasonApi, teamApi, tournamentApi } from '../api/endpoints'
+import type { EventType, Match, Player, Sanction } from '../api/types'
+import { editionsCache } from '../editions'
 import { t } from '../i18n'
 
 // Admin editor for a match: presence, score (typed, or derived from per-player events), penalties for drawn
-// definitions, and the match data (date, round, field, pitch, note).
+// definitions, who played, and the match data (date, round, field, pitch, note). Also: suspend a match being
+// played, swap its time with another one, and (after a red card) create the sanction.
 const props = defineProps<{ match: Match }>()
 const emit = defineEmits<{ saved: []; close: [] }>()
 
@@ -97,6 +99,110 @@ function setAll(side: Side, on: boolean) {
 const playerName = (side: Side, id: number) => rosters.value[side].find((p) => p.id === id)?.fullName ?? '?'
 const sideEvents = (side: Side) => events.value.map((e, i) => ({ ...e, i })).filter((e) => e.side === side)
 
+// ---- sanctions for the sent-off players (the tribunal decides the final number of match days)
+interface SanctionDraft { playerId: number; name: string; type: Sanction['type']; matches: number; create: boolean }
+const sanctionDrafts = ref<SanctionDraft[] | null>(null)
+const seasonId = computed(() => editionsCache.value?.find((e) => e.id === props.match.tournamentId)?.seasonId ?? null)
+
+/** A red card is a direct red; two yellows of the same player in the match, a double yellow */
+function offerSanctions() {
+  const drafts: SanctionDraft[] = []
+  if (!walkover.value && seasonId.value) {
+    const byPlayer = new Map<number, { side: Side; reds: number; yellows: number }>()
+    for (const e of events.value) {
+      const x = byPlayer.get(e.playerId) ?? { side: e.side, reds: 0, yellows: 0 }
+      if (e.type === 'RED_CARD') x.reds++
+      if (e.type === 'YELLOW_CARD') x.yellows++
+      byPlayer.set(e.playerId, x)
+    }
+    for (const [playerId, x] of byPlayer) {
+      const type: Sanction['type'] | null = x.reds > 0 ? 'DIRECT_RED' : x.yellows >= 2 ? 'DOUBLE_YELLOW' : null
+      if (type) drafts.push({ playerId, name: playerName(x.side, playerId), type, matches: DEFAULT_SUSPENSION[type], create: true })
+    }
+  }
+  if (drafts.length === 0) emit('saved')
+  else sanctionDrafts.value = drafts
+}
+
+async function createSanctions() {
+  busy.value = true
+  error.value = ''
+  try {
+    for (const d of sanctionDrafts.value ?? []) {
+      if (!d.create) continue
+      await seasonApi.createSanction(seasonId.value!, {
+        playerId: d.playerId, tournamentId: props.match.tournamentId, type: d.type, matchesSuspended: d.matches,
+        matchesServed: 0, status: null, notes: null,
+      })
+    }
+    emit('saved')
+  } catch (e) {
+    error.value = e instanceof Error ? e.message : t('common.genericError')
+  } finally {
+    busy.value = false
+  }
+}
+
+// ---- suspended while being played: score so far and minutes left
+const suspending = ref(false)
+const remaining = ref(30)
+async function suspend() {
+  busy.value = true
+  error.value = ''
+  try {
+    await matchApi.suspend(props.match.id, {
+      homeGoals: goals.value.home ?? score.value.home, awayGoals: goals.value.away ?? score.value.away, remainingMinutes: remaining.value,
+    })
+    emit('saved')
+  } catch (e) {
+    error.value = e instanceof Error ? e.message : t('common.genericError')
+  } finally {
+    busy.value = false
+  }
+}
+async function unsuspend() {
+  busy.value = true
+  try {
+    await matchApi.unsuspend(props.match.id)
+    emit('saved')
+  } catch (e) {
+    error.value = e instanceof Error ? e.message : t('common.genericError')
+  } finally {
+    busy.value = false
+  }
+}
+
+// ---- swap the time with another match of the edition (captains agreed; the organizer makes it official)
+const others = ref<Match[]>([])
+const swapWith = ref<number | null>(null)
+async function loadOthers() {
+  if (others.value.length) return
+  const all = await tournamentApi.fixtures(props.match.tournamentId)
+  others.value = all.filter((m) => m.id !== props.match.id && m.status !== 'FINISHED' && m.scheduledAt)
+}
+const otherLabel = (m: Match) => {
+  const when = m.scheduledAt ? new Date(m.scheduledAt).toLocaleString('es-AR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : ''
+  return `${when} · ${m.homeTeam.name} vs ${m.awayTeam.name}${m.venue ? ` · ${m.venue}` : ''}`
+}
+/** The same match day first (that is where swaps happen) */
+const swapOptions = computed(() => {
+  const day = props.match.scheduledAt?.slice(0, 10)
+  return [...others.value].sort((a, b) => Number(b.scheduledAt?.slice(0, 10) === day) - Number(a.scheduledAt?.slice(0, 10) === day)
+    || (a.scheduledAt ?? '').localeCompare(b.scheduledAt ?? ''))
+})
+async function swap() {
+  if (!swapWith.value) return
+  busy.value = true
+  error.value = ''
+  try {
+    await matchApi.swapSchedule(props.match.id, swapWith.value)
+    emit('saved')
+  } catch (e) {
+    error.value = e instanceof Error ? e.message : t('common.genericError')
+  } finally {
+    busy.value = false
+  }
+}
 async function remove() {
   error.value = ''
   try {
@@ -142,7 +248,7 @@ async function save() {
       awayPenalties: needsPenalties.value ? penalties.value.away : null,
       played: walkover.value ? [] : [...new Set([...played.value, ...withEvents.value])],
     })
-    emit('saved')
+    offerSanctions()
   } catch (e) {
     error.value = e instanceof Error ? e.message : t('common.genericError')
   } finally {
@@ -153,13 +259,32 @@ async function save() {
 
 <template>
   <BaseModal :title="t('results.title')" width="820px" @close="emit('close')">
-    <form @submit.prevent="save">
+    <div v-if="sanctionDrafts" class="sanctions">
+      <h3>{{ t('results.sanctionsTitle') }}</h3>
+      <p class="muted small">{{ t('results.sanctionsHelp') }}</p>
+      <div v-for="d in sanctionDrafts" :key="d.playerId" class="sanction-row">
+        <label class="check"><input v-model="d.create" type="checkbox" /> {{ d.name }}</label>
+        <span class="muted">{{ t(`season.types.${d.type}`) }}</span>
+        <label class="fechas">{{ t('results.sanctionMatches') }}<input v-model.number="d.matches" class="input mins" type="number" min="1" max="20" /></label>
+      </div>
+      <p v-if="error" class="error">{{ error }}</p>
+      <footer class="actions">
+        <span class="spacer" />
+        <button type="button" class="btn secondary" @click="emit('saved')">{{ t('results.sanctionsSkip') }}</button>
+        <button type="button" class="btn" :disabled="busy" @click="createSanctions">{{ t('results.sanctionsCreate') }}</button>
+      </footer>
+    </div>
+    <form v-else @submit.prevent="save">
 
       <div class="scoreboard">
         <span class="team"><TeamBadge :team="teams.home" :size="40" /> {{ teams.home.name }}</span>
         <strong class="score">{{ score.home }} - {{ score.away }}</strong>
         <span class="team right">{{ teams.away.name }} <TeamBadge :team="teams.away" :size="40" /></span>
       </div>
+      <p v-if="match.suspended && match.status !== 'FINISHED'" class="suspended">
+        {{ t('results.suspendedInfo', { n: match.remainingMinutes ?? 0 }) }}
+        <button type="button" class="link" :disabled="busy" @click="unsuspend">{{ t('results.unsuspend') }}</button>
+      </p>
       <p v-if="walkover" class="hint">{{ present.home || present.away ? t('results.walkoverHint') : t('results.noShowHint') }}</p>
       <div v-else class="typed">
         <span>{{ t('results.score') }}</span>
@@ -236,6 +361,24 @@ async function save() {
           <label class="wide">{{ t('results.notes') }}<input v-model="details.notes" class="input" maxlength="500" /></label>
         </div>
         <button type="button" class="btn secondary" :disabled="busy" @click="saveDetails">{{ t('results.saveDetails') }}</button>
+        <div v-if="match.status !== 'FINISHED'" class="swap" @focusin="loadOthers" @mouseenter="loadOthers">
+          <label>
+            {{ t('results.swapWith') }}
+            <select v-model="swapWith" class="select" @focus="loadOthers">
+              <option :value="null" disabled>{{ t('results.swapPick') }}</option>
+              <option v-for="m in swapOptions" :key="m.id" :value="m.id">{{ otherLabel(m) }}</option>
+            </select>
+          </label>
+          <button type="button" class="btn secondary" :disabled="busy || !swapWith" @click="swap">{{ t('results.swap') }}</button>
+        </div>
+        <div v-if="match.status !== 'FINISHED'" class="suspend">
+          <button v-if="!suspending" type="button" class="btn secondary" @click="suspending = true">{{ t('results.suspend') }}</button>
+          <template v-else>
+            <span class="muted small">{{ t('results.suspendHelp', { home: goals.home ?? score.home, away: goals.away ?? score.away }) }}</span>
+            <label>{{ t('results.remaining') }}<input v-model.number="remaining" class="input mins" type="number" min="1" max="60" /></label>
+            <button type="button" class="btn" :disabled="busy" @click="suspend">{{ t('results.suspendConfirm') }}</button>
+          </template>
+        </div>
       </details>
 
       <p v-if="error" class="error">{{ error }}</p>
@@ -263,6 +406,15 @@ async function save() {
 .details-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; margin: 12px 0; }
 .details-grid label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--muted); }
 .details-grid .wide { grid-column: 1 / -1; }
+.swap, .suspend { display: flex; align-items: flex-end; gap: 10px; flex-wrap: wrap; margin-top: 12px; padding-top: 10px; border-top: 1px dashed var(--border); }
+.swap label, .suspend label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--muted); }
+.swap .select { min-width: 280px; }
+.input.mins { width: 80px; }
+.suspended { background: #fff4e0; color: #8a5300; border-radius: 8px; padding: 8px 12px; font-size: 14px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.suspended .link, .link { background: none; border: 0; padding: 0; color: var(--navy); font: inherit; font-size: 13px; text-decoration: underline; cursor: pointer; }
+.sanctions h3 { font-size: 16px; color: var(--navy); margin: 0 0 4px; }
+.sanction-row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; padding: 8px 0; border-bottom: 1px solid var(--border); }
+.sanction-row .fechas { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); }
 .sides { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 8px; }
 .side { background: var(--row-alt); border-radius: 10px; padding: 12px; }
 .check { display: flex; align-items: center; gap: 8px; font-weight: 500; margin-bottom: 8px; }

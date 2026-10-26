@@ -30,6 +30,9 @@ watch(isAdmin, (admin) => { if (admin) refreshPendingRequests() }, { immediate: 
         <AppIcon name="check" /> {{ t('nav.requests') }}
         <span v-if="pendingRequests" class="badge" :aria-label="t('requests.pendingCount', { n: pendingRequests })">{{ pendingRequests }}</span>
       </RouterLink>
+      <RouterLink v-if="isAdmin" :to="PANEL.banned" class="item" active-class="active">
+        <AppIcon name="shield" /> {{ t('nav.banned') }}
+      </RouterLink>
       <RouterLink :to="PANEL.history" class="item" active-class="active">
         <AppIcon name="star" /> {{ t('nav.history') }}
       </RouterLink>

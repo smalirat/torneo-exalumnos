@@ -5,6 +5,7 @@ import AppIcon from '../components/AppIcon.vue'
 import CrestPicker from '../components/CrestPicker.vue'
 import ConfirmButton from '../components/ConfirmButton.vue'
 import MyContactModal from '../components/MyContactModal.vue'
+import CaptainProtests from '../components/CaptainProtests.vue'
 import InlineEdit from '../components/InlineEdit.vue'
 import { authApi, requestApi, teamApi } from '../api/endpoints'
 import { isAdmin, missingContact } from '../auth'
@@ -246,6 +247,8 @@ const countLabel = (n: number) => (n === 1 ? t('teams.onePlayer') : t('teams.pla
                     :placeholder="t('teams.dniMissing')" :aria-label="t('teams.dniOf', { name: p.fullName })"
                     @change="setDni(team.id, p, $event)"
                   >
+                  <small v-if="p.banned" class="state banned">{{ t('teams.bannedPlayer') }}</small>
+                  <small v-if="p.eligibleFromRound" class="state eligible">{{ t('teams.eligibleFrom', { n: p.eligibleFromRound }) }}</small>
                   <small v-if="!p.approved && p.transferFrom" class="state">{{ t('teams.transferPending', { team: p.transferFrom }) }}</small>
                   <small v-else-if="!p.approved" class="state">{{ t('teams.playerPending') }}</small>
                   <small v-else-if="p.removalRequested" class="state">{{ t('teams.playerRemovalPending') }}</small>
@@ -268,6 +271,7 @@ const countLabel = (n: number) => (n === 1 ? t('teams.onePlayer') : t('teams.pla
       </template>
     </div>
 
+    <CaptainProtests v-if="!isAdmin && teams?.length && teams[0].approved" :team-id="teams[0].id" />
   </GlobalLayout>
 </template>
 
@@ -307,6 +311,8 @@ const countLabel = (n: number) => (n === 1 ? t('teams.onePlayer') : t('teams.pla
 .dni:hover, .dni:focus { border-color: var(--border); background: #fff; outline: none; color: var(--text); }
 .dni-input { width: 130px; flex-shrink: 0; }
 .state { margin-left: 6px; font-size: 12px; font-weight: 700; color: #b26a00; }
+.state.banned { color: var(--danger); }
+.state.eligible { color: var(--muted); font-weight: 500; }
 .review { color: #b26a00; font-weight: 700; display: flex; gap: 10px; flex-wrap: wrap; }
 .notice { color: #8a6500; background: #fff6d6; border-radius: 8px; padding: 8px 12px; font-size: 14px; }
 .pname { flex: 1; }

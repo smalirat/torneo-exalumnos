@@ -28,9 +28,10 @@ Campeonato (Tournament)   etapa APERTURA / CLAUSURA
 - **Punto de presencia:** +1 al equipo que se presenta a un partido (el admin lo marca al cargar el resultado).
 - **Abandono** (en el código, *walkover*): si un equipo no se presenta, el que se presentó gana 3-0 y suma presencia; el ausente no suma nada. Si no se presenta ninguno: 0-0, sin ganador y nadie suma (ni presencia). En la UI no se usa "walkover" ni "W.O.".
 - **Walkover anticipado:** si un walkover ya está cargado pero su fecha todavía no se jugó (p. ej. un equipo que se retiró y el Excel trae los 3-0 de las próximas fechas), se guarda pero **no cuenta en la tabla hasta que se juegue algún otro partido de esa fecha** (misma zona y número de fecha). El día del calendario no alcanza porque las fechas se postergan. Solo si la fecha no tiene otros partidos se usa el día (hora de Argentina). La UI lo marca con "Cuenta en la tabla cuando se juegue la fecha" y no lo toma como fecha jugada.
-- **Desempate:** PTS → diferencia de gol → goles a favor → resultado entre ellos → fair play → puntos de presencia → orden alfabético.
-- **Fair play:** penalización de 1 por amarilla y 3 por roja (menos es mejor), a partir de las tarjetas cargadas por jugador.
+- **Desempate** (reglamento 2026): con igualdad de puntos, 1º resultados entre ellos (mini-liga entre todos los empatados, 3/1/0 sin presencia), 2º diferencia de gol, 3º goles a favor, 4º partidos ganados, 5º puntos de presencia; después orden alfabético. El fair play ya no desempata.
+- **Fair play:** penalización de 1 por amarilla y 3 por roja, a partir de las tarjetas cargadas por jugador; se informa pero no desempata.
 - "Resultado entre ellos" = puntos (3/1/0, sin presencia) de los partidos entre los equipos empatados.
+- **No se presenta ninguno**: 3-0 en contra para los dos (cada uno suma 3 goles en contra; el marcador queda 0-0), sin puntos ni presencia.
 - Las reglas de puntaje viven en `MatchGame` (las usan la tabla y el dashboard del equipo).
 
 ## Goles y tarjetas (`MatchEvent`)
@@ -152,4 +153,16 @@ Campeonato (Tournament)   etapa APERTURA / CLAUSURA
 - El DNI es dato personal: solo en el plantel privado (`GET /api/teams/{id}/roster`, capitán o admin) y en la solicitud de alta que ve el admin. `GET /api/public/teams/{id}/players?former=true` incluye a los que se fueron (el editor de resultados los muestra al final: "ya no está en el equipo").
 - **Sanciones (suspensiones) son de la persona**: en Sancionados se muestran con el equipo en el que juega ahora y "recibida en X" si la recibió en otro. Las que no se cumplieron **pasan de temporada**: la lista de una temporada incluye las pendientes / en tribunal de temporadas anteriores, marcadas "(de 2025)". Las **amarillas acumuladas no** se trasladan: son de cada torneo. El Excel exporta solo las sanciones de su temporada, con el equipo donde se recibieron (`SeasonDataService.seasonSanctions`).
 - Las fechas cumplidas de una suspensión las descuenta el admin a mano (como en el Excel). Los totales anuales del Excel siguen siendo por ficha.
+
+## Reglamento: plantel, inhabilitados, plazos, suspensiones y protestas
+
+- **Inhabilitados** (`banned_people`, `V19`; `/panel/inhabilitados`, `/api/admin/banned`): la lista de la Asociación por DNI. Un DNI de la lista no se puede agregar a un plantel ni cargarse a un jugador (409). Si alguien ya estaba en un plantel, la lista dice en cuál y el plantel lo marca "Inhabilitado".
+- **Plantel de 11 a 24**: no se puede pasar de 24 (contando altas pendientes). Un capitán no puede pedir una baja que deje al equipo con menos de 11: primero el reemplazo (el admin puede).
+- **Plazos de incorporación** (`players.registered_at`, `V20`): los capitanes no pueden pedir altas cuando la próxima fecha de su zona es una de las 2 últimas (el admin sí, como excepción). Un alta pedida hasta el jueves 18 hs juega la fecha de ese fin de semana; después, la siguiente: el plantel y la solicitud muestran "juega desde la Fecha N" (solo si se sumó con la edición empezada).
+- **Partido suspendido** (`matches.suspended`, `remaining_minutes`, `V21`): `PATCH /api/admin/matches/{id}/suspension` guarda el resultado parcial y los minutos que faltan; no cuenta en la tabla hasta cargar el resultado final (que levanta la suspensión). Se muestra "Suspendido · faltan N'".
+- **Intercambiar horario**: `POST /api/admin/matches/{id}/swap-schedule` (horario, campo y cancha) entre dos partidos de la edición; en el editor, "Datos del partido".
+- **Sanciones**: al guardar un resultado con una roja (o dos amarillas del mismo jugador) el editor ofrece crear la sanción con las fechas mínimas del reglamento (roja directa 2, doble amarilla 1). En la temporada, el admin suma fechas cumplidas ("+1 cumplida") o cambia el total.
+- **Protestas** (`match_protests`, `V21`): el capitán protesta un partido jugado de su equipo desde Registro de equipos (hechos y pedido; una abierta por partido); el admin la resuelve en Solicitudes (cuenta en el contador) y el capitán ve la respuesta. `POST/GET /api/me/protests`, `GET /api/admin/protests`, `POST /api/admin/protests/{id}/resolve`.
+- **Vacantes en el armado automático**: cada categoría tiene un cupo (lo que quedó en la propuesta). Si faltan equipos, "Completar vacantes" sube desde la categoría de abajo: primero los que perdieron la promoción (mejor diferencia de gol en ese partido: `promoGoalDiff`), después los mejor ubicados; los que descendieron no suben.
+- Fuera de alcance por ahora (decisión 2026-10-25): guardianes de campo, mínimo de jugadores para el punto de presencia, acumulación anual de amarillas, año de promoción / localidad, pagos, subcapitán, pedidos de cambio de horario y descargos por la app.
 

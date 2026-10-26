@@ -34,6 +34,8 @@ export interface BuildTeam {
   included: boolean
   /** The proposal is a guess: the admin has to answer */
   question: boolean
+  /** Goal difference in the promotion it played (null if none): ranks the losers when filling vacancies */
+  promoGoalDiff: number | null
 }
 export interface BuildProposal {
   sourceId: number
@@ -139,6 +141,9 @@ export interface Match {
   advanceWalkover: boolean
   /** Walkover because a team withdrew from the edition (not a one-off absence) */
   withdrawal: boolean
+  /** Suspended while being played: the score so far, the minutes left (not counted until finished) */
+  suspended: boolean
+  remainingMinutes: number | null
 }
 
 export interface TeamSummary {
@@ -202,6 +207,37 @@ export interface Player {
   transferFrom?: string
   /** Left the team (transfer or removal with history); only in lists that include former players */
   gone: boolean
+  /** On the Asociación's list of players not allowed (private roster) */
+  banned?: boolean
+  /** Added mid-edition: the first match day they can play (Thursday 18 hs deadline) */
+  eligibleFromRound?: number | null
+}
+
+/** A DNI the Asociación does not allow; currentTeam = the roster the person is in now */
+export interface BannedPerson {
+  id: number
+  dni: string
+  fullName: string | null
+  reason: string | null
+  createdAt: string
+  currentTeam: string | null
+}
+
+/** A captain's protest of a match */
+export interface Protest {
+  id: number
+  matchId: number
+  match: string
+  round: number | null
+  matchAt: string | null
+  team: TeamRef
+  captain: string
+  facts: string
+  request: string
+  status: 'OPEN' | 'RESOLVED'
+  resolution: string | null
+  createdAt: string
+  resolvedAt: string | null
 }
 
 export interface TeamRegistration {

@@ -2,6 +2,7 @@
 import { computed, onMounted, ref } from 'vue'
 import GlobalLayout from '../layouts/GlobalLayout.vue'
 import BaseModal from '../components/BaseModal.vue'
+import AdminProtests from '../components/AdminProtests.vue'
 import { requestApi } from '../api/endpoints'
 import type { RequestItem } from '../api/types'
 import { refreshPendingRequests } from '../requests'
@@ -70,6 +71,7 @@ const confirmReject = () => run(async () => {
     <h1 class="title">{{ t('requests.title') }}</h1>
     <p class="muted intro">{{ t('requests.intro') }}</p>
     <p v-if="error" class="error">{{ error }}</p>
+    <AdminProtests />
 
     <p v-if="items === null" class="muted">{{ t('common.loading') }}</p>
     <p v-else-if="items.length === 0" class="card muted">{{ t('requests.empty') }}</p>

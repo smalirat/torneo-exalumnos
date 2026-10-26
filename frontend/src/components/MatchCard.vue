@@ -43,6 +43,9 @@ const place = computed(() => [
         <strong>{{ match.homeGoals }} - {{ match.awayGoals }}</strong>
         <small v-if="match.homePenalties !== null" class="muted">({{ match.homePenalties }}-{{ match.awayPenalties }} {{ t('playoffs.pens') }})</small>
       </span>
+      <span v-else-if="match.suspended" class="score">
+        <strong>{{ match.homeGoals }} - {{ match.awayGoals }}</strong>
+      </span>
       <span v-else class="score muted">vs</span>
       <span :class="['side', 'right', { win: isWinner(match.awayTeam.id) }]">
         {{ match.awayTeam.name }} <TeamBadge :team="match.awayTeam" :size="22" />
@@ -51,6 +54,7 @@ const place = computed(() => [
     <span v-if="walkover && match.status === 'FINISHED'" class="wo">
       {{ match.homePresent || match.awayPresent ? t('standings.walkover') : t('standings.noShow') }}<span v-if="hints && match.advanceWalkover" class="muted pending"> · {{ t('standings.advanceWalkover') }}</span>
     </span>
+    <span v-if="match.suspended && match.status !== 'FINISHED'" class="wo">{{ t('results.suspendedShort', { n: match.remainingMinutes ?? 0 }) }}</span>
     <p v-if="match.notes" class="note">{{ match.notes }}</p>
   </div>
 </template>

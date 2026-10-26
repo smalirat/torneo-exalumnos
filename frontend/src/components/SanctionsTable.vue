@@ -6,7 +6,9 @@ import { t } from '../i18n'
 // One list of sanctions. Served ones drop the "pending" and "status" columns (always "—" / "Cumplida").
 // A suspension is the person's: it shows the team they play for now ("recibida en X" if they got it elsewhere) and,
 // when it comes from an earlier season than `year`, which one.
-defineProps<{ rows: Sanction[]; served?: boolean; year?: number | null }>()
+defineProps<{ rows: Sanction[]; served?: boolean; year?: number | null; admin?: boolean }>()
+// admin: one more match served, or the total of match days changed (the tribunal decided)
+const emit = defineEmits<{ change: [sanction: Sanction, matchesSuspended: number, matchesServed: number] }>()
 </script>
 
 <template>
@@ -25,6 +27,7 @@ defineProps<{ rows: Sanction[]; served?: boolean; year?: number | null }>()
             <th>{{ t('season.status') }}</th>
           </template>
           <th class="left">{{ t('season.notes') }}</th>
+          <th v-if="admin && !served">{{ t('season.actions') }}</th>
         </tr>
       </thead>
       <tbody>
@@ -45,6 +48,17 @@ defineProps<{ rows: Sanction[]; served?: boolean; year?: number | null }>()
             <td><span :class="['status', s.status]">{{ t(`season.statuses.${s.status}`) }}</span></td>
           </template>
           <td class="left small">{{ s.notes }}</td>
+          <td v-if="admin && !served" class="actions">
+            <button type="button" class="btn secondary small-btn" @click="emit('change', s, s.matchesSuspended, s.matchesServed + 1)">
+              {{ t('season.serveOne') }}
+            </button>
+            <label class="total">{{ t('season.total') }}
+              <input
+                class="input" type="number" min="1" max="30" :value="s.matchesSuspended"
+                @change="emit('change', s, Number(($event.target as HTMLInputElement).value), s.matchesServed)"
+              >
+            </label>
+          </td>
         </tr>
       </tbody>
     </table>
@@ -60,6 +74,10 @@ td { text-align: center; padding: 6px; }
 tbody tr:nth-child(even) td { background: var(--row-alt); }
 .team { display: inline-flex; align-items: center; gap: 8px; }
 .strong { font-weight: 700; }
+.actions { white-space: nowrap; }
+.actions .total { display: inline-flex; align-items: center; gap: 4px; margin-left: 6px; font-size: 12px; color: var(--muted); }
+.actions .input { width: 56px; padding: 2px 6px; }
+.small-btn { padding: 4px 10px; font-size: 12px; }
 .from { display: block; font-size: 12px; color: var(--muted); }
 .small { font-size: 12px; color: var(--muted); }
 .status { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px; white-space: nowrap; }

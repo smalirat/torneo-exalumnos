@@ -46,6 +46,8 @@ watch(sourceId, async (id) => {
     const p = await tournamentApi.buildProposal(edition.value.id, id)
     proposal.value = p
     rows.value = p.teams.map((r, seed) => ({ ...r, seed, target: r.included ? r.categoryId : null, answered: !r.question }))
+    quota.value = Object.fromEntries(p.categories.map((c) => [c.id, rows.value.filter((r) => r.target === c.id).length]))
+    filled.value = []
     definitions.value = p.definitions.map((d) => ({ ...d }))
   } catch (e) {
     error.value = e instanceof Error ? e.message : t('common.genericError')
@@ -68,6 +70,32 @@ const out = computed(() => rows.value.filter((r) => r.target === null))
 function setTarget(r: Row, value: string) {
   r.target = value === '' ? null : Number(value)
   r.answered = true
+}
+
+// ---- vacancies (the rules): if a category is short of teams, it is completed from the one below. First the
+// promotion losers, best goal difference in their promotion first; then the best placed of the category below that
+// did not go up. The ones that went down stay down.
+const quota = ref<Record<number, number>>({})
+const filled = ref<string[]>([])
+function fillVacancies() {
+  const cats = proposal.value?.categories ?? []
+  const moved: string[] = []
+  for (let i = 0; i + 1 < cats.length; i++) {
+    const upper = cats[i], lower = cats[i + 1]
+    const count = () => rows.value.filter((r) => r.target === upper.id).length
+    const candidates = rows.value
+      .filter((r) => r.target === lower.id && r.reason !== 'DESCENDS' && r.position !== null)
+      .sort((a, b) => Number(b.reason === 'PROMO_LOST') - Number(a.reason === 'PROMO_LOST')
+        || (b.promoGoalDiff ?? -999) - (a.promoGoalDiff ?? -999)
+        || a.seed - b.seed)
+    for (const r of candidates) {
+      if (count() >= (quota.value[upper.id] ?? 0)) break
+      r.target = upper.id
+      r.answered = true
+      moved.push(`${r.team.name} → ${upper.name}`)
+    }
+  }
+  filled.value = moved.length ? moved : [t('build.noVacancies')]
 }
 
 /** "Zona 1 · 3º" */
@@ -197,12 +225,23 @@ const homePath = computed(() => (edition.value ? panelEditionPath(edition.value)
         </div>
       </section>
 
+      <div v-if="(proposal.categories.length ?? 0) > 1" class="card vacancy-bar">
+        <span class="muted small">{{ t('build.vacanciesHelp') }}</span>
+        <button type="button" class="btn secondary" @click="fillVacancies">{{ t('build.fillVacancies') }}</button>
+        <ul v-if="filled.length" class="filled"><li v-for="f in filled" :key="f">{{ f }}</li></ul>
+      </div>
+
       <div class="columns">
         <section v-for="c in columns" :key="c.id" class="card column">
           <header>
             <h2>{{ c.name }}</h2>
             <span class="muted">{{ t('build.count', { n: c.rows.length, zones: zonesText(c.zoneCount) }) }}</span>
           </header>
+          <label class="quota">
+            {{ t('build.quota') }}
+            <input v-model.number="quota[c.id]" class="input" type="number" min="0" max="40" />
+            <span v-if="c.rows.length < (quota[c.id] ?? 0)" class="vacancies">{{ t('build.vacancies', { n: (quota[c.id] ?? 0) - c.rows.length }) }}</span>
+          </label>
           <p v-if="c.rows.length === 0" class="muted small">{{ t('build.emptyCategory') }}</p>
           <div v-for="r in c.rows" :key="r.team.id" :class="['row', { pending: r.question && !r.answered }]">
             <TeamBadge :team="r.team" :size="24" />
@@ -350,5 +389,10 @@ a { color: var(--navy); font-weight: 500; text-decoration: underline; }
   border: 1px dashed var(--border); background: none; color: var(--navy); font: inherit; font-size: 13px; font-weight: 500; margin-top: 4px;
 }
 .iz { margin: 4px 0 6px 26px; }
+.quota { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); margin-bottom: 6px; }
+.quota .input { width: 70px; padding: 4px 8px; }
+.vacancies { color: #a86b00; font-weight: 700; }
+.vacancy-bar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.filled { width: 100%; margin: 4px 0 0; padding-left: 18px; font-size: 13px; }
 .summary { margin: 0 0 10px; padding-left: 18px; }
 </style>

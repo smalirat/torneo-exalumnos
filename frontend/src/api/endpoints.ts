@@ -1,6 +1,6 @@
 import { api, del, download, get, patch, post, put, upload } from './client'
 import type {
-  BuildDefinition, BuildProposal, CardRow, Category, CategoryHistory, CollageItem, CollagePhoto, InviteRes, MyRequests, RequestItem, RequestType, ImportHistory, ImportPreview, Match, MatchDetails, MatchEvent, Me, Player,
+  BannedPerson, BuildDefinition, BuildProposal, CardRow, Protest, Category, CategoryHistory, CollageItem, CollagePhoto, InviteRes, MyRequests, RequestItem, RequestType, ImportHistory, ImportPreview, Match, MatchDetails, MatchEvent, Me, Player,
   Registration, Sanction, ScoreReq, ScorerRow, Season, SeasonStatRow, SlotReq, StandingRow, TeamRef, TeamRegistration,
   TeamSummary, TokenRes, Tournament, TournamentStatus, YellowTally, Zone,
 } from './types'
@@ -100,6 +100,35 @@ export const tournamentApi = {
   }) => post<{ teams: number; matches: number; definitions: number }>(`/api/admin/tournaments/${id}/build`, body),
 }
 
+/** A sanction as the admin loads it (status null = derived from the matches served) */
+export interface SanctionInput {
+  playerId: number
+  tournamentId: number | null
+  type: Sanction['type']
+  matchesSuspended: number
+  matchesServed: number
+  status: Sanction['status'] | null
+  notes: string | null
+}
+
+/** The rules: a direct red is at least 2 match days; a double yellow, 1 */
+export const DEFAULT_SUSPENSION: Record<Sanction['type'], number> = { DIRECT_RED: 2, DOUBLE_YELLOW: 1, YELLOW_ACCUMULATION: 1, OTHER: 1 }
+
+/** Players the Asociación does not allow (admin) */
+export const bannedApi = {
+  list: () => get<BannedPerson[]>('/api/admin/banned'),
+  add: (body: { dni: string; fullName: string | null; reason: string | null }) => post<BannedPerson>('/api/admin/banned', body),
+  remove: (id: number) => del(`/api/admin/banned/${id}`),
+}
+
+/** Protests of matches: captains file them, the admin resolves */
+export const protestApi = {
+  mine: () => get<Protest[]>('/api/me/protests'),
+  create: (body: { matchId: number; facts: string; request: string }) => post<Protest>('/api/me/protests', body),
+  all: () => get<Protest[]>('/api/admin/protests'),
+  resolve: (id: number, resolution: string) => post<Protest>(`/api/admin/protests/${id}/resolve`, { resolution }),
+}
+
 /** URL of an edition's banner / logo, or null when it has none (the version busts the cache) */
 export function editionImage(t: Pick<Tournament, 'id' | 'bannerVersion' | 'logoVersion'>, kind: 'banner' | 'logo') {
   const v = kind === 'banner' ? t.bannerVersion : t.logoVersion
@@ -142,6 +171,12 @@ export const matchApi = {
   score: (matchId: number, body: ScoreReq) => patch<Match>(`/api/admin/matches/${matchId}/score`, body),
   remove: (matchId: number) => del(`/api/admin/matches/${matchId}`),
   updateDetails: (matchId: number, body: MatchDetails) => patch<Match>(`/api/admin/matches/${matchId}`, body),
+  /** Suspended while being played: score so far and minutes left */
+  suspend: (matchId: number, body: { homeGoals: number; awayGoals: number; remainingMinutes: number }) =>
+    patch<Match>(`/api/admin/matches/${matchId}/suspension`, body),
+  unsuspend: (matchId: number) => api<Match>('DELETE', `/api/admin/matches/${matchId}/suspension`),
+  /** Two matches swap time, field and pitch */
+  swapSchedule: (matchId: number, otherMatchId: number) => post<Match[]>(`/api/admin/matches/${matchId}/swap-schedule`, { otherMatchId }),
 }
 
 export interface NewSpecialMatch {
@@ -164,6 +199,8 @@ export const seasonApi = {
   figures: (id: number) => get<SeasonStatRow[]>(`/api/public/seasons/${id}/figures`),
   goalkeepers: (id: number) => get<SeasonStatRow[]>(`/api/public/seasons/${id}/goalkeepers`),
   sanctions: (id: number) => get<Sanction[]>(`/api/public/seasons/${id}/sanctions`),
+  createSanction: (seasonId: number, body: SanctionInput) => post<Sanction>(`/api/admin/seasons/${seasonId}/sanctions`, body),
+  updateSanction: (id: number, body: SanctionInput) => put<Sanction>(`/api/admin/sanctions/${id}`, body),
 }
 
 export const championApi = {
