@@ -43,6 +43,4 @@ desgin/
 .env
 .env.*
 
-### Docker
-.env
 !.env.example
