@@ -13,6 +13,7 @@ import com.mjt.Football_Tournament_Management_System.repo.MatchEventRepository;
 import com.mjt.Football_Tournament_Management_System.repo.MatchRepository;
 import com.mjt.Football_Tournament_Management_System.repo.PlayerRepository;
 import com.mjt.Football_Tournament_Management_System.exception.BadRequestException;
+import com.mjt.Football_Tournament_Management_System.exception.ConflictException;
 import com.mjt.Football_Tournament_Management_System.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -30,6 +31,7 @@ public class MatchService {
     private final PlayerRepository playerRepo;
     private final PlayoffService playoffs;
     private final MatchAppearanceRepository appearanceRepo;
+    private final com.mjt.Football_Tournament_Management_System.repo.MatchProtestRepository protestRepo;
 
     /**
      * Loads the result from per-player events (goals, own goals, cards); the score is derived from them.
@@ -73,6 +75,8 @@ public class MatchService {
         m.setAwayRedCards(count(events, m, false, MatchEvent.Type.RED_CARD));
         applyPenalties(m, req, home && away);
         m.setStatus(MatchGame.Status.FINISHED);
+        m.setSuspended(false);
+        m.setRemainingMinutes(null);
         m.setSource(DataSource.WEB);
         var saved = matchRepo.save(m);
         saveAppearances(saved, req.getPlayed(), events, home && away);
@@ -141,12 +145,54 @@ public class MatchService {
                 .map(a -> new ResponseDtos.AppearanceRes(a.getPlayer().getId(), a.getTeam().getId())).toList();
     }
 
+    /**
+     * The match was suspended while being played (the rules: the minutes left are played another day). It keeps the
+     * score so far and does not count; loading its final result ends the suspension.
+     */
+    @Transactional
+    public ResponseDtos.MatchRes suspend(Long matchId, AdminDtos.SuspendReq req) {
+        var m = matchRepo.findById(matchId).orElseThrow(() -> NotFoundException.of("Partido", matchId));
+        if (m.isFinished()) throw new ConflictException("El partido ya tiene resultado final; para suspenderlo, borrá el resultado");
+        m.setSuspended(true);
+        m.setHomeGoals(req.getHomeGoals());
+        m.setAwayGoals(req.getAwayGoals());
+        m.setRemainingMinutes(req.getRemainingMinutes());
+        m.setSource(DataSource.WEB);
+        return ResponseDtos.MatchRes.from(m);
+    }
+
+    @Transactional
+    public ResponseDtos.MatchRes unsuspend(Long matchId) {
+        var m = matchRepo.findById(matchId).orElseThrow(() -> NotFoundException.of("Partido", matchId));
+        if (m.isSuspended()) {
+            m.setSuspended(false);
+            m.setRemainingMinutes(null);
+            m.setHomeGoals(0);
+            m.setAwayGoals(0);
+        }
+        return ResponseDtos.MatchRes.from(m);
+    }
+
+    /** Two matches swap their time, field and pitch (captains agreed and the organizer makes it official) */
+    @Transactional
+    public List<ResponseDtos.MatchRes> swapSchedule(Long matchId, Long otherId) {
+        var a = matchRepo.findById(matchId).orElseThrow(() -> NotFoundException.of("Partido", matchId));
+        var b = matchRepo.findById(otherId).orElseThrow(() -> NotFoundException.of("Partido", otherId));
+        if (a.getId().equals(b.getId())) throw new BadRequestException("Elegí otro partido");
+        if (!a.getTournament().getId().equals(b.getTournament().getId())) throw new BadRequestException("Los partidos son de distintas ediciones");
+        var when = a.getScheduledAt(); var venue = a.getVenue(); var pitch = a.getPitch();
+        a.setScheduledAt(b.getScheduledAt()); a.setVenue(b.getVenue()); a.setPitch(b.getPitch());
+        b.setScheduledAt(when); b.setVenue(venue); b.setPitch(pitch);
+        return List.of(ResponseDtos.MatchRes.from(a), ResponseDtos.MatchRes.from(b));
+    }
+
     /** Deletes a match together with its goals, cards and who played. */
     @Transactional
     public void delete(Long matchId) {
         var m = matchRepo.findById(matchId).orElseThrow(() -> NotFoundException.of("Partido", matchId));
         eventRepo.deleteByMatch(m);
         appearanceRepo.deleteByMatch(m);
+        protestRepo.deleteByMatch(m);
         matchRepo.delete(m);
     }
 

@@ -205,6 +205,24 @@ public class AdminController {
         return pService.resolve(id);
     }
 
+    @PatchMapping("/matches/{id}/suspension")
+    @Operation(summary = "The match was suspended while being played: score so far and minutes left (it does not count until finished)")
+    public ResponseDtos.MatchRes suspend(@PathVariable Long id, @Valid @RequestBody AdminDtos.SuspendReq req) {
+        return mService.suspend(id, req);
+    }
+
+    @DeleteMapping("/matches/{id}/suspension")
+    @Operation(summary = "Undo a suspension (the match goes back to not played)")
+    public ResponseDtos.MatchRes unsuspend(@PathVariable Long id) {
+        return mService.unsuspend(id);
+    }
+
+    @PostMapping("/matches/{id}/swap-schedule")
+    @Operation(summary = "Swap the time, field and pitch of two matches of the same edition")
+    public List<ResponseDtos.MatchRes> swapSchedule(@PathVariable Long id, @Valid @RequestBody AdminDtos.SwapScheduleReq req) {
+        return mService.swapSchedule(id, req.getOtherMatchId());
+    }
+
     @PatchMapping("/matches/{id}/score")
     @Operation(summary = "Load the result as per-player events (score is derived); absent team = walkover 3-0")
     public ResponseDtos.MatchRes score(@PathVariable Long id, @Valid @RequestBody AdminDtos.ScoreUpdateReq req) {

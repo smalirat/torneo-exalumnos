@@ -242,7 +242,8 @@ public class ResponseDtos {
                            LocalDateTime scheduledAt, Integer round, String roundLabel, String venue, String pitch,
                            String notes, String status, Integer homeGoals, Integer awayGoals,
                            Integer homePenalties, Integer awayPenalties, TeamRef winner,
-                           boolean homePresent, boolean awayPresent, boolean advanceWalkover, boolean withdrawal) {
+                           boolean homePresent, boolean awayPresent, boolean advanceWalkover, boolean withdrawal,
+                           boolean suspended, Integer remainingMinutes) {
         /** For a match that is not a walkover waiting for its round (new, unplayed or special). */
         public static MatchRes from(MatchGame m) { return from(m, Set.of()); }
 
@@ -256,7 +257,8 @@ public class ResponseDtos {
                     m.getStatus().name(), m.getHomeGoals(), m.getAwayGoals(),
                     m.getHomePenalties(), m.getAwayPenalties(),
                     m.winner() == null ? null : TeamRef.from(m.winner()),
-                    m.present(true), m.present(false), m.getId() != null && pendingWalkovers.contains(m.getId()), m.isWithdrawal());
+                    m.present(true), m.present(false), m.getId() != null && pendingWalkovers.contains(m.getId()), m.isWithdrawal(),
+                    m.isSuspended(), m.getRemainingMinutes());
         }
     }
 
@@ -291,13 +293,27 @@ public class ResponseDtos {
      * PLACED) and whether the admin has to answer (the proposal is a guess).
      */
     public record BuildTeam(TeamRef team, String sourceGroup, Integer position, Long categoryId, String reason,
-                            String detail, boolean included, boolean question) {}
+                            String detail, boolean included, boolean question,
+                            /** Goal difference in the promotion it played (null if none): ranks losers for vacancies */
+                            Integer promoGoalDiff) {}
 
     public record BuildResult(int teams, int matches, int definitions) {}
 
     /** A banned DNI; currentTeam = the roster the person is in now (added before being banned), else null */
     public record BannedRes(Long id, String dni, String fullName, String reason, java.time.LocalDateTime createdAt,
                             String currentTeam) {}
+
+    /** A protest: the match (as "home vs away", its round and day), the team that protests and its captain */
+    public record ProtestRes(Long id, Long matchId, String match, Integer round, java.time.LocalDateTime matchAt,
+                             TeamRef team, String captain, String facts, String request, String status,
+                             String resolution, java.time.LocalDateTime createdAt, java.time.LocalDateTime resolvedAt) {
+        public static ProtestRes from(MatchProtest p) {
+            var m = p.getMatch();
+            return new ProtestRes(p.getId(), m.getId(), m.getHomeTeam().getName() + " vs " + m.getAwayTeam().getName(),
+                    m.getRound(), m.getScheduledAt(), TeamRef.from(p.getTeam()), p.getAuthor().getUsername(), p.getFacts(),
+                    p.getRequest(), p.getStatus().name(), p.getResolution(), p.getCreatedAt(), p.getResolvedAt());
+        }
+    }
 
     /** A player who played a match */
     public record AppearanceRes(Long playerId, Long teamId) {}

@@ -50,7 +50,8 @@ public class EditionBuilderService {
     private record Entry(Team team, int level, String group, int position, int groupKey, boolean withdrawn, Long zoneId) {}
 
     /** A promotion of the source edition, seen from one of its sides */
-    private record Promo(int upper, int lower, Team winner, String opponent) {}
+    /** goalDiff: of this side in the promotion (null if not played): ranks the losers when filling vacancies */
+    private record Promo(int upper, int lower, Team winner, String opponent, Integer goalDiff) {}
 
     @Transactional(readOnly = true)
     public ResponseDtos.BuildProposal proposal(Long targetId, Long sourceId) {
@@ -96,7 +97,9 @@ public class EditionBuilderService {
             var winner = m.winner();
             for (var side : List.of(a, b)) {
                 var other = side == a ? b : a;
-                promos.put(side.team().getId(), new Promo(upper, lower, winner, other.team().getName()));
+                boolean home = side == a;
+                Integer diff = m.isFinished() ? m.goalsFor(home) - m.goalsAgainst(home) : null;
+                promos.put(side.team().getId(), new Promo(upper, lower, winner, other.team().getName(), diff));
                 (side.level() == upper ? downPlaces : upPlaces)
                         .computeIfAbsent(side.groupKey(), k -> new ArrayList<>()).add(side.position());
             }
@@ -151,7 +154,7 @@ public class EditionBuilderService {
                 level = targetCats.indexOf(placed.getZone().getCategory());
             }
             var row = new ResponseDtos.BuildTeam(ResponseDtos.TeamRef.from(e.team()), e.group(), e.position(),
-                    targetCats.get(level).getId(), reason, detail, included, question);
+                    targetCats.get(level).getId(), reason, detail, included, question, promo == null ? null : promo.goalDiff());
             drafts.add(new Draft(row, level, e.level(), e.position(), e.groupKey()));
         }
 
@@ -161,7 +164,7 @@ public class EditionBuilderService {
             boolean placed = r.getZone() != null;
             int level = placed ? targetCats.indexOf(r.getZone().getCategory()) : levels - 1;
             var row = new ResponseDtos.BuildTeam(ResponseDtos.TeamRef.from(r.getTeam()), null, null,
-                    targetCats.get(level).getId(), placed ? "PLACED" : "NEW", null, true, !placed);
+                    targetCats.get(level).getId(), placed ? "PLACED" : "NEW", null, true, !placed, null);
             drafts.add(new Draft(row, level, Integer.MAX_VALUE, Integer.MAX_VALUE, Integer.MAX_VALUE));
         }
 

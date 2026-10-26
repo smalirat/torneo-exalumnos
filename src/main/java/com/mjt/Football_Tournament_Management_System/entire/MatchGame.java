@@ -89,6 +89,10 @@ public class MatchGame {
     private Integer homePenalties;
     private Integer awayPenalties;
 
+    /** Suspended while being played: the score so far stays, it does not count until the final result is loaded */
+    private boolean suspended;
+    private Integer remainingMinutes;
+
     /** Chronological order with undated matches last (databases put NULL first). */
     public static final Comparator<MatchGame> BY_DATE = Comparator
             .comparing(MatchGame::getScheduledAt, Comparator.nullsLast(Comparator.naturalOrder()))

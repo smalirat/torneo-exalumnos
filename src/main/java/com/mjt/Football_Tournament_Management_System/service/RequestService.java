@@ -25,6 +25,7 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class RequestService {
     private final TeamRepository teamRepo;
+    private final com.mjt.Football_Tournament_Management_System.repo.MatchProtestRepository protestRepo;
     private final PlayerRepository playerRepo;
     private final RegistrationRepository regRepo;
     private final RequestDecisionRepository decisionRepo;
@@ -56,7 +57,7 @@ public class RequestService {
     }
 
     @Transactional(readOnly = true)
-    public int count() { return pending().size(); }
+    public int count() { return pending().size() + (int) protestRepo.countByStatus(com.mjt.Football_Tournament_Management_System.entire.MatchProtest.Status.OPEN); }
 
     /** The captain's own pending requests and the latest answers */
     @Transactional(readOnly = true)

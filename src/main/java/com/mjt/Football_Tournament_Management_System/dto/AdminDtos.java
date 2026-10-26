@@ -70,6 +70,34 @@ public class AdminDtos {
         @Size(max = 20) private String pitch;
         @Size(max = 500) private String notes;
     }
+    /** A match suspended while being played: the score so far and the minutes left to play */
+    @Data
+    public static class SuspendReq {
+        @NotNull @Min(0) private Integer homeGoals;
+        @NotNull @Min(0) private Integer awayGoals;
+        @NotNull @Min(1) @Max(60) private Integer remainingMinutes;
+    }
+
+    /** A captain's protest about a match of their team */
+    @Data
+    public static class ProtestReq {
+        @NotNull private Long matchId;
+        @NotBlank @Size(max = 2000) private String facts;
+        @NotBlank @Size(max = 1000) private String request;
+    }
+
+    /** The organizer's answer to a protest */
+    @Data
+    public static class ProtestResolutionReq {
+        @NotBlank @Size(max = 2000) private String resolution;
+    }
+
+    /** Swap the time (and field / pitch) of a match with another one */
+    @Data
+    public static class SwapScheduleReq {
+        @NotNull private Long otherMatchId;
+    }
+
     /** Annual totals of a player; null leaves that value unset. */
     @Data
     public static class PlayerStatReq {
