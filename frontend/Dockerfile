@@ -2,7 +2,8 @@
 # Frontend (Vue + Vite). Node builds the static files, nginx serves them and forwards /api to the backend.
 
 # ---- build
-FROM node:22-alpine AS build
+# On the build machine's platform: the output (HTML/JS/CSS) is the same for every CPU
+FROM --platform=$BUILDPLATFORM node:22-alpine AS build
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN --mount=type=cache,target=/root/.npm npm ci

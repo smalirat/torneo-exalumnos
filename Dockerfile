@@ -2,7 +2,9 @@
 # Backend (Spring Boot). Two stages: Maven builds the jar, a small JRE image runs it.
 
 # ---- build
-FROM maven:3.9-eclipse-temurin-21 AS build
+# Runs on the machine doing the build ($BUILDPLATFORM), whatever the target: the jar is the same for every CPU,
+# so an ARM image (Oracle Cloud) does not need to compile under slow emulation
+FROM --platform=$BUILDPLATFORM maven:3.9-eclipse-temurin-21 AS build
 WORKDIR /src
 # Dependencies first: this layer is reused while pom.xml does not change
 COPY pom.xml .
@@ -11,7 +13,7 @@ COPY src ./src
 RUN --mount=type=cache,target=/root/.m2 mvn -q -B -DskipTests package \
     && cp target/*.jar /app.jar
 
-# ---- run
+# ---- run (one per target platform: amd64, arm64)
 FROM eclipse-temurin:21-jre-alpine
 # Never run as root inside the container
 RUN addgroup -S app && adduser -S app -G app
