@@ -36,6 +36,7 @@ public class TeamService {
     private final TeamRepository teamRepo;
     private final PlayerRepository playerRepo;
     private final PersonRepository personRepo;
+    private final BannedService banned;
     private final TournamentRepository tournamentRepo;
     private final RegistrationRepository regRepo;
     private final MatchRepository matchRepo;
@@ -212,10 +213,71 @@ public class TeamService {
             return;
         }
         if (!isAdmin(auth) && team.isApproved()) {
+            // The rules: a player leaves only if the team keeps the minimum; otherwise it is a replacement (add one first)
+            long staying = playerRepo.findByTeamAndApprovedTrueAndLeftAtIsNullOrderByJerseyNoAscFullNameAsc(team).stream()
+                    .filter(p -> p.getRemovalRequestedAt() == null && !p.getId().equals(player.getId())).count();
+            if (staying < MIN_ROSTER) {
+                throw new ConflictException("El equipo quedaría con menos de " + MIN_ROSTER
+                        + " jugadores: para darlo de baja, agregá antes a su reemplazo");
+            }
             player.setRemovalRequestedAt(LocalDateTime.now()); // the admin decides
             return;
         }
         removePlayer(player);
+    }
+
+    /** The rules: from 11 (save exceptions) up to 24 players per team */
+    static final int MIN_ROSTER = 11;
+    static final int MAX_ROSTER = 24;
+
+    /**
+     * The team's active edition (registration open or being played) whose next match day to play is one of its last
+     * two (no additions then); its name, else empty.
+     */
+    private Optional<String> lastMatchDays(Team team) {
+        for (var reg : regRepo.findByTeamOrderByIdDesc(team)) {
+            var t = reg.getTournament();
+            if (reg.getZone() == null || !(t.getStatus() == Tournament.Status.OPEN || t.getStatus() == Tournament.Status.LIVE)) continue;
+            var rounds = matchRepo.findByZoneOrderByScheduledAtAsc(reg.getZone()).stream().filter(m -> m.getRound() != null).toList();
+            int last = rounds.stream().mapToInt(MatchGame::getRound).max().orElse(0);
+            var next = rounds.stream().filter(m -> !m.isFinished()).mapToInt(MatchGame::getRound).min();
+            if (last > 0 && next.isPresent() && next.getAsInt() >= last - 1) return Optional.of(t.getName());
+        }
+        return Optional.empty();
+    }
+
+    /**
+     * The rules: additions asked for by Thursday 18 hs play that weekend's match day; later ones, the next. For a player
+     * added while their team plays an edition, the first match day (of their zone) they can play; null otherwise.
+     */
+    public Integer eligibleFromRound(Player p) {
+        if (p.getRegisteredAt() == null || p.getLeftAt() != null) return null;
+        for (var reg : regRepo.findByTeamOrderByIdDesc(p.getTeam())) {
+            var t = reg.getTournament();
+            if (reg.getZone() == null || !(t.getStatus() == Tournament.Status.OPEN || t.getStatus() == Tournament.Status.LIVE)) continue;
+            var byRound = new TreeMap<Integer, LocalDateTime>();
+            for (var m : matchRepo.findByZoneOrderByScheduledAtAsc(reg.getZone())) {
+                if (m.getRound() == null || m.getScheduledAt() == null) continue;
+                byRound.merge(m.getRound(), m.getScheduledAt(), (a, b) -> a.isBefore(b) ? a : b);
+            }
+            if (byRound.isEmpty()) return null;
+            for (var e : byRound.entrySet()) {
+                if (!p.getRegisteredAt().isAfter(thursdayCutoff(e.getValue()))) {
+                    // Only worth saying when they joined after the edition started
+                    return e.getKey().equals(byRound.firstKey()) ? null : e.getKey();
+                }
+            }
+            return null; // after the last match day's deadline
+        }
+        return null;
+    }
+
+    /** 18 hs of the Thursday before a match (a match on a Thursday: the one of the week before) */
+    static LocalDateTime thursdayCutoff(LocalDateTime match) {
+        var day = match.toLocalDate();
+        int back = (day.getDayOfWeek().getValue() - java.time.DayOfWeek.THURSDAY.getValue() + 7) % 7;
+        if (back == 0) back = 7;
+        return day.minusDays(back).atTime(18, 0);
     }
 
     /**
@@ -250,7 +312,7 @@ public class TeamService {
         if (player.getTeam() == null || !player.getTeam().getId().equals(team.getId())) throw NotFoundException.of("Jugador", playerId);
         if (req.getJerseyNo() != null) player.setJerseyNo(req.getJerseyNo());
         if (req.getDni() != null) setDni(player, req.getDni());
-        return ResponseDtos.PlayerRes.withDni(player, transferFrom(player));
+        return ResponseDtos.PlayerRes.withDni(player, transferFrom(player), banned.isBanned(player.getDni()), eligibleFromRound(player));
     }
 
     /**
@@ -261,6 +323,7 @@ public class TeamService {
         var dni = normalizeDni(raw);
         var person = player.getPerson();
         if (Objects.equals(dni, person.getDni())) return;
+        banned.checkAllowed(dni);
         var other = dni == null ? null : personRepo.findByDni(dni).orElse(null);
         if (other == null) {
             person.setDni(dni);
@@ -281,13 +344,7 @@ public class TeamService {
         personRepo.delete(person);
     }
 
-    /** Only its digits ("30.123.456" -> "30123456"), 7 or 8 of them; blank = no DNI */
-    private static String normalizeDni(String raw) {
-        var dni = raw.replaceAll("[\\s.\\-]", "");
-        if (dni.isEmpty()) return null;
-        if (!dni.matches("\\d{7,8}")) throw new BadRequestException("El DNI tiene que tener 7 u 8 números");
-        return dni;
-    }
+    private static String normalizeDni(String raw) { return Dni.normalize(raw); }
 
     /** A team in review is only visible to its captain and the admin. */
     @Transactional(readOnly = true)
@@ -325,7 +382,7 @@ public class TeamService {
     @Transactional(readOnly = true)
     public List<ResponseDtos.PlayerRes> roster(Long teamId, Authentication auth) {
         return playerRepo.findByTeamAndLeftAtIsNullOrderByJerseyNoAscFullNameAsc(ownedTeam(teamId, auth)).stream()
-                .map(p -> ResponseDtos.PlayerRes.withDni(p, transferFrom(p))).toList();
+                .map(p -> ResponseDtos.PlayerRes.withDni(p, transferFrom(p), banned.isBanned(p.getDni()), eligibleFromRound(p))).toList();
     }
 
     /**
@@ -337,10 +394,19 @@ public class TeamService {
     public List<ResponseDtos.PlayerRes> addPlayers(Long teamId, TeamDtos.AddPlayersReq req, Authentication auth) {
         var team = ownedTeam(teamId, auth);
         boolean admin = isAdmin(auth);
+        int inRoster = playerRepo.findByTeamAndLeftAtIsNullOrderByJerseyNoAscFullNameAsc(team).size();
+        if (inRoster + req.getPlayers().size() > MAX_ROSTER) {
+            throw new ConflictException("Un plantel puede tener hasta " + MAX_ROSTER + " jugadores (tiene " + inRoster + ")");
+        }
+        // The rules: players can be added until 2 match days before the end of the tournament (the admin can make exceptions)
+        if (!admin) lastMatchDays(team).ifPresent(edition -> {
+            throw new ConflictException("No se pueden incorporar jugadores en las últimas 2 fechas del " + edition);
+        });
         var dnis = new HashSet<String>();
         var out = new ArrayList<ResponseDtos.PlayerRes>();
         for (var item : req.getPlayers()) {
             var dni = item.getDni() == null ? null : normalizeDni(item.getDni());
+            banned.checkAllowed(dni);
             if (dni != null && !dnis.add(dni)) throw new ConflictException("El DNI " + dni + " está repetido");
             var person = dni == null ? null : personRepo.findByDni(dni).orElse(null);
             if (person != null) {
@@ -356,11 +422,12 @@ public class TeamService {
             pl.setTeam(team); pl.setPerson(person); pl.setJerseyNo(item.getJerseyNo());
             pl.setFullName(dni != null && person.getFullName() != null ? person.getFullName() : item.getFullName().trim());
             pl.setJoinedAt(LocalDate.now());
+            pl.setRegisteredAt(LocalDateTime.now(MatchGame.LEAGUE_ZONE));
             checkTransfer(pl);
             if (!admin) { pl.setApproved(false); pl.setRequestedAt(LocalDateTime.now()); }
             playerRepo.save(pl);
             if (admin) closeOtherFiles(pl);
-            out.add(ResponseDtos.PlayerRes.withDni(pl, transferFrom(pl)));
+            out.add(ResponseDtos.PlayerRes.withDni(pl, transferFrom(pl), false, eligibleFromRound(pl)));
         }
         return out;
     }

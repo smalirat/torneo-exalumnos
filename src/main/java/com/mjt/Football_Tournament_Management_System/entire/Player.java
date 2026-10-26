@@ -23,6 +23,8 @@ public class Player {
     /** When the file opened, and closed (left the team: transfer or removal with history); null = in the roster */
     private java.time.LocalDate joinedAt;
     private java.time.LocalDate leftAt;
+    /** When the addition was asked for (captain) or made (admin): the deadline of the rules counts from it */
+    private java.time.LocalDateTime registeredAt;
 
     @ManyToOne(fetch = FetchType.LAZY)
     private Team team;

@@ -146,16 +146,21 @@ public class ResponseDtos {
                             @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
                             String transferFrom,
                             /** The file is closed (the person left the team); only in lists that include former players */
-                            boolean gone) {
+                            boolean gone,
+                            /** On the Asociación's list of players not allowed (private roster only) */
+                            boolean banned,
+                            /** Match day of the current edition from which they can play (added mid-edition); null otherwise */
+                            Integer eligibleFromRound) {
         public static PlayerRes from(Player p) {
             return new PlayerRes(p.getId(), p.getFullName(), p.getJerseyNo(), p.getTeam().getId(), p.isApproved(),
-                    p.getRemovalRequestedAt() != null, null, null, p.getLeftAt() != null);
+                    p.getRemovalRequestedAt() != null, null, null, p.getLeftAt() != null, false, null);
         }
 
         /** For the team's captain or the admin; dni "" when the player has none yet */
-        public static PlayerRes withDni(Player p, String transferFrom) {
+        public static PlayerRes withDni(Player p, String transferFrom, boolean banned, Integer eligibleFromRound) {
             return new PlayerRes(p.getId(), p.getFullName(), p.getJerseyNo(), p.getTeam().getId(), p.isApproved(),
-                    p.getRemovalRequestedAt() != null, p.getDni() == null ? "" : p.getDni(), transferFrom, p.getLeftAt() != null);
+                    p.getRemovalRequestedAt() != null, p.getDni() == null ? "" : p.getDni(), transferFrom, p.getLeftAt() != null,
+                    banned, eligibleFromRound);
         }
     }
 
@@ -289,6 +294,10 @@ public class ResponseDtos {
                             String detail, boolean included, boolean question) {}
 
     public record BuildResult(int teams, int matches, int definitions) {}
+
+    /** A banned DNI; currentTeam = the roster the person is in now (added before being banned), else null */
+    public record BannedRes(Long id, String dni, String fullName, String reason, java.time.LocalDateTime createdAt,
+                            String currentTeam) {}
 
     /** A player who played a match */
     public record AppearanceRes(Long playerId, Long teamId) {}

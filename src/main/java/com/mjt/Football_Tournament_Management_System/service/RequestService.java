@@ -42,7 +42,8 @@ public class RequestService {
         for (var t : teamRepo.findByPendingNameNotNull()) out.add(req(Type.RENAME, t.getId(), t, t.getPendingName(), t.getPendingNameAt()));
         for (var t : teamRepo.findByDeletionRequestedAtNotNull()) out.add(req(Type.DELETE_TEAM, t.getId(), t, t.getName(), t.getDeletionRequestedAt()));
         for (var p : playerRepo.findByApprovedFalseAndTeam_ApprovedTrue()) out.add(req(Type.PLAYER_ADD, p.getId(), p.getTeam(), playerName(p) + (p.getDni() == null ? "" : " · DNI " + p.getDni())
-                + Optional.ofNullable(teamService.transferFrom(p)).map(from -> " · pase desde " + from).orElse(""), p.getRequestedAt()));
+                + Optional.ofNullable(teamService.transferFrom(p)).map(from -> " · pase desde " + from).orElse("")
+                + Optional.ofNullable(teamService.eligibleFromRound(p)).map(r -> " · juega desde la Fecha " + r).orElse(""), p.getRequestedAt()));
         for (var p : playerRepo.findByRemovalRequestedAtNotNull()) out.add(req(Type.PLAYER_REMOVE, p.getId(), p.getTeam(), playerName(p), p.getRemovalRequestedAt()));
         for (var r : regRepo.findByApprovedFalse()) out.add(req(Type.REGISTRATION, r.getId(), r.getTeam(), r.getTournament().getName(), r.getRequestedAt()));
         // The one asking is the "captain" of a claim (so it shows among their own requests)

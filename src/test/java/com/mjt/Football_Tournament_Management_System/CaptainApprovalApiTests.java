@@ -47,6 +47,10 @@ class CaptainApprovalApiTests extends ApiTestSupport {
         long team = newTeam(captain); // approved by the helper
         long kept = read(post("/api/teams/" + team + "/players", "{\"players\":[{\"fullName\":\"Titular\",\"jerseyNo\":1}]}", captain)).get(0).get("id").asLong();
         post("/api/admin/requests/teams/" + team + "/approve-all", "", admin).andExpect(status().isOk());
+        // The rules: a captain cannot leave the roster under 11 players
+        StringBuilder fill = new StringBuilder();
+        for (int i = 0; i < 11; i++) fill.append(i == 0 ? "" : ",").append("{\"fullName\":\"Relleno ").append(i).append("\",\"jerseyNo\":").append(50 + i).append("}");
+        post("/api/teams/" + team + "/players", "{\"players\":[" + fill + "]}", admin).andExpect(status().isOk());
         String oldName = read(get("/api/public/teams/" + team, null)).get("name").asText();
 
         String newName = "Renombrado " + UUID.randomUUID();
@@ -61,8 +65,9 @@ class CaptainApprovalApiTests extends ApiTestSupport {
         // Nothing changed publicly yet
         get("/api/public/teams/" + team, null).andExpect(jsonPath("$.name").value(oldName));
         get("/api/public/teams/" + team + "/players", null)
-                .andExpect(jsonPath("$.length()").value(1))
-                .andExpect(jsonPath("$[0].id").value(kept));
+                .andExpect(jsonPath("$.length()").value(12)) // Titular (removal pending) + 11 fillers; Suplente not yet
+                .andExpect(jsonPath("$[?(@.id == " + kept + ")]").isNotEmpty())
+                .andExpect(jsonPath("$[?(@.id == " + added + ")]").isEmpty());
         get("/api/public/tournaments/" + tournament + "/registrations", null).andExpect(jsonPath("$.length()").value(0));
         get("/api/me/requests", captain).andExpect(jsonPath("$.pending.length()").value(4));
 
@@ -72,8 +77,9 @@ class CaptainApprovalApiTests extends ApiTestSupport {
         post("/api/admin/requests/teams/" + team + "/approve-all", "", admin).andExpect(jsonPath("$.approved").value(4));
         get("/api/public/teams/" + team, null).andExpect(jsonPath("$.name").value(newName));
         get("/api/public/teams/" + team + "/players", null)
-                .andExpect(jsonPath("$.length()").value(1))
-                .andExpect(jsonPath("$[0].id").value(added));
+                .andExpect(jsonPath("$.length()").value(12)) // Suplente in, Titular out
+                .andExpect(jsonPath("$[?(@.id == " + added + ")]").isNotEmpty())
+                .andExpect(jsonPath("$[?(@.id == " + kept + ")]").isEmpty());
         get("/api/public/tournaments/" + tournament + "/registrations", null).andExpect(jsonPath("$[0].id").value(reg));
         post("/api/admin/requests/REGISTRATION/" + reg + "/approve", "", admin).andExpect(status().isConflict()); // already done
     }

@@ -238,6 +238,14 @@ public class AdminDtos {
         @NotNull private Long zoneB;
     }
 
+    /** A player not allowed in the tournament (by DNI); the name is optional (taken from the person if known) */
+    @Data
+    public static class BannedReq {
+        @NotBlank @Size(max = 20) private String dni;
+        @Size(max = 255) private String fullName;
+        @Size(max = 500) private String reason;
+    }
+
     @Data
     public static class ZoneDrawReq {
         /** Unassigned registrations of the tournament to draw into the category's zones. */

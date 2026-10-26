@@ -285,6 +285,10 @@ class AuthAndTeamApiTests {
         long scorer = newPlayer(captain, mine, "Goleador");
         long bench = newPlayer(captain, mine, "Suplente");
         approveAll(mine); // the captain's additions wait for the admin
+        // The rules: a captain cannot leave the roster under 11 players
+        StringBuilder fill = new StringBuilder();
+        for (int i = 0; i < 10; i++) fill.append(i == 0 ? "" : ",").append("{\"fullName\":\"Relleno ").append(i).append("\",\"jerseyNo\":").append(50 + i).append("}");
+        post("/api/teams/" + mine + "/players", "{\"players\":[" + fill + "]}", admin).andExpect(status().isOk());
         assignToZone(admin, zone, mine, rival);
         score(admin, scheduleMatch(admin, zone, mine, rival), "{\"events\":[" + event(scorer, "GOAL") + "]}");
 
@@ -292,18 +296,18 @@ class AuthAndTeamApiTests {
         delete("/api/teams/" + mine + "/players/" + bench, captain).andExpect(status().isNoContent());
         // A captain's removal waits for the admin
         mvc.perform(get("/api/teams").header("Authorization", "Bearer " + captain))
-                .andExpect(jsonPath("$[0].playerCount").value(2));
+                .andExpect(jsonPath("$[0].playerCount").value(12));
         post("/api/admin/requests/PLAYER_REMOVE/" + bench + "/approve", "", admin).andExpect(status().isNoContent());
         mvc.perform(get("/api/teams").header("Authorization", "Bearer " + captain))
-                .andExpect(jsonPath("$[0].playerCount").value(1));
+                .andExpect(jsonPath("$[0].playerCount").value(11));
 
         // With a goal the player can leave too: the file is closed, the goal stays with the team
         delete("/api/teams/" + mine + "/players/" + scorer, admin).andExpect(status().isNoContent());
         mvc.perform(get("/api/teams").header("Authorization", "Bearer " + captain))
-                .andExpect(jsonPath("$[0].playerCount").value(0));
-        mvc.perform(get("/api/public/teams/" + mine + "/players")).andExpect(jsonPath("$.length()").value(0));
+                .andExpect(jsonPath("$[0].playerCount").value(10));
+        mvc.perform(get("/api/public/teams/" + mine + "/players")).andExpect(jsonPath("$[?(@.id == " + scorer + ")]").isEmpty());
         mvc.perform(get("/api/public/teams/" + mine + "/players?former=true"))
-                .andExpect(jsonPath("$[0].id").value(scorer)).andExpect(jsonPath("$[0].gone").value(true));
+                .andExpect(jsonPath("$[?(@.id == " + scorer + ")].gone").value(true));
     }
 
     @Test
