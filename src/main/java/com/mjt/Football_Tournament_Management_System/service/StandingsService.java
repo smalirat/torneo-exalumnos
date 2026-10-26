@@ -49,9 +49,7 @@ public class StandingsService {
         }
 
         var sorted = new ArrayList<>(rows.values());
-        sorted.sort(Comparator.comparingInt(Row::points).reversed()
-                .thenComparing(Comparator.comparingInt(Row::goalDiff).reversed())
-                .thenComparing(Comparator.comparingInt((Row r) -> r.goalsFor).reversed()));
+        sorted.sort(Comparator.comparingInt(Row::points).reversed());
         breakTies(sorted, finished);
 
         var out = new ArrayList<ResponseDtos.StandingRow>();
@@ -59,7 +57,10 @@ public class StandingsService {
         return out;
     }
 
-    /** Re-sorts each block tied on points/difference/goals with the remaining criteria. */
+    /**
+     * Teams tied on points, as the league rules say: 1º the results between them (a "league" among all the tied
+     * teams), 2º goal difference, 3º goals for, 4º matches won, 5º presence points; then the name, so it is stable.
+     */
     private void breakTies(List<Row> rows, List<MatchGame> matches) {
         int i = 0;
         while (i < rows.size()) {
@@ -71,7 +72,9 @@ public class StandingsService {
                 block.forEach(r -> ids.add(r.team.getId()));
                 block.forEach(r -> r.headToHead = headToHeadPoints(r.team, ids, matches));
                 block.sort(Comparator.comparingInt((Row r) -> r.headToHead).reversed()
-                        .thenComparingInt(r -> r.fairPlay)
+                        .thenComparing(Comparator.comparingInt(Row::goalDiff).reversed())
+                        .thenComparing(Comparator.comparingInt((Row r) -> r.goalsFor).reversed())
+                        .thenComparing(Comparator.comparingInt((Row r) -> r.won).reversed())
                         .thenComparing(Comparator.comparingInt((Row r) -> r.presence).reversed())
                         .thenComparing((a, b) -> NAME_ORDER.compare(a.team.getName(), b.team.getName())));
             }
@@ -112,9 +115,7 @@ public class StandingsService {
 
         int goalDiff() { return goalsFor - goalsAgainst; }
 
-        boolean tiedWith(Row o) {
-            return points() == o.points() && goalDiff() == o.goalDiff() && goalsFor == o.goalsFor;
-        }
+        boolean tiedWith(Row o) { return points() == o.points(); }
 
         ResponseDtos.StandingRow toRes(int position) {
             return new ResponseDtos.StandingRow(position, ResponseDtos.TeamRef.from(team), points(), played,

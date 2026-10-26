@@ -758,31 +758,44 @@ class AuthAndTeamApiTests {
     }
 
     @Test
-    void fairPlayThenAlphabeticalBreakFullTies() throws Exception {
+    void tiesFollowTheLeagueRulesAndNobodyShowingUpIsThreeNilForBoth() throws Exception {
         String admin = login("admin", "admin123");
         String suffix = UUID.randomUUID().toString();
 
-        // 1-1 draw with a yellow card for AAA: ZZZ goes first on fair play
-        long zone1 = newZone(admin);
-        long a1 = newTeamNamed(admin, "AAA1 " + suffix), z1 = newTeamNamed(admin, "ZZZ1 " + suffix);
-        long pa1 = newPlayer(admin, a1, "Jugador A1"), pz1 = newPlayer(admin, z1, "Jugador Z1");
-        assignToZone(admin, zone1, a1, z1);
-        score(admin, scheduleMatch(admin, zone1, a1, z1), "{\"events\":[" + String.join(",",
-                event(pa1, "GOAL"), event(pz1, "GOAL"), event(pa1, "YELLOW_CARD")) + "]}");
-        mvc.perform(get("/api/public/zones/" + zone1 + "/standings"))
-                .andExpect(jsonPath("$[0].team.id").value(z1))
-                .andExpect(jsonPath("$[1].fairPlay").value(1));
+        // A and B on 5 points: A beat B, so A goes first although B has a much better goal difference
+        long zone = newZone(admin);
+        long a = newTeamNamed(admin, "ZZA " + suffix), b = newTeamNamed(admin, "AAB " + suffix);
+        long x = newTeamNamed(admin, "X " + suffix), y = newTeamNamed(admin, "Y " + suffix);
+        assignToZone(admin, zone, a, b, x, y);
+        score(admin, scheduleMatch(admin, zone, a, b), "{\"homeGoals\":1,\"awayGoals\":0,\"events\":[]}");
+        score(admin, scheduleMatch(admin, zone, b, x), "{\"homeGoals\":9,\"awayGoals\":0,\"events\":[]}");
+        score(admin, scheduleMatch(admin, zone, y, a), "{\"homeGoals\":1,\"awayGoals\":0,\"events\":[]}");
+        mvc.perform(get("/api/public/zones/" + zone + "/standings"))
+                .andExpect(jsonPath("$[0].team.id").value(a))
+                .andExpect(jsonPath("$[1].team.id").value(b))
+                .andExpect(jsonPath("$[1].goalDiff").value(8));
 
-        // Same draw without cards: alphabetical
+        // Same draw, same everything (cards do not count): alphabetical
         long zone2 = newZone(admin);
         long a2 = newTeamNamed(admin, "AAA2 " + suffix), z2 = newTeamNamed(admin, "ZZZ2 " + suffix);
         long pa2 = newPlayer(admin, a2, "Jugador A2"), pz2 = newPlayer(admin, z2, "Jugador Z2");
         assignToZone(admin, zone2, z2, a2);
         score(admin, scheduleMatch(admin, zone2, z2, a2), "{\"events\":[" + String.join(",",
-                event(pa2, "GOAL"), event(pz2, "GOAL")) + "]}");
+                event(pa2, "GOAL"), event(pz2, "GOAL"), event(pa2, "YELLOW_CARD")) + "]}");
         mvc.perform(get("/api/public/zones/" + zone2 + "/standings"))
                 .andExpect(jsonPath("$[0].team.id").value(a2))
                 .andExpect(jsonPath("$[0].points").value(2)); // draw + presence
+
+        // Nobody showed up: 3-0 against both, no points
+        long zone3 = newZone(admin);
+        long c = newTeamNamed(admin, "C " + suffix), d = newTeamNamed(admin, "D " + suffix);
+        assignToZone(admin, zone3, c, d);
+        score(admin, scheduleMatch(admin, zone3, c, d), "{\"homePresent\":false,\"awayPresent\":false,\"events\":[]}");
+        mvc.perform(get("/api/public/zones/" + zone3 + "/standings"))
+                .andExpect(jsonPath("$[0].points").value(0))
+                .andExpect(jsonPath("$[0].goalsAgainst").value(3))
+                .andExpect(jsonPath("$[1].goalsAgainst").value(3))
+                .andExpect(jsonPath("$[1].goalDiff").value(-3));
     }
 
     // --- promotions & finals ---

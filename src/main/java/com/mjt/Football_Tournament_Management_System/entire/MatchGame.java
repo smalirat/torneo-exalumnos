@@ -165,7 +165,11 @@ public class MatchGame {
 
     public int goalsFor(boolean home) { return nz(home ? homeGoals : awayGoals); }
 
-    public int goalsAgainst(boolean home) { return goalsFor(!home); }
+    /** If nobody showed up, both lose 3-0 (the rules): each gets 3 against, though the score stays 0-0 */
+    public int goalsAgainst(boolean home) {
+        if (isFinished() && !present(true) && !present(false)) return WALKOVER_GOALS;
+        return goalsFor(!home);
+    }
 
     /** 3 win / 1 draw / 0 loss. If both teams were absent nobody gets result points. */
     public int resultPoints(boolean home) {
