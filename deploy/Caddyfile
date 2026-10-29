@@ -1,0 +1,10 @@
+# Caddy gets and renews the HTTPS certificate for {$DOMAIN} by itself (Let's Encrypt). It needs the domain pointing
+# to this server and ports 80 and 443 open. With DOMAIN=localhost it uses its own local certificate instead.
+{
+	email {$ACME_EMAIL}
+}
+
+{$DOMAIN} {
+	# Everything goes to the web container (nginx), which serves the app and forwards /api to the backend
+	reverse_proxy web:80
+}

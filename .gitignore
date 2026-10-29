@@ -44,3 +44,6 @@ desgin/
 .env.*
 
 !.env.example
+
+### Database dumps made by deploy/backup.sh ###
+deploy/backups/

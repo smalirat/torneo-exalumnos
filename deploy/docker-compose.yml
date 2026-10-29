@@ -1,0 +1,78 @@
+# Production: the same three services as the root docker-compose.yml, but nothing is built here. The images are the
+# ones CI published to ghcr.io (amd64 + arm64), and Caddy sits in front with HTTPS.
+# This folder is all the server needs: copy it, create .env from .env.example and run ./deploy.sh
+name: torneo-prod
+
+# Docker keeps container logs forever by default and a small server's disk fills up: keep 3 files of 10 MB each
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: football_tournament
+      POSTGRES_USER: ${DB_USERNAME:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d football_tournament"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    logging: *logging
+
+  api:
+    image: ghcr.io/smalirat/torneo-api:${TAG:-latest}
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DB_URL: jdbc:postgresql://db:5432/football_tournament
+      DB_USERNAME: ${DB_USERNAME:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD}
+      APP_JWT_SECRET: ${APP_JWT_SECRET:?Set APP_JWT_SECRET in .env (32+ characters)}
+      APP_ADMIN_USERNAME: ${APP_ADMIN_USERNAME:-admin}
+      APP_ADMIN_PASSWORD: ${APP_ADMIN_PASSWORD:-}
+      APP_CORS_ALLOWED_ORIGINS: https://${DOMAIN:?Set DOMAIN in .env}
+      APP_SWAGGER_ENABLED: "false"
+    logging: *logging
+
+  web:
+    image: ghcr.io/smalirat/torneo-web:${TAG:-latest}
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    logging: *logging
+    # No published port anymore: Caddy is the only door from the internet
+
+  caddy:
+    image: caddy:2.8-alpine
+    restart: unless-stopped
+    depends_on:
+      web:
+        condition: service_healthy
+    ports:
+      - "80:80"         # HTTP: Let's Encrypt checks the domain here, and Caddy redirects everything else to HTTPS
+      - "443:443"       # HTTPS
+      - "443:443/udp"   # HTTP/3
+    environment:
+      DOMAIN: ${DOMAIN}
+      ACME_EMAIL: ${ACME_EMAIL:?Set ACME_EMAIL in .env}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data       # certificates: keep them, or every restart asks Let's Encrypt again (rate limited)
+      - caddy-config:/config
+    logging: *logging
+
+volumes:
+  db-data:
+  caddy-data:
+  caddy-config:

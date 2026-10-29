@@ -113,7 +113,7 @@ docker compose up -d --build
 ```
 
 Open **http://localhost:8080** (log in with the admin of `.env`). Details, architecture and daily commands:
-[`docs/docker.md`](docs/docker.md). CI (tests, build and images on every push): [`docs/ci.md`](docs/ci.md).
+[`docs/docker.md`](docs/docker.md). CI (tests, build and images on every push): [`docs/ci.md`](docs/ci.md). Production (published images behind Caddy with HTTPS, backups): [`docs/deploy.md`](docs/deploy.md).
 
 ---
 
