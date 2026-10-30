@@ -134,10 +134,10 @@ jobs:
         env:
           DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
           DEPLOY_KNOWN_HOSTS: ${{ vars.DEPLOY_KNOWN_HOSTS }}
-          DEPLOY_HOST: ${{ vars.DEPLOY_HOST }}
+          DEPLOY_SSH_HOST: ${{ vars.DEPLOY_SSH_HOST }}
         run: |
           # Say clearly what is missing (Settings → Secrets and variables → Actions) instead of a cryptic ssh error
-          for name in DEPLOY_SSH_KEY DEPLOY_KNOWN_HOSTS DEPLOY_HOST; do
+          for name in DEPLOY_SSH_KEY DEPLOY_SSH_HOST DEPLOY_KNOWN_HOSTS; do
             [ -n "${!name}" ] || { echo "::error::$name is empty: create it in Settings → Secrets and variables → Actions"; exit 1; }
           done
           install -m 700 -d ~/.ssh
@@ -147,4 +147,4 @@ jobs:
 
       # Same tag the images job published (type=sha: the first 7 characters of the commit)
       - name: Deploy this commit
-        run: ssh -i ~/.ssh/deploy_key -o BatchMode=yes ubuntu@${{ vars.DEPLOY_HOST }} "sha-${GITHUB_SHA::7}"
+        run: ssh -i ~/.ssh/deploy_key -o BatchMode=yes ubuntu@${{ vars.DEPLOY_SSH_HOST }} "sha-${GITHUB_SHA::7}"
