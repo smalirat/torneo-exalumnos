@@ -1,5 +1,6 @@
 # Continuous integration: on every push and pull request to main, test the backend, build the frontend and
-# build the Docker images. On main, the images are published to GitHub Container Registry (ghcr.io).
+# build the Docker images. On main, the images are published to GitHub Container Registry (ghcr.io) and deployed to
+# the demo server.
 name: CI
 
 on:
@@ -9,10 +10,11 @@ on:
     branches: [main]
   workflow_dispatch: # run it by hand from the Actions tab
 
-# A newer push to the same branch cancels the run still going
+# A newer push to a pull request cancels the run still going. On main runs wait in line instead: cancelling one in the
+# middle of a deploy would leave the server half updated.
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 # Least privilege: jobs only read the code unless they say otherwise
 permissions:
@@ -114,3 +116,30 @@ jobs:
           # Docker layer cache in GitHub Actions: unchanged layers are not rebuilt
           cache-from: type=gha,scope=${{ matrix.name }}
           cache-to: type=gha,mode=max,scope=${{ matrix.name }}
+
+  deploy:
+    name: Deploy · demo
+    needs: images # the images of this commit are published
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # Shows the deploys (and the link) in the repository's Environments
+    environment:
+      name: demo
+      url: https://torneo-marianista-demo.duckdns.org
+    steps:
+      # The key's only power on the server is deploying a tag (forced command, deploy/deploy-ci.sh). The host key is
+      # pinned: the job refuses to talk to any other machine answering at that IP.
+      - name: SSH key and known host
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ vars.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
+
+      # Same tag the images job published (type=sha: the first 7 characters of the commit)
+      - name: Deploy this commit
+        run: ssh -i ~/.ssh/deploy_key -o BatchMode=yes ubuntu@${{ vars.DEPLOY_HOST }} "sha-${GITHUB_SHA::7}"
