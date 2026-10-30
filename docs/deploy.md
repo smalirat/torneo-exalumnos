@@ -24,6 +24,45 @@ Diferencias con el compose local de la raíz:
 - **Swagger siempre apagado** y CORS fijo a `https://DOMAIN`.
 - **Logs rotados** (3 × 10 MB por contenedor): por defecto Docker los guarda para siempre y llenan el disco.
 
+## Preparar el servidor
+
+Hoy corre en Oracle Cloud Always Free, en una `VM.Standard.E2.1.Micro` (Ubuntu 24.04, x86_64, 1 GB de RAM). La
+instancia y su red se pueden crear con [`infra/oci_launch.py`](../infra/oci_launch.py), que reintenta hasta que haya
+capacidad. Una vez creada, por SSH:
+
+```bash
+# 2 GB de swap: con 1 GB de RAM, sin swap Linux mata procesos (OOM killer) cuando se llena la memoria
+sudo fallocate -l 2G /swapfile && sudo chmod 600 /swapfile && sudo mkswap /swapfile && sudo swapon /swapfile
+echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
+echo 'vm.swappiness=10' | sudo tee /etc/sysctl.d/99-swap.conf && sudo sysctl -p /etc/sysctl.d/99-swap.conf
+
+sudo apt update && sudo apt upgrade -y        # y sudo reboot si existe /var/run/reboot-required
+
+# Firewall interno: las imágenes de Oracle solo dejan entrar el 22. Antes de instalar Docker, para no guardar sus reglas
+sudo iptables -I INPUT 5 -m state --state NEW -p tcp --dport 80 -j ACCEPT
+sudo iptables -I INPUT 6 -m state --state NEW -p tcp --dport 443 -j ACCEPT
+sudo netfilter-persistent save
+
+# Docker desde su repositorio oficial (el paquete docker.io de Ubuntu viene atrasado)
+sudo install -m 0755 -d /etc/apt/keyrings
+sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo $VERSION_CODENAME) stable" | sudo tee /etc/apt/sources.list.d/docker.list
+sudo apt update && sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+sudo usermod -aG docker ubuntu                # docker sin sudo (vale desde la próxima sesión)
+
+# SSH: sin login directo de root, menos intentos por conexión; fail2ban bloquea 1 h a quien falla 5 veces en 10 min
+printf "PermitRootLogin no\nMaxAuthTries 3\nLoginGraceTime 30\n" | sudo tee /etc/ssh/sshd_config.d/99-hardening.conf
+sudo sshd -t && sudo systemctl reload ssh
+sudo apt install -y fail2ban
+printf "[sshd]\nenabled = true\nbackend = systemd\njournalmatch = _SYSTEMD_UNIT=ssh.service\nmaxretry = 5\nfindtime = 10m\nbantime = 1h\n" | sudo tee /etc/fail2ban/jail.d/sshd.local
+sudo systemctl restart fail2ban
+```
+
+Las contraseñas de SSH ya vienen desactivadas y las actualizaciones automáticas de seguridad (`unattended-upgrades`)
+ya vienen activas. Además del firewall interno, en la *Security List* de la VCN tienen que estar abiertos el 80 y el 443.
+
+Con 1 GB hay que limitar la memoria de Java: descomentar `JAVA_OPTS` en `.env` (ver `.env.example`).
+
 ## Primer deploy
 
 Requisitos: un servidor Linux con Docker, los puertos 80 y 443 abiertos, y un dominio apuntando a su IP (sirve un

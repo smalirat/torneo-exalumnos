@@ -47,3 +47,6 @@ desgin/
 
 ### Database dumps made by deploy/backup.sh ###
 deploy/backups/
+
+### Python venv for infra/ scripts ###
+infra/.venv/
