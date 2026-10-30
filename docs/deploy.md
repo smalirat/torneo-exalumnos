@@ -69,8 +69,11 @@ Requisitos: un servidor Linux con Docker, los puertos 80 y 443 abiertos, y un do
 subdominio gratis de [DuckDNS](https://www.duckdns.org)).
 
 ```bash
-# desde tu máquina: copiar la carpeta al servidor
-scp -r deploy/ usuario@IP:/opt/torneo
+# en el servidor: la carpeta de la app (/opt es de root)
+sudo mkdir -p /opt/torneo && sudo chown ubuntu:ubuntu /opt/torneo
+
+# desde tu máquina, dentro de deploy/: los archivos (no el .env local ni los backups)
+scp docker-compose.yml Caddyfile .env.example *.sh ubuntu@IP:/opt/torneo/
 
 # en el servidor
 cd /opt/torneo
@@ -92,6 +95,25 @@ Cada push a `main` que pasa el CI publica imágenes con el tag `sha-<commit>`.
 
 `deploy.sh` usa `docker compose up --wait`: si algún healthcheck no pasa, termina con error en vez de dejarlo a medias
 sin avisar. Flyway aplica las migraciones nuevas al arrancar la API. Ojo: un rollback **no deshace migraciones**.
+
+## Deploy automático
+
+El job `deploy` del CI (ver [ci.md](ci.md)) hace lo mismo después de cada push a `main` que pasa los tests: entra por SSH
+y pide desplegar `sha-<commit>`. Usa una clave propia, distinta de la personal, atada a un comando forzado en
+`~/.ssh/authorized_keys` del servidor:
+
+```
+restrict,command="/opt/torneo/deploy-ci.sh" ssh-ed25519 AAAA... github-actions-deploy
+```
+
+- `command="…"`: se ejecuta [`deploy-ci.sh`](../deploy/deploy-ci.sh) sin importar lo que pida el cliente. Lo pedido le
+  llega en `SSH_ORIGINAL_COMMAND` y solo se acepta si es un tag (`sha-` + hash). Con la clave robada lo único posible es
+  desplegar una versión que construyó el CI.
+- `restrict`: sin terminal, sin túneles, sin reenvíos.
+- Para revocarla, borrar esa línea. El acceso personal sigue funcionando.
+
+Probarla desde una máquina con la clave: `ssh -i torneo_ci ubuntu@IP whoami` tiene que contestar `refused`, y
+`ssh -i torneo_ci ubuntu@IP sha-abc1234` despliega.
 
 ## Backups
 

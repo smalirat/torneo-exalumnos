@@ -1,235 +1,195 @@
-## ⚽ Football Tournament Management System (Spring Boot + JWT + PostgreSQL)
+# ⚽ Torneo de Exalumnos · Colegio Marianista
 
 [![CI](https://github.com/smalirat/torneo-exalumnos/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/smalirat/torneo-exalumnos/actions/workflows/ci.yml)
+[![Live demo](https://img.shields.io/badge/demo-torneo--marianista--demo.duckdns.org-1f3a6e)](https://torneo-marianista-demo.duckdns.org)
 
-A complete **backend REST API** for managing football tournaments, built using **Spring Boot 3**, **JPA/Hibernate**, **PostgreSQL** (Flyway migrations), **JWT authentication**, and **Swagger API documentation**.
+A web app to run a real amateur football league (the alumni league of Colegio Marianista, Buenos Aires): fixtures,
+results, standings, top scorers, sanctions and team rosters, with a public site for players and panels for the
+organizer and the team captains. Built and operated end to end: Spring Boot + Vue, containerized, tested and deployed
+automatically to a free cloud server on every push.
 
-This system allows **administrators** to create tournaments and manage fixtures, while **teams** can register, add players, join tournaments, and view performance dashboards.
-
----
-
-## 🚀 Tech Stack
-
-| Technology        | Purpose                 |
-| ----------------- | ----------------------- |
-| Spring Boot 3     | Backend application     |
-| Spring Security   | JWT Authentication      |
-| JPA + Hibernate   | ORM + Database Access   |
-| PostgreSQL + Flyway | Relational Database + schema migrations |
-| Swagger / OpenAPI | API Documentation       |
-| Lombok            | Reduce boilerplate code |
+**Live demo:** https://torneo-marianista-demo.duckdns.org
 
 ---
 
-## ✨ Features
+## The problem
 
-### 👨‍💼 Admin
+The league has run on Excel spreadsheets for years: one workbook per season, results typed by hand, standings computed
+with formulas, sanctions tracked in a separate sheet and shared as screenshots in WhatsApp groups. The rulebook has
+details that are easy to get wrong by hand: head-to-head tiebreakers, a presence point, forfeits counted as 3-0,
+suspensions that follow the player across tournaments, roster limits, players that can only play from a given match day.
 
-* 🔐 Secure login via JWT
-* 🏆 Create tournaments with registration & match windows
-* 🧮 Auto-generate **round-robin fixtures**
-* 📅 Schedule matches manually
-* 📝 Enter match scores / update results
-* 🎲 Random zone draw per category (balanced zone sizes)
-* 🔔 Notifications for followers (fixture, results, Excel imports)
+The goal: one source of truth that applies the rules, that the organizer can keep loading the way they already work
+(the Excel import/export stays), and that anyone can check from a phone.
 
-### 🏟️ Teams
+## What it does
 
-* ✅ Register a football team
-* 👥 Add players to the team
-* ✍ Register for a tournament (within registration window)
-* 📊 View dashboard: matches, goals, points
+- **Public site:** results by match day, standings per zone, top scorers, booked and suspended players, playoffs and
+  finals, team pages and rosters. Followers get notified of new fixtures and results.
+- **Captains:** register their team, manage the roster (with the league's DNI ban list and roster limits), see
+  their matches and file protests.
+- **Organizer (admin):** editions (Apertura / Clausura) with categories and zones, random zone draw, round-robin and
+  interzonal fixture generation, automatic build of a new edition from the previous one (promotions, relegations,
+  vacancies), results entered per player (goals, cards, who played), sanctions offered after a red card, suspended
+  and swapped matches, protests, and Excel import/export of a whole season.
+- **League rules in code:** 3/1/0 plus a presence point, head-to-head mini-league tiebreak → goal difference → goals
+  for → wins → presence, forfeits (one or both teams absent), sanctions carried over between seasons, transfers with
+  one team per edition. See [`docs/modelo-campeonato.md`](docs/modelo-campeonato.md).
 
-### 🌐 Public Endpoints
+## Architecture
 
-* 📃 View list of tournaments
-* 📅 View tournament fixtures
-* 📌 See registered teams
-* 👀 Public site at `/` (`/fixture`, `/posiciones`, `/goleadores`, …): results by round, standings, upcoming matches, scorers
-* ⭐ Follow tournaments and get their news (`/api/me/follows`, `/api/me/notifications`)
+```mermaid
+flowchart LR
+    user([Browser]) -- HTTPS --> caddy
 
----
-
-## 📂 Project Structure
-
-```
-src/main/java/com/mjt/Football_Tournament_Management_System
-├─ config/         # Security & OpenAPI config
-├─ controller/     # REST APIs (Admin, Team, Public, Auth)
-├─ dto/           # Request/Response DTOs
-├─ entire/        # Entities (Tournament, Team, Match, etc.)
-├─ repo/          # Spring Data JPA Repositories
-├─ security/      # JWT Filter & Token Service
-├─ service/       # Business Logic
-└─ resources/
-   ├─ application.properties
+    subgraph server["Oracle Cloud VM (Ubuntu, 1 GB)"]
+        caddy["Caddy<br/>TLS (Let's Encrypt)"] --> web["nginx<br/>Vue static build"]
+        web -- "/api" --> api["Spring Boot API<br/>Java 21"]
+        api --> db[("PostgreSQL 16<br/>volume")]
+    end
 ```
 
----
+Four containers on one machine, started by Docker Compose:
 
-## 🔐 Authentication (JWT)
+| Container | Role | Exposed |
+|---|---|---|
+| **caddy** | HTTPS: gets and renews the Let's Encrypt certificate, redirects HTTP → HTTPS | 80, 443 (the only open ports) |
+| **web** | nginx serves the Vue build (SPA fallback, cached hashed assets, security headers) and proxies `/api` to the backend, so there is no CORS | internal |
+| **api** | Spring Boot REST API, JWT auth, Flyway migrations on startup | internal |
+| **db** | PostgreSQL with a named volume; nightly compressed dumps | internal |
 
-### 🔑 Login (POST)
+## Delivery pipeline
 
-```
-POST /api/auth/login
-Content-Type: application/json
-
-{
-  "username": "admin",
-  "password": "admin123"
-}
-```
-
-You receive a token:
-
-```
-Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-```
-
-✅ Use this in headers:
-
-```
-Authorization: Bearer <TOKEN>
+```mermaid
+flowchart LR
+    push([git push main]) --> backend["Backend<br/>82 integration tests"]
+    push --> frontend["Frontend<br/>type check + build"]
+    backend --> images["Images api + web<br/>amd64 + arm64"]
+    frontend --> images
+    images -- "tag sha-1a2b3c4" --> ghcr[(ghcr.io)]
+    images --> deploy["Deploy job<br/>SSH: deploy.sh sha-1a2b3c4"]
+    deploy --> srv["Server pulls the images,<br/>waits for health checks"]
+    ghcr -.-> srv
 ```
 
----
+Every push to `main` that passes the tests is live a few minutes later; a pull request runs the same checks and
+builds the images without publishing them.
 
-## 📘 API Documentation (Swagger UI)
+- **Build once, deploy many:** the server never compiles. It runs exactly the images that passed CI, tagged with the
+  commit (`sha-1a2b3c4`), so a rollback is `./deploy.sh <previous tag>`.
+- **A deploy that fails says so:** `docker compose up --wait` waits for every health check, and the job turns red if
+  the new version does not come up healthy.
+- **The CI's SSH key can only deploy:** in `authorized_keys` it is bound to a forced command
+  ([`deploy/deploy-ci.sh`](deploy/deploy-ci.sh)) that accepts nothing but an image tag. A leaked key can deploy a
+  version CI built, and nothing else: no shell, no reading secrets.
+- **Pinned host key:** the job verifies the server's SSH fingerprint instead of disabling host key checking.
+- **Least privilege:** the workflow only reads the code; only the image job can write packages; secrets live in
+  GitHub (the private key as an encrypted secret, host and fingerprint as plain variables).
 
-Once the application is running, open:
+## Infrastructure and operations
 
-🔗 **[http://localhost:8081/swagger-ui.html](http://localhost:8081/swagger-ui.html)** (only with the `dev` profile or `APP_SWAGGER_ENABLED=true`)
+- **Oracle Cloud Always Free**, São Paulo. The ARM shape (4 OCPU / 24 GB) had no capacity for days, so the demo runs
+  on the 1 GB AMD micro. The images are multi-arch, so moving to ARM later needs no change. The instance and its network
+  can be created with [`infra/oci_launch.py`](infra/oci_launch.py) (OCI Python SDK), which retries until there is
+  capacity.
+- **Fitting in 1 GB:** Java capped at 256 MB heap (serial GC, C1 only), 2 GB of swap with low swappiness, rotated
+  container logs (3 × 10 MB), longer health check start period for the small CPU. Idle footprint: API ~180 MB,
+  Postgres ~25 MB, Caddy ~14 MB, nginx ~8 MB.
+- **Hardening:** two firewalls (OCI security list and iptables) with only 22, 80 and 443 open; SSH keys only, no root
+  login; fail2ban; unattended security upgrades; database and API not reachable from outside; Swagger disabled.
+- **Backups:** nightly `pg_dump` (cron, 04:00 Argentina), compressed, written atomically, 14 days kept;
+  [`restore.sh`](deploy/restore.sh) tested by deleting data and restoring it.
 
----
+Step-by-step: [`docs/deploy.md`](docs/deploy.md).
 
-## 🐳 Run everything with Docker Compose
+## Decisions and trade-offs
 
-The whole app (PostgreSQL + backend + frontend served by nginx) starts with one command:
+| Decision | Why | Trade-off |
+|---|---|---|
+| One VM with Docker Compose, not Kubernetes or a PaaS | A league app with a few hundred users; free tier; everything visible and debuggable | No high availability: if the VM goes down, the site goes down |
+| PostgreSQL in the same VM | Self-contained demo, backups under my control, no external dependency | Shares 1 GB with the app; a managed database would scale and back up by itself |
+| Caddy in front of nginx | Automatic HTTPS and renewal in 3 lines; nginx keeps doing what it already did well | One more container (~14 MB) |
+| Images built in CI, pulled by the server | Reproducible deploys, instant rollbacks, no build tools on the server | Needs a registry and a tag strategy |
+| Multi-arch images (amd64 + arm64) | Same images on the AMD micro, the ARM free tier or a laptop | Slower image builds (QEMU), offset by building the jar once on the native platform |
+| SSH deploy with a forced command | Simple push-based CD without an agent on the server, with the key limited to one action | Port 22 stays open to the internet (next step: Tailscale) |
+| Flyway migrations, H2 in PostgreSQL mode for tests | Same schema everywhere; tests need no database or secrets, so CI is simple | A few PostgreSQL-only features cannot be used |
+
+## Problems found along the way
+
+- **A healthy container reported unhealthy.** The web health check called `http://localhost/`; inside the container
+  `localhost` resolved to `::1` first and nginx only listens on IPv4. Found from the health check log
+  (`docker inspect … .State.Health`), fixed with `127.0.0.1`. `--wait` stopped that deploy instead of declaring it done.
+- **fail2ban watching the wrong service.** Its SSH filter reads the journal of `sshd.service`; on Ubuntu 24.04 the unit
+  is `ssh.service`, so it would never have banned anyone. Tested the filter against the real failed logins (15 in the
+  first two hours of the VM's life) and pointed it at the right unit.
+- **An empty crontab.** `set -e` stopped the subshell when `grep` found nothing in the empty crontab, so the backup line
+  was never added. Caught by reading the crontab back.
+- **Old images filling the disk.** `docker image prune` only removes untagged images; every deployed version kept its
+  tag. Switched to `prune -a` (435 MB freed on the first run).
+- **A missing CI variable.** The deploy failed in under a second with `Could not resolve hostname`: the variable had a
+  different name than the workflow expected. The job now checks its secrets and variables and says which one is missing.
+- **No ARM capacity.** The console kept answering "Out of capacity", so the instance creation became a small script
+  against the OCI API that retries every minute, in every availability domain, without pinning a fault domain.
+
+## Tech stack
+
+| Layer | Technology |
+|---|---|
+| Backend | Java 21, Spring Boot 3.5, Spring Security (JWT), JPA/Hibernate, Flyway, Apache POI (Excel), springdoc OpenAPI |
+| Frontend | Vue 3, TypeScript, Vite, Vue Router |
+| Data | PostgreSQL 16 (H2 in PostgreSQL mode for tests) |
+| Containers | Docker multi-stage builds (non-root, health checks), Docker Compose, nginx, Caddy |
+| CI/CD | GitHub Actions, GitHub Container Registry, Buildx + QEMU (multi-arch) |
+| Cloud | Oracle Cloud Infrastructure (VCN, security lists, compute), OCI Python SDK, DuckDNS |
+| Operations | Ubuntu 24.04, iptables, fail2ban, unattended-upgrades, cron, swap tuning |
+
+## Run it locally
+
+With Docker (the whole app, same images as production but built locally):
 
 ```bash
-cp .env.example .env      # then edit .env: DB_PASSWORD, APP_JWT_SECRET (32+ chars), APP_ADMIN_PASSWORD
-docker compose up -d --build
+cp .env.example .env          # set DB_PASSWORD, APP_JWT_SECRET (32+ chars) and APP_ADMIN_PASSWORD
+docker compose up -d --build  # http://localhost:8080
 ```
 
-Open **http://localhost:8080** (log in with the admin of `.env`). Details, architecture and daily commands:
-[`docs/docker.md`](docs/docker.md). CI (tests, build and images on every push): [`docs/ci.md`](docs/ci.md). Production (published images behind Caddy with HTTPS, backups): [`docs/deploy.md`](docs/deploy.md).
-
----
-
-## 🛠 Installation & Setup (without Docker, for development)
-
-### 1️⃣ Database (PostgreSQL)
-
-Any PostgreSQL works (production: Supabase). The schema is created by Flyway on startup from
-`src/main/resources/db/migration`. Local example with Docker:
+For development (hot reload):
 
 ```bash
-docker run -d --name ftms-pg -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=football_tournament -p 55432:5432 postgres:16-alpine
+./mvnw spring-boot:run -Dspring-boot.run.profiles=dev   # API on :8081, in-memory H2, admin/admin123
+cd frontend && npm install && npm run dev               # http://localhost:5173
+./mvnw test                                             # 82 tests, no database needed
 ```
 
-See `docs/base-de-datos.md` (Supabase connection, migration rules).
+With the `dev` profile Swagger UI is at http://localhost:8081/swagger-ui.html. Configuration and database details:
+[`docs/docker.md`](docs/docker.md), [`docs/base-de-datos.md`](docs/base-de-datos.md).
 
-### 2️⃣ Configure environment variables
+## Repository
 
-Secrets are read from the environment (never commit them):
-
-| Variable | Required | Default |
-| -------- | -------- | ------- |
-| `APP_JWT_SECRET` | yes (min. 32 chars) | - |
-| `APP_ADMIN_PASSWORD` | to create the first admin on startup | empty (no admin created) |
-| `APP_ADMIN_USERNAME` | no | `admin` |
-| `DB_URL` / `DB_USERNAME` / `DB_PASSWORD` | yes in production | `jdbc:postgresql://localhost:5432/football_tournament`, `postgres`/`postgres` |
-| `DB_POOL_SIZE` | no | `5` |
-| `APP_CORS_ALLOWED_ORIGINS` | no | `http://localhost:5173` |
-| `APP_SWAGGER_ENABLED` | no | `false` (Swagger UI; always on with the `dev` profile) |
-
-Tests run on an in-memory H2 database (profile `test`), in PostgreSQL mode with the same Flyway migrations, no database needed: `./mvnw test`.
-
-To run the app without PostgreSQL use the `dev` profile (in-memory H2, admin `admin/admin123`):
-`./mvnw spring-boot:run -Dspring-boot.run.profiles=dev`. The Vue frontend lives in `frontend/` (see `frontend/README.md`).
-
-### 3️⃣ Build & Run
-
-```bash
-mvn clean install
-mvn spring-boot:run
+```
+src/main/java/…          Spring Boot API: controller/, service/, entire/ (entities), repo/, security/, dto/, excel/
+src/main/resources/db/   Flyway migrations (V1–V21)
+src/test/                Integration tests (H2)
+frontend/                Vue 3 + TypeScript app, its Dockerfile and nginx config
+Dockerfile               API image (Maven build stage → JRE 21 Alpine, non-root)
+docker-compose.yml       Local stack (builds the images)
+deploy/                  Production: compose with published images, Caddyfile, deploy/backup/restore scripts
+infra/                   OCI instance + network creation script
+.github/workflows/       CI/CD
+docs/                    Design notes and guides (Spanish)
 ```
 
----
+| Doc | Content |
+|---|---|
+| [`docs/modelo-campeonato.md`](docs/modelo-campeonato.md) | Tournament model and league rules |
+| [`docs/excel-y-temporadas.md`](docs/excel-y-temporadas.md) | Excel import/export and seasons |
+| [`docs/docker.md`](docs/docker.md) | Local Docker stack |
+| [`docs/ci.md`](docs/ci.md) | CI/CD workflow |
+| [`docs/deploy.md`](docs/deploy.md) | Server setup, deploys, rollbacks, backups |
 
-## 🧪 Sample Endpoints
+## What's next
 
-### 📂 Public APIs (No JWT needed)
-
-| Method | Endpoint                                     | Description                   |
-| ------ | -------------------------------------------- | ----------------------------- |
-| GET    | `/api/public/tournaments`                    | List all tournaments          |
-| GET    | `/api/public/tournaments/{id}/fixtures`      | List fixtures of a tournament |
-| GET    | `/api/public/tournaments/{id}/registrations` | List registered teams         |
-| GET    | `/api/public/seasons`                        | Seasons with their tournaments |
-| GET    | `/api/public/tournaments/{id}/categories`    | Categories with their zones   |
-| GET    | `/api/public/zones/{id}/registrations`       | Teams of a zone               |
-| GET    | `/api/public/zones/{id}/fixtures`            | Fixtures of a zone            |
-| GET    | `/api/public/zones/{id}/standings`           | Zone table (3/1/0 + presence) |
-| GET    | `/api/public/matches/{id}/events`            | Goals and cards of a match    |
-| GET    | `/api/public/tournaments/{id}/scorers`       | Top scorers                   |
-| GET    | `/api/public/tournaments/{id}/cards`         | Booked players                |
-| GET    | `/api/public/teams/{id}`                     | Team name                     |
-| GET    | `/api/public/teams/{id}/registrations`       | Team's tournaments and zones  |
-| GET    | `/api/public/teams/{id}/players`             | Team roster                   |
-| GET    | `/api/public/tournaments/{id}/special-matches` | Promotions and finals       |
-
-### 🧑‍🤝‍🧑 Team APIs
-
-| Method | Endpoint                                                   | Description      |
-| ------ | ---------------------------------------------------------- | ---------------- |
-| GET    | `/api/teams`                                               | My teams (all for admin) |
-| POST   | `/api/teams/register`                                      | Register a team  |
-| PUT/DELETE | `/api/teams/{teamId}`                                  | Edit / delete team (409 if registered) |
-| DELETE | `/api/teams/{teamId}/players/{playerId}`                   | Remove player (409 if it has events) |
-| POST   | `/api/teams/{teamId}/players`                              | Add players      |
-| POST   | `/api/teams/{teamId}/tournaments/{tournamentId}/register`  | Join tournament (admin assigns zone) |
-| GET    | `/api/teams/{teamId}/tournaments/{tournamentId}/dashboard` | Team performance |
-
-### 🛡 Admin APIs (JWT required)
-
-| Method | Endpoint                                           | Description         |
-| ------ | -------------------------------------------------- | ------------------- |
-| POST   | `/api/admin/tournaments`                           | Create a tournament |
-| POST   | `/api/admin/tournaments/{id}/categories`           | Create category (+ default zone) |
-| PUT/DELETE | `/api/admin/categories/{id}`                   | Rename / delete category |
-| POST   | `/api/admin/categories/{id}/zones`                 | Add zone            |
-| PUT/DELETE | `/api/admin/zones/{id}`                        | Rename / delete zone |
-| PUT/DELETE | `/api/admin/tournaments/{id}`                  | Edit / delete tournament (409 if it has teams or matches) |
-| PATCH  | `/api/admin/matches/{id}`                          | Edit date, round, field, pitch, note |
-| DELETE | `/api/admin/matches/{id}`                          | Delete match and its events |
-| PATCH  | `/api/admin/registrations/{id}/zone`               | Assign/move team to a zone |
-| POST   | `/api/admin/imports`                               | Upload league .xlsx → preview |
-| POST   | `/api/admin/imports/{id}/apply`                    | Apply preview (`overwrite` conflict keys) |
-| GET    | `/api/admin/imports`                               | Import history |
-| GET    | `/api/admin/imports/export/{seasonId}`             | Download the season as .xlsx (re-importable) |
-| POST   | `/api/admin/zones/{id}/fixtures/round-robin`       | Generate zone fixtures |
-| POST   | `/api/admin/fixtures/manual`                       | Manual fixtures (by zone) |
-| POST   | `/api/admin/tournaments/{id}/special-matches`      | Promotion/final by team or zone position |
-| POST   | `/api/admin/matches/{id}/resolve`                  | Re-resolve position rules (not played yet) |
-| PATCH  | `/api/admin/matches/{id}/score`                    | Result as per-player events; presence (walkover 3-0) |
-
----
-
-## 🤖 Users
-
-Users are stored in the DB with BCrypt-hashed passwords.
-
-- **ADMIN**: created on startup from `APP_ADMIN_USERNAME` / `APP_ADMIN_PASSWORD`.
-- **CAPTAIN**: self sign-up via `POST /api/auth/register`. A captain owns the teams they create and can only modify those.
-- `GET /api/auth/me` returns the current user, role and owned team ids.
-
----
-
-## 📌 Future Enhancements
-
-✅ Email/SMS notifications
-✅ Tournament leaderboard API
-✅ Docker Compose (database, backend and frontend)
-✅ React frontend
+- **Real use:** the league running the season on the app.
+- **Observability:** uptime checks and alerts, metrics (Spring Boot Actuator), centralized logs.
+- **Close port 22:** SSH only over Tailscale, for me and for the CI.
+- **Off-site backups:** copy the nightly dumps to object storage.
+- **ARM instance:** move to the 4 OCPU / 24 GB free shape when capacity shows up (backup → restore → DNS).
