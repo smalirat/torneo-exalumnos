@@ -10,5 +10,5 @@ fi
 
 docker compose pull               # download the images of that tag (only the layers that changed)
 docker compose up -d --wait       # recreate what changed and wait until every healthcheck passes (fails otherwise)
-docker image prune -f             # delete the old images that nothing uses anymore
+docker image prune -af            # delete the images no container uses (old versions; a rollback pulls them again)
 docker compose ps
