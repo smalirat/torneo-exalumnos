@@ -74,7 +74,7 @@ scp -r deploy/ usuario@IP:/opt/torneo
 
 # en el servidor
 cd /opt/torneo
-cp .env.example .env && nano .env    # DOMAIN, ACME_EMAIL, contraseñas y secretos
+cp .env.example .env && nano .env    # DOMAIN, contraseñas, secretos (y JAVA_OPTS si el server tiene 1 GB)
 chmod +x *.sh
 ./deploy.sh                          # baja las imágenes, levanta todo y espera los healthchecks
 ```
@@ -116,7 +116,7 @@ navegador avisa que no es de confianza) en vez de Let's Encrypt:
 
 ```bash
 cd deploy
-cp .env.example .env    # DOMAIN=localhost, ACME_EMAIL cualquiera, contraseñas
+cp .env.example .env    # DOMAIN=localhost y contraseñas
 ./deploy.sh             # https://localhost
 docker compose down     # (-v borra también la base y los certificados)
 ```
