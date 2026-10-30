@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Compressed dump of the database into backups/, deleting the ones older than KEEP_DAYS (.env, default 14).
-# On the server it runs every night from cron: 0 4 * * * /opt/torneo/backup.sh >> /opt/torneo/backups/backup.log 2>&1
+# On the server it runs every night from cron (server in UTC): 0 7 * * * /opt/torneo/backup.sh >> /opt/torneo/backups/backup.log 2>&1
 set -euo pipefail
 cd "$(dirname "$0")"
 

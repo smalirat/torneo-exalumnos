@@ -100,10 +100,10 @@ sin avisar. Flyway aplica las migraciones nuevas al arrancar la API. Ojo: un rol
 ./restore.sh backups/torneo-20261026-040000.sql.gz
 ```
 
-Para que corra todas las noches, con `crontab -e` en el servidor:
+Para que corra todas las noches, con `crontab -e` en el servidor (el servidor está en UTC: 07:00 UTC son las 04:00 en Argentina):
 
 ```
-0 4 * * * /opt/torneo/backup.sh >> /opt/torneo/backups/backup.log 2>&1
+0 7 * * * /opt/torneo/backup.sh >> /opt/torneo/backups/backup.log 2>&1
 ```
 
 Un backup que vive en el mismo servidor no sirve si se pierde el servidor: hay que copiarlo afuera también (por
