@@ -106,6 +106,9 @@ builds the images without publishing them.
   port that nginx never forwards; node-exporter adds CPU (including steal on the shared micro), RAM, swap and disk.
   Prometheus keeps 30 days, Grafana shows a dashboard provisioned from git. Both listen on `127.0.0.1` only and are
   reached through an SSH tunnel; all three have memory caps (~130 MB together at idle).
+- **Alerts:** a scheduled GitHub Actions workflow checks the site, the API and the certificate's expiry every 10
+  minutes from outside Oracle and emails on failure; the nightly backup reports to healthchecks.io, which emails when
+  a night's report does not arrive (a dead man's switch).
 
 Step-by-step: [`docs/deploy.md`](docs/deploy.md), [`docs/observability.md`](docs/observability.md).
 
@@ -211,7 +214,7 @@ docs/                    Design notes and guides (Spanish)
 ## What's next
 
 - **Real use:** the league running the season on the app.
-- **Alerts:** an external uptime check (it must live outside the server it watches) and Grafana alerts by email.
+- **Metric alerts:** Grafana alerts by email (memory, 5xx, response time).
 - **Centralized logs:** Loki, if memory allows.
 - **Close port 22:** SSH only over Tailscale, for me and for the CI.
 - **Config in the pipeline:** today a deploy changes images only; changes to `deploy/` are copied by hand.

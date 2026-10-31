@@ -69,7 +69,15 @@ totales), así que lo útil es su velocidad.
 
 ## Lo que falta
 
-- **Alertas**: hoy hay que mirar el dashboard. Grafana puede mandar mails, pero necesita un servidor SMTP.
-- **Monitoreo desde afuera**: si se cae el servidor entero, se caen también Prometheus y Grafana. Para eso hace falta
-  un chequeo externo (UptimeRobot, Healthchecks.io).
+## Avisos
+
+| Qué | Cómo | Dónde |
+|---|---|---|
+| El sitio o la API no responden, o el certificado está por vencer | Monitoreo **activo**: un workflow de GitHub les pide respuesta cada 10 minutos desde afuera | [ci.md](ci.md#uptime-monitor-externo) |
+| El backup de la noche no corrió | Monitoreo **pasivo** (*dead man's switch*): el backup avisa a healthchecks.io; si una noche no avisa, healthchecks.io manda un mail | [deploy.md](deploy.md#aviso-si-un-backup-no-corre) |
+
+## Lo que falta
+
+- **Alertas sobre las métricas** (memoria, errores 5xx, tiempos): hoy hay que mirar el dashboard. Grafana puede
+  mandar mails, pero necesita un servidor SMTP.
 - **Logs centralizados**: hoy `docker compose logs`. Loki los haría buscables desde Grafana (más memoria).

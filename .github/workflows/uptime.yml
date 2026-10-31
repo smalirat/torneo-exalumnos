@@ -1,0 +1,39 @@
+# External uptime check: every 10 minutes, from GitHub's servers (outside Oracle, so it still works when the whole
+# server is down), checks that the site and the API answer and that the HTTPS certificate is not about to expire.
+# A failed run sends an email to whoever last changed the cron line (GitHub → Settings → Notifications → Actions).
+# Limits: GitHub may start scheduled runs some minutes late, and disables them after 60 days without commits.
+name: Uptime
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch: # run it by hand from the Actions tab
+
+permissions: {} # it reads nothing from the repository
+
+jobs:
+  check:
+    name: Site, API and certificate
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      HOST: torneo-marianista-demo.duckdns.org
+    steps:
+      - name: Site and API answer 200
+        run: |
+          # --retry: a single slow answer or a deploy restarting the API (about 2 minutes) is not an outage
+          check() {
+            code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 --retry 4 --retry-delay 30 --retry-all-errors "$1" || true)
+            echo "$1 -> $code"
+            [ "$code" = 200 ] || { echo "::error::$1 answered $code"; return 1; }
+          }
+          check "https://$HOST/"
+          check "https://$HOST/api/public/league"
+
+      - name: Certificate valid for 14 more days
+        run: |
+          # Caddy renews it 30 days before it expires; under 14 days left means renewal is failing
+          end=$(echo | openssl s_client -connect "$HOST:443" -servername "$HOST" 2>/dev/null | openssl x509 -noout -enddate | cut -d= -f2)
+          days=$(( ($(date -d "$end" +%s) - $(date +%s)) / 86400 ))
+          echo "certificate expires $end ($days days)"
+          [ "$days" -ge 14 ] || { echo "::error::certificate expires in $days days"; exit 1; }

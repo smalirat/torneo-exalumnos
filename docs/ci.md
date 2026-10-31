@@ -43,3 +43,17 @@ push / PR ──► backend (tests) ─┐
 
 Un *secret* queda cifrado y GitHub lo tapa en los logs; una *variable* es configuración visible (la IP y la huella del
 servidor son públicas). Si falta alguno, el job lo dice y no intenta conectarse.
+
+## Uptime (monitor externo)
+
+[`.github/workflows/uptime.yml`](../.github/workflows/uptime.yml) corre cada 10 minutos desde los servidores de
+GitHub, fuera de Oracle: si se cae el servidor entero, este chequeo sigue funcionando (Prometheus y Grafana no).
+
+- Pide la página principal **y** `/api/public/league`. La home sola no alcanza: nginx la sirve aunque la API esté
+  caída. Reintenta durante unos 2 minutos para que un deploy (la API reiniciándose) no cuente como caída.
+- Revisa que al certificado HTTPS le queden 14 días o más. Caddy lo renueva 30 días antes, así que menos de 14
+  significa que la renovación está fallando.
+- Si falla, GitHub manda un mail a quien cambió por última vez la línea `cron` (*Settings → Notifications →
+  Actions*: "Notify on failed workflows").
+- Límites: GitHub puede arrancar los runs programados unos minutos tarde, y los desactiva después de 60 días sin
+  commits en el repo. No avisa cuando el sitio vuelve: hay que mirar el próximo run verde.
