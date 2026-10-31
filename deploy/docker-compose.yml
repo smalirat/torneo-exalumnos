@@ -45,15 +45,18 @@ services:
       # The image default is 75% of the RAM: fine on a big server, too much on a 1 GB one (see .env.example)
       JAVA_OPTS: ${JAVA_OPTS:--XX:MaxRAMPercentage=75}
     healthcheck:
-      start_period: 180s   # a small CPU takes a couple of minutes to start Spring Boot
+      # A small shared CPU takes 2 minutes to start Spring Boot, and up to 7 when other containers start at the same time
+      start_period: 300s
     logging: *logging
 
   web:
     image: ghcr.io/smalirat/torneo-web:${TAG:-latest}
     restart: unless-stopped
+    # Started, not healthy: nginx looks the api up on each request, so the site is served while a slow api starts
+    # (only /api answers 502 meanwhile) instead of waiting, and failing, with it
     depends_on:
       api:
-        condition: service_healthy
+        condition: service_started
     logging: *logging
     # No published port anymore: Caddy is the only door from the internet
 

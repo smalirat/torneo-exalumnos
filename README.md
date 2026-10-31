@@ -137,6 +137,12 @@ Step-by-step: [`docs/deploy.md`](docs/deploy.md), [`docs/observability.md`](docs
   Docker does not recreate it); it had not bitten yet only because Docker happened to hand the same IP back.
   Fixed by resolving through Docker's DNS on each request (`resolver 127.0.0.11` + a variable in `proxy_pass`), and
   verified by forcing the API onto a different IP.
+- **A deploy that took the whole site down.** The deploy that added Prometheus and Grafana started them together with
+  the new API; on the shared micro CPU the API took 431 s to start instead of ~130 s, failed its health check window,
+  and the web container (which waited for a *healthy* API) never started: the job went red and the site answered 502.
+  The new dashboard showed why: **56% CPU steal**, time the cloud host gives to other VMs. Fixed by making the web
+  depend on the API being *started*, not healthy (possible after the nginx DNS fix): now a slow API only delays
+  `/api`, the site keeps loading; and a longer start window. Re-tested: home page 200 during the whole restart.
 - **Old images filling the disk.** `docker image prune` only removes untagged images; every deployed version kept its
   tag. Switched to `prune -a` (435 MB freed on the first run).
 - **A missing CI variable.** The deploy failed in under a second with `Could not resolve hostname`: the variable had a
