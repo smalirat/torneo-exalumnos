@@ -17,6 +17,7 @@ servidor"). Everything else is logged on stderr.
 Auth: ~/.oci/config, like infra/oci_launch.py.
 """
 import sys
+import time
 from datetime import datetime, timedelta, timezone
 
 import oci
@@ -65,10 +66,19 @@ def main():
 
     ensure_lifecycle_policy(oci.identity.IdentityClient(config), tenancy, region)
     log(f'lifecycle rule: delete after {DELETE_AFTER_DAYS} days')
-    storage.put_object_lifecycle_policy(namespace, BUCKET, oci.object_storage.models.PutObjectLifecyclePolicyDetails(
-        items=[oci.object_storage.models.ObjectLifecycleRule(
-            name=f'delete-after-{DELETE_AFTER_DAYS}-days', target='objects', action='DELETE',
-            time_amount=DELETE_AFTER_DAYS, time_unit='DAYS', is_enabled=True)]))
+    rule = oci.object_storage.models.PutObjectLifecyclePolicyDetails(items=[oci.object_storage.models.ObjectLifecycleRule(
+        name=f'delete-after-{DELETE_AFTER_DAYS}-days', target='objects', action='DELETE',
+        time_amount=DELETE_AFTER_DAYS, time_unit='DAYS', is_enabled=True)])
+    for attempt in range(20):
+        try:
+            storage.put_object_lifecycle_policy(namespace, BUCKET, rule)
+            break
+        except oci.exceptions.ServiceError as e:
+            # A new IAM policy takes a few minutes to reach every Oracle server
+            if e.code != 'InsufficientServicePermissions' or attempt == 19:
+                raise
+            log('the IAM policy has not propagated yet, retrying in 15 s')
+            time.sleep(15)
 
     old = [p for p in storage.list_preauthenticated_requests(namespace, BUCKET).data if p.name == PAR_NAME]
     expires = datetime.now(timezone.utc) + timedelta(days=URL_VALID_DAYS)
@@ -78,7 +88,8 @@ def main():
     for p in old:
         storage.delete_preauthenticated_request(namespace, BUCKET, p.id)
     log(f'write-only upload URL created, valid until {expires:%Y-%m-%d}' + (f'; revoked {len(old)} old one(s)' if old else ''))
-    print(par.full_path or f'https://objectstorage.{region}.oraclecloud.com{par.access_uri}')
+    url = par.full_path or f'https://objectstorage.{region}.oraclecloud.com{par.access_uri}'
+    sys.stdout.buffer.write(f'{url}\n'.encode())   # bare \n: print() on Windows ends with \r\n, which breaks the URL
 
 
 if __name__ == '__main__':
