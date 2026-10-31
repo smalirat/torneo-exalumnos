@@ -1,0 +1,10 @@
+# Loads the dashboards in /var/lib/grafana/dashboards (deploy/monitoring/grafana/dashboards in the repo).
+# They live in git: changes made in the UI are not saved, edit the JSON (or export it from the UI) and redeploy.
+apiVersion: 1
+providers:
+  - name: torneo
+    folder: Torneo
+    type: file
+    allowUiUpdates: false
+    options:
+      path: /var/lib/grafana/dashboards

@@ -51,6 +51,8 @@ public class SecurityConfig {
                                 "/swagger-ui.html","/swagger-ui/**","/v3/api-docs/**",
                                 "/api/public/**","/api/auth/login","/api/auth/register","/api/auth/claim","/api/auth/invites/**","/error"
                         ).permitAll()
+                        // health and prometheus only, on the management port that nginx never forwards
+                        .requestMatchers("/actuator/health", "/actuator/prometheus").permitAll()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )

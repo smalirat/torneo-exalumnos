@@ -1,5 +1,5 @@
 # Production: the same three services as the root docker-compose.yml, but nothing is built here. The images are the
-# ones CI published to ghcr.io (amd64 + arm64), and Caddy sits in front with HTTPS.
+# ones CI published to ghcr.io (amd64 + arm64), Caddy sits in front with HTTPS, and Prometheus + Grafana watch it all.
 # This folder is all the server needs: copy it, create .env from .env.example and run ./deploy.sh
 name: torneo-prod
 
@@ -75,7 +75,84 @@ services:
       - caddy-config:/config
     logging: *logging
 
+  # ---- Monitoring: Prometheus collects the metrics, Grafana shows them. Both only on 127.0.0.1 of the server: reach
+  # them with an SSH tunnel (docs/observability.md). Memory caps keep them from starving the app on a 1 GB machine.
+  prometheus:
+    image: prom/prometheus:v3.5.0
+    restart: unless-stopped
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=30d
+      - --storage.tsdb.retention.size=1GB
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    ports:
+      - "127.0.0.1:9090:9090"
+    mem_limit: 192m
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:9090/-/ready"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    logging: *logging
+
+  # Server metrics (CPU, RAM, swap, disk, network) read from the host's /proc and /sys
+  node-exporter:
+    image: prom/node-exporter:v1.9.1
+    restart: unless-stopped
+    command:
+      - --path.procfs=/host/proc
+      - --path.sysfs=/host/sys
+      - --path.rootfs=/rootfs
+      - --collector.filesystem.mount-points-exclude=^/(dev|proc|sys|run|var/lib/docker/.+)($$|/)
+    pid: host
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    mem_limit: 48m
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:9100/"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    logging: *logging
+
+  grafana:
+    image: grafana/grafana-oss:12.1.1
+    restart: unless-stopped
+    depends_on:
+      prometheus:
+        condition: service_healthy
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?Set GRAFANA_ADMIN_PASSWORD in .env}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      # Nothing phones home or downloads plugins at startup: less memory, less outbound traffic
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+      GF_ANALYTICS_CHECK_FOR_UPDATES: "false"
+      GF_ANALYTICS_CHECK_FOR_PLUGIN_UPDATES: "false"
+      GF_PLUGINS_PREINSTALL_DISABLED: "true"
+      GF_NEWS_NEWS_FEED_ENABLED: "false"
+    volumes:
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana-data:/var/lib/grafana
+    ports:
+      - "127.0.0.1:3000:3000"
+    mem_limit: 256m
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:3000/api/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 180s   # the first start creates its database, slow on a small CPU
+    logging: *logging
+
 volumes:
   db-data:
   caddy-data:
   caddy-config:
+  prometheus-data:
+  grafana-data:
