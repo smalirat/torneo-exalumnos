@@ -49,7 +49,7 @@ flowchart LR
     end
 ```
 
-Four containers on one machine, started by Docker Compose:
+The app is four containers on one machine, started by Docker Compose, plus three for monitoring:
 
 | Container | Role | Exposed |
 |---|---|---|
@@ -57,12 +57,13 @@ Four containers on one machine, started by Docker Compose:
 | **web** | nginx serves the Vue build (SPA fallback, cached hashed assets, security headers) and proxies `/api` to the backend, so there is no CORS | internal |
 | **api** | Spring Boot REST API, JWT auth, Flyway migrations on startup | internal |
 | **db** | PostgreSQL with a named volume; nightly compressed dumps | internal |
+| **prometheus**, **node-exporter**, **grafana** | Metrics of the app (Actuator) and the server, 30 days kept, one provisioned dashboard | `127.0.0.1` only (SSH tunnel) |
 
 ## Delivery pipeline
 
 ```mermaid
 flowchart LR
-    push([git push main]) --> backend["Backend<br/>82 integration tests"]
+    push([git push main]) --> backend["Backend<br/>87 integration tests"]
     push --> frontend["Frontend<br/>type check + build"]
     backend --> images["Images api + web<br/>amd64 + arm64"]
     frontend --> images
@@ -97,10 +98,16 @@ builds the images without publishing them.
   Postgres ~25 MB, Caddy ~14 MB, nginx ~8 MB.
 - **Hardening:** two firewalls (OCI security list and iptables) with only 22, 80 and 443 open; SSH keys only, no root
   login; fail2ban; unattended security upgrades; database and API not reachable from outside; Swagger disabled.
-- **Backups:** nightly `pg_dump` (cron, 04:00 Argentina), compressed, written atomically, 14 days kept;
-  [`restore.sh`](deploy/restore.sh) tested by deleting data and restoring it.
+- **Backups:** nightly `pg_dump` (cron, 04:00 Argentina), compressed, written atomically, 14 days kept on the
+  server and copied to Oracle Object Storage through a **write-only** pre-authenticated URL (it cannot list, read or
+  delete). The bucket has a 30-day retention rule, so not even that URL can overwrite a backup, and a lifecycle rule
+  that deletes them after 90 days. [`restore.sh`](deploy/restore.sh) tested by deleting data and restoring it.
+- **Observability:** Spring Boot Actuator + Micrometer expose JVM, HTTP and connection-pool metrics on a separate
+  port that nginx never forwards; node-exporter adds CPU (including steal on the shared micro), RAM, swap and disk.
+  Prometheus keeps 30 days, Grafana shows a dashboard provisioned from git. Both listen on `127.0.0.1` only and are
+  reached through an SSH tunnel; all three have memory caps (~130 MB together at idle).
 
-Step-by-step: [`docs/deploy.md`](docs/deploy.md).
+Step-by-step: [`docs/deploy.md`](docs/deploy.md), [`docs/observability.md`](docs/observability.md).
 
 ## Decisions and trade-offs
 
@@ -124,6 +131,12 @@ Step-by-step: [`docs/deploy.md`](docs/deploy.md).
   first two hours of the VM's life) and pointed it at the right unit.
 - **An empty crontab.** `set -e` stopped the subshell when `grep` found nothing in the empty crontab, so the backup line
   was never added. Caught by reading the crontab back.
+- **502 after the API moved.** While testing the monitoring stack, the site answered 502 although every container was
+  healthy. nginx resolves `proxy_pass http://api:8081` once, at startup; the API container had been recreated with a
+  new IP and nginx kept the old one. In production that happens on any deploy where the web image does not change (so
+  Docker does not recreate it); it had not bitten yet only because Docker happened to hand the same IP back.
+  Fixed by resolving through Docker's DNS on each request (`resolver 127.0.0.11` + a variable in `proxy_pass`), and
+  verified by forcing the API onto a different IP.
 - **Old images filling the disk.** `docker image prune` only removes untagged images; every deployed version kept its
   tag. Switched to `prune -a` (435 MB freed on the first run).
 - **A missing CI variable.** The deploy failed in under a second with `Could not resolve hostname`: the variable had a
@@ -139,8 +152,9 @@ Step-by-step: [`docs/deploy.md`](docs/deploy.md).
 | Frontend | Vue 3, TypeScript, Vite, Vue Router |
 | Data | PostgreSQL 16 (H2 in PostgreSQL mode for tests) |
 | Containers | Docker multi-stage builds (non-root, health checks), Docker Compose, nginx, Caddy |
+| Observability | Spring Boot Actuator, Micrometer, Prometheus, node-exporter, Grafana |
 | CI/CD | GitHub Actions, GitHub Container Registry, Buildx + QEMU (multi-arch) |
-| Cloud | Oracle Cloud Infrastructure (VCN, security lists, compute), OCI Python SDK, DuckDNS |
+| Cloud | Oracle Cloud Infrastructure (VCN, security lists, compute, Object Storage, IAM), OCI Python SDK, DuckDNS |
 | Operations | Ubuntu 24.04, iptables, fail2ban, unattended-upgrades, cron, swap tuning |
 
 ## Run it locally
@@ -157,7 +171,7 @@ For development (hot reload):
 ```bash
 ./mvnw spring-boot:run -Dspring-boot.run.profiles=dev   # API on :8081, in-memory H2, admin/admin123
 cd frontend && npm install && npm run dev               # http://localhost:5173
-./mvnw test                                             # 82 tests, no database needed
+./mvnw test                                             # 87 tests, no database needed
 ```
 
 With the `dev` profile Swagger UI is at http://localhost:8081/swagger-ui.html. Configuration and database details:
@@ -173,7 +187,8 @@ frontend/                Vue 3 + TypeScript app, its Dockerfile and nginx config
 Dockerfile               API image (Maven build stage → JRE 21 Alpine, non-root)
 docker-compose.yml       Local stack (builds the images)
 deploy/                  Production: compose with published images, Caddyfile, deploy/backup/restore scripts
-infra/                   OCI instance + network creation script
+deploy/monitoring/       Prometheus config, Grafana data source and dashboard
+infra/                   OCI scripts: instance + network, backup bucket
 .github/workflows/       CI/CD
 docs/                    Design notes and guides (Spanish)
 ```
@@ -185,11 +200,13 @@ docs/                    Design notes and guides (Spanish)
 | [`docs/docker.md`](docs/docker.md) | Local Docker stack |
 | [`docs/ci.md`](docs/ci.md) | CI/CD workflow |
 | [`docs/deploy.md`](docs/deploy.md) | Server setup, deploys, rollbacks, backups |
+| [`docs/observability.md`](docs/observability.md) | Metrics, dashboard, SSH tunnel |
 
 ## What's next
 
 - **Real use:** the league running the season on the app.
-- **Observability:** uptime checks and alerts, metrics (Spring Boot Actuator), centralized logs.
+- **Alerts:** an external uptime check (it must live outside the server it watches) and Grafana alerts by email.
+- **Centralized logs:** Loki, if memory allows.
 - **Close port 22:** SSH only over Tailscale, for me and for the CI.
-- **Off-site backups:** copy the nightly dumps to object storage.
+- **Config in the pipeline:** today a deploy changes images only; changes to `deploy/` are copied by hand.
 - **ARM instance:** move to the 4 OCPU / 24 GB free shape when capacity shows up (backup → restore → DNS).

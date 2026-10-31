@@ -14,7 +14,9 @@ internet ──► caddy (:80 y :443, HTTPS) ──► web (nginx) ──► api
 | `Caddyfile` | Caddy consigue y renueva solo el certificado HTTPS de Let's Encrypt para `DOMAIN` |
 | `.env.example` | Variables (copiar a `.env` en el servidor) |
 | `deploy.sh` | Pone online una versión: `./deploy.sh sha-14f7f04` |
-| `backup.sh` / `restore.sh` | Dump comprimido de la base / volver a un dump |
+| `deploy-ci.sh` | Lo único que puede ejecutar la clave SSH del CI (ver [Deploy automático](#deploy-automático)) |
+| `backup.sh` / `restore.sh` | Dump comprimido de la base (y copia afuera) / volver a un dump |
+| `monitoring/` | Prometheus y Grafana: configuración y dashboard (ver [observability.md](observability.md)) |
 
 Diferencias con el compose local de la raíz:
 
@@ -73,7 +75,7 @@ subdominio gratis de [DuckDNS](https://www.duckdns.org)).
 sudo mkdir -p /opt/torneo && sudo chown ubuntu:ubuntu /opt/torneo
 
 # desde tu máquina, dentro de deploy/: los archivos (no el .env local ni los backups)
-scp docker-compose.yml Caddyfile .env.example *.sh ubuntu@IP:/opt/torneo/
+scp -r docker-compose.yml Caddyfile .env.example *.sh monitoring ubuntu@IP:/opt/torneo/
 
 # en el servidor
 cd /opt/torneo
@@ -95,6 +97,10 @@ Cada push a `main` que pasa el CI publica imágenes con el tag `sha-<commit>`.
 
 `deploy.sh` usa `docker compose up --wait`: si algún healthcheck no pasa, termina con error en vez de dejarlo a medias
 sin avisar. Flyway aplica las migraciones nuevas al arrancar la API. Ojo: un rollback **no deshace migraciones**.
+
+Un deploy cambia **imágenes**, no archivos de configuración. Si cambia algo de `deploy/` (compose, Caddyfile,
+scripts, `monitoring/`), hay que copiarlo a mano (el `scp` de arriba, sin `.env.example` si no cambió) y correr
+`./deploy.sh` en el servidor. Si el cambio agrega una variable obligatoria, primero va al `.env`.
 
 ## Deploy automático
 
@@ -128,8 +134,38 @@ Para que corra todas las noches, con `crontab -e` en el servidor (el servidor es
 0 7 * * * /opt/torneo/backup.sh >> /opt/torneo/backups/backup.log 2>&1
 ```
 
-Un backup que vive en el mismo servidor no sirve si se pierde el servidor: hay que copiarlo afuera también (por
-ejemplo bajarlo con `scp`, o subirlo a un bucket).
+### Backups fuera del servidor
+
+Un backup que vive en el mismo servidor no sirve si se pierde el servidor. Con `OFFSITE_URL` en el `.env`,
+`backup.sh` sube cada dump a un bucket de Oracle Object Storage (Always Free: 20 GB; cada dump pesa unos KB).
+
+[`infra/oci_backup_bucket.py`](../infra/oci_backup_bucket.py) crea todo, con la API key de `~/.oci/config`:
+
+- Bucket `torneo-backups`, privado.
+- **Regla de retención de 30 días**: nadie puede pisar ni borrar un backup en ese tiempo, ni con la URL de subida ni
+  por error desde la consola. Protege contra un atacante (o un script roto) que quiera arruinar los backups.
+- **Regla de ciclo de vida**: Object Storage borra solo lo que tiene más de 90 días. Para hacerlo necesita una
+  política de IAM, que el script crea si falta.
+- **URL de subida pre-autenticada** (PAR) que **solo puede escribir**: no lista, no lee, no borra. Si se filtra el
+  `.env`, con ella no se pueden leer los backups. Vence al año: correr el script de nuevo crea otra y revoca las
+  viejas.
+
+La URL es un secreto: va directo del script al `.env` del servidor por un pipe, sin aparecer en la pantalla:
+
+```bash
+infra/.venv/Scripts/python.exe infra/oci_backup_bucket.py | ssh -i ~/.ssh/oracle_torneo ubuntu@IP \
+  'read -r url; cd /opt/torneo; sed -i "/^OFFSITE_URL=/d" .env; echo "OFFSITE_URL=$url" >> .env; echo guardada'
+ssh -i ~/.ssh/oracle_torneo ubuntu@IP /opt/torneo/backup.sh     # tiene que decir "local + off-site"
+```
+
+Para restaurar desde el bucket: bajar el archivo desde la consola de Oracle (*Storage › Buckets › torneo-backups*),
+copiarlo al servidor con `scp` y usar `restore.sh`.
+
+### Aviso si un backup no corre
+
+Un cron que falla no avisa a nadie. Con `HEALTHCHECK_URL` (un chequeo gratis de [healthchecks.io](https://healthchecks.io),
+período 1 día, gracia 1 hora), `backup.sh` avisa cuando empieza, cuando termina bien y cuando falla. Si una noche no
+llega el aviso, healthchecks.io manda un mail.
 
 ## Probarlo local
 
