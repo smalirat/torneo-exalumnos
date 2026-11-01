@@ -41,7 +41,7 @@ networks:
 services:
   db:
     <<: *hardening
-    image: postgres:16-alpine
+    image: postgres:18-alpine
     restart: unless-stopped
     # The entrypoint starts as root, fixes the data folder's owner and switches to the postgres user
     cap_add: [CHOWN, DAC_OVERRIDE, FOWNER, SETUID, SETGID]
