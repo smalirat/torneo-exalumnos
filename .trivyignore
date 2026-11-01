@@ -1,0 +1,8 @@
+# Vulnerabilities the image scan (.github/workflows/security.yml) skips on purpose. Each one needs a reason, and
+# must be reviewed again when the reason changes. Everything else HIGH or CRITICAL with a fix fails the scan.
+
+# Spring Framework 6.2: fixed only in 7.x (Spring Boot 4); the free 6.2 line gets no more patches.
+# Not exploitable here: the API only returns JSON. It has no XSLT views (CVE-2026-47884 needs XsltView) and no
+# Server-Sent Events with view fragments (CVE-2026-47890). Real fix: move to Spring Boot 4.
+CVE-2026-47884
+CVE-2026-47890

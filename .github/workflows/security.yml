@@ -1,0 +1,87 @@
+# Security scans. CI (ci.yml) checks that the code works; this checks it has no known holes:
+# - images: builds the api and web images and looks for known vulnerabilities (CVEs) in everything inside them:
+#   Alpine packages, the JRE, every Java library in the jar. Fails on HIGH or CRITICAL ones that already have a fix.
+# - codeql: GitHub's static analysis reads the Java and TypeScript code looking for vulnerable patterns (SQL built
+#   from user input, XSS, path traversal...). Findings go to the repository's Security tab.
+# Also every Monday: new CVEs are published every day, so an image that was clean last week may not be today.
+name: Security
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: "0 9 * * 1"   # Mondays 09:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: security-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  images:
+    name: Image vulnerabilities (Trivy)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: api
+            context: .
+          - name: web
+            context: frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build the ${{ matrix.name }} image
+        run: docker build -t scan/${{ matrix.name }} ${{ matrix.context }}
+
+      # Trivy runs from its official image, pinned by digest: the scanner itself cannot change under us
+      - name: Scan
+        run: |
+          docker run --rm \
+            -v /var/run/docker.sock:/var/run/docker.sock \
+            -v "$PWD/.trivyignore:/.trivyignore:ro" \
+            aquasec/trivy:0.75.0@sha256:af6acf9a6b85dfe389a1941505c0ce9efef52a4719635e1a962f022a3d855daa \
+            image --scanners vuln --severity HIGH,CRITICAL --ignore-unfixed --ignorefile /.trivyignore \
+            --timeout 20m --exit-code 1 scan/${{ matrix.name }}
+
+  # Misconfigurations in the Dockerfiles and compose files: a container running as root, a missing USER, etc.
+  config:
+    name: Container configuration (Trivy)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Scan Dockerfiles and compose files
+        run: |
+          docker run --rm -v "$PWD:/src:ro" \
+            aquasec/trivy:0.75.0@sha256:af6acf9a6b85dfe389a1941505c0ce9efef52a4719635e1a962f022a3d855daa \
+            config --severity MEDIUM,HIGH,CRITICAL --exit-code 1 --skip-dirs /src/frontend/node_modules /src
+
+  codeql:
+    name: Code analysis (CodeQL)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      security-events: write   # upload the findings to the Security tab
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [java-kotlin, javascript-typescript]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: github/codeql-action/init@v4
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: none            # reads the sources directly, no need to compile
+          queries: security-extended  # the broader set of security checks
+      - uses: github/codeql-action/analyze@v4
+        with:
+          category: /language:${{ matrix.language }}
