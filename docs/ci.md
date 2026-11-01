@@ -57,3 +57,23 @@ GitHub, fuera de Oracle: si se cae el servidor entero, este chequeo sigue funcio
   Actions*: "Notify on failed workflows").
 - Límites: GitHub puede arrancar los runs programados unos minutos tarde, y los desactiva después de 60 días sin
   commits en el repo. No avisa cuando el sitio vuelve: hay que mirar el próximo run verde.
+
+## Seguridad
+
+[`.github/workflows/security.yml`](../.github/workflows/security.yml) corre en cada push, en cada pull request y
+todos los lunes (los CVE nuevos salen todos los días: una imagen limpia la semana pasada puede no estarlo hoy):
+
+| Job | Qué hace |
+|---|---|
+| **Image vulnerabilities** | Arma las imágenes `api` y `web` y las escanea con Trivy: paquetes de Alpine, la JRE y cada librería del jar. Falla si hay una vulnerabilidad alta o crítica que ya tenga arreglo |
+| **Container configuration** | Trivy revisa Dockerfiles y compose (contenedores como root, etc.) |
+| **Code analysis** | CodeQL lee el código Java y TypeScript buscando patrones vulnerables; los hallazgos quedan en *Security › Code scanning* |
+
+- No frena el deploy (es otro workflow), pero un rojo acá es para arreglar enseguida. Las excepciones justificadas van
+  en [`.trivyignore`](../.trivyignore).
+- Trivy corre desde su imagen oficial fijada por *digest* (el hash del contenido): aunque alguien publique otra
+  imagen con el mismo tag, el CI sigue usando exactamente la misma.
+- **Dependabot** ([`dependabot.yml`](../.github/dependabot.yml)) abre pull requests semanales con versiones nuevas
+  (Maven, npm, imágenes base y del compose, actions), y el CI las prueba antes de mergear.
+
+Detalle de todas las capas de seguridad: [security.md](security.md).

@@ -137,7 +137,9 @@ Para que corra todas las noches, con `crontab -e` en el servidor (el servidor es
 ### Backups fuera del servidor
 
 Un backup que vive en el mismo servidor no sirve si se pierde el servidor. Con `OFFSITE_URL` en el `.env`,
-`backup.sh` sube cada dump a un bucket de Oracle Object Storage (Always Free: 20 GB; cada dump pesa unos KB).
+`backup.sh` sube cada dump a un bucket de Oracle Object Storage (Always Free: 20 GB; cada dump pesa unos KB),
+**cifrado** con la clave pública `backup-key.asc`, que tiene que estar en la carpeta del servidor. Sin ella no sube
+nada: el backup tiene todos los DNI. La clave privada no está en el servidor (ver [security.md](security.md#la-clave-de-los-backups)).
 
 [`infra/oci_backup_bucket.py`](../infra/oci_backup_bucket.py) crea todo, con la API key de `~/.oci/config`:
 
@@ -155,11 +157,13 @@ La URL es un secreto: va directo del script al `.env` del servidor por un pipe, 
 ```bash
 infra/.venv/Scripts/python.exe infra/oci_backup_bucket.py | ssh -i ~/.ssh/oracle_torneo ubuntu@IP \
   'read -r url; cd /opt/torneo; sed -i "/^OFFSITE_URL=/d" .env; echo "OFFSITE_URL=$url" >> .env; echo guardada'
-ssh -i ~/.ssh/oracle_torneo ubuntu@IP /opt/torneo/backup.sh     # tiene que decir "local + off-site"
+scp -i ~/.ssh/oracle_torneo backup-key.asc ubuntu@IP:/opt/torneo/
+ssh -i ~/.ssh/oracle_torneo ubuntu@IP /opt/torneo/backup.sh     # tiene que decir "local + off-site encrypted"
 ```
 
 Para restaurar desde el bucket: bajar el archivo desde la consola de Oracle (*Storage › Buckets › torneo-backups*),
-copiarlo al servidor con `scp` y usar `restore.sh`.
+descifrarlo en la PC (`gpg --decrypt`), copiarlo al servidor con `scp` y usar `restore.sh`
+([security.md](security.md#la-clave-de-los-backups)).
 
 ### Aviso si un backup no corre
 

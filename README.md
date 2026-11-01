@@ -63,7 +63,7 @@ The app is four containers on one machine, started by Docker Compose, plus three
 
 ```mermaid
 flowchart LR
-    push([git push main]) --> backend["Backend<br/>87 integration tests"]
+    push([git push main]) --> backend["Backend<br/>92 integration tests"]
     push --> frontend["Frontend<br/>type check + build"]
     backend --> images["Images api + web<br/>amd64 + arm64"]
     frontend --> images
@@ -98,6 +98,16 @@ builds the images without publishing them.
   Postgres ~25 MB, Caddy ~14 MB, nginx ~8 MB.
 - **Hardening:** two firewalls (OCI security list and iptables) with only 22, 80 and 443 open; SSH keys only, no root
   login; fail2ban; unattended security upgrades; database and API not reachable from outside; Swagger disabled.
+- **Security in layers** ([`docs/security.md`](docs/security.md)):
+  - *app:* parameterized queries only; size and format limits on every input; invisible characters stripped;
+    uploaded images re-encoded (no EXIF/GPS, no hidden payloads, decompression bombs refused); forged JWTs rejected;
+    tests that sweep every public endpoint for DNI, email or phone.
+  - *edge:* per-IP rate limits that a spoofed `X-Forwarded-For` cannot bypass; strict CSP; HSTS; self-hosted fonts.
+  - *containers:* nothing runs as root (nginx included), all Linux capabilities dropped, read-only filesystems,
+    process limits, and segmented networks where the database and the API have no internet access.
+  - *data:* the off-site backup copy is encrypted with a public key whose private half never touches the server.
+  - *supply chain:* Trivy scans the images and the container config, CodeQL scans the code, Dependabot opens weekly
+    updates. The first scan found 60 high/critical CVEs in an outdated nginx base image; both images are at 0 now.
 - **Backups:** nightly `pg_dump` (cron, 04:00 Argentina), compressed, written atomically, 14 days kept on the
   server and copied to Oracle Object Storage through a **write-only** pre-authenticated URL (it cannot list, read or
   delete). The bucket has a 30-day retention rule, so not even that URL can overwrite a backup, and a lifecycle rule
@@ -163,6 +173,7 @@ Step-by-step: [`docs/deploy.md`](docs/deploy.md), [`docs/observability.md`](docs
 | Containers | Docker multi-stage builds (non-root, health checks), Docker Compose, nginx, Caddy |
 | Observability | Spring Boot Actuator, Micrometer, Prometheus, node-exporter, Grafana |
 | CI/CD | GitHub Actions, GitHub Container Registry, Buildx + QEMU (multi-arch) |
+| Security | Trivy (image CVEs and container config), CodeQL, Dependabot, GnuPG (backup encryption) |
 | Cloud | Oracle Cloud Infrastructure (VCN, security lists, compute, Object Storage, IAM), OCI Python SDK, DuckDNS |
 | Operations | Ubuntu 24.04, iptables, fail2ban, unattended-upgrades, cron, swap tuning |
 
@@ -180,7 +191,7 @@ For development (hot reload):
 ```bash
 ./mvnw spring-boot:run -Dspring-boot.run.profiles=dev   # API on :8081, in-memory H2, admin/admin123
 cd frontend && npm install && npm run dev               # http://localhost:5173
-./mvnw test                                             # 87 tests, no database needed
+./mvnw test                                             # 92 tests, no database needed
 ```
 
 With the `dev` profile Swagger UI is at http://localhost:8081/swagger-ui.html. Configuration and database details:
@@ -210,10 +221,12 @@ docs/                    Design notes and guides (Spanish)
 | [`docs/ci.md`](docs/ci.md) | CI/CD workflow |
 | [`docs/deploy.md`](docs/deploy.md) | Server setup, deploys, rollbacks, backups |
 | [`docs/observability.md`](docs/observability.md) | Metrics, dashboard, SSH tunnel |
+| [`docs/security.md`](docs/security.md) | Security layers, backup encryption key, what is left |
 
 ## What's next
 
 - **Real use:** the league running the season on the app.
+- **Spring Boot 4:** the 3.5 line no longer gets free patches (two Spring Framework CVEs are fixed only in 7.x; neither applies today).
 - **Metric alerts:** Grafana alerts by email (memory, 5xx, response time).
 - **Centralized logs:** Loki, if memory allows.
 - **Close port 22:** SSH only over Tailscale, for me and for the CI.

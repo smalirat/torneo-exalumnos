@@ -3,7 +3,7 @@
 La app completa corre con Docker Compose: un comando levanta la base, el backend y el frontend.
 
 ```
-navegador ──► web (nginx :80, publicado en :8080)
+navegador ──► web (nginx :8080, publicado en :8080)
                 ├── /            archivos estáticos de Vue (y fallback a index.html para las rutas)
                 └── /api/…  ──►  api (Spring Boot :8081) ──► db (PostgreSQL :5432)
 ```
@@ -27,7 +27,6 @@ Todo sale de `.env` (copiar `.env.example`; `.env` está en `.gitignore`):
 | `APP_ADMIN_USERNAME`, `APP_ADMIN_PASSWORD` | Admin que se crea al arrancar si no existe |
 | `PUBLIC_URL` | URL desde la que se abre la app (CORS) |
 | `WEB_PORT` | Puerto de la máquina donde se publica (por defecto 8080) |
-| `APP_SWAGGER_ENABLED` | Swagger en `/swagger-ui.html` (dejar en `false` en producción) |
 
 Compose corta con un error claro si falta `DB_PASSWORD` o `APP_JWT_SECRET`.
 
