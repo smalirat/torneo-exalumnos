@@ -4,7 +4,7 @@
 # ---- build
 # Runs on the machine doing the build ($BUILDPLATFORM), whatever the target: the jar is the same for every CPU,
 # so an ARM image (Oracle Cloud) does not need to compile under slow emulation
-FROM --platform=$BUILDPLATFORM maven:3.9-eclipse-temurin-21 AS build
+FROM --platform=$BUILDPLATFORM maven:3.9-eclipse-temurin-26 AS build
 WORKDIR /src
 # Dependencies first: this layer is reused while pom.xml does not change
 COPY pom.xml .
