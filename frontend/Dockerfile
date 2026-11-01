@@ -13,7 +13,7 @@ RUN npm run build
 # ---- serve
 # Stable branch (even minor version); the tag follows its patch releases. apk upgrade adds the Alpine security
 # fixes published after the base image was built (CI scans the result, see .github/workflows/security.yml)
-FROM nginx:1.30-alpine
+FROM nginx:1.31-alpine
 # Run nginx entirely as the unprivileged nginx user, not as root: no "user" switch, the pid file in /tmp, and its cache
 # folders owned by nginx. That is why it listens on 8080 (ports below 1024 need root)
 RUN apk upgrade --no-cache \
