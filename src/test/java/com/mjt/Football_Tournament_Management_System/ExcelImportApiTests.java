@@ -249,6 +249,29 @@ class ExcelImportApiTests {
 
     // ------------------------------------------------------------------ helpers
 
+    /**
+     * The public demo's workbook (infra/demo_workbook.py: the real one with invented names) must load exactly like the
+     * real one: same number of rows of each kind and the same warnings. Local only, like the real workbook.
+     */
+    @Test
+    void demoWorkbookLoadsLikeTheRealOne() throws Exception {
+        var real = Path.of("design", "TORNEO CLAUSURA 2026-7.xlsx");
+        var demo = Path.of("design", "DEMO 2026.xlsx");
+        assumeTrue(Files.exists(real) && Files.exists(demo), "real or demo workbook not present");
+        String admin = login();
+        JsonNode realPreview = upload(Files.readAllBytes(real), admin), demoPreview = upload(Files.readAllBytes(demo), admin);
+        for (var c : realPreview.get("counters")) {
+            // Totals, whatever is already in the database: created + updated + unchanged = rows of that kind in the file
+            String entity = c.get("entity").asText();
+            int realRows = c.get("created").asInt() + c.get("updated").asInt() + c.get("unchanged").asInt() + c.get("conflicts").asInt();
+            int demoRows = count(demoPreview, entity, "created") + count(demoPreview, entity, "updated")
+                    + count(demoPreview, entity, "unchanged") + count(demoPreview, entity, "conflicts");
+            assertEquals(realRows, demoRows, entity);
+        }
+        assertEquals(realPreview.get("warnings").size(), demoPreview.get("warnings").size(), "warnings");
+        System.out.println("demo counters: " + demoPreview.get("counters"));
+    }
+
     private JsonNode upload(byte[] file, String token) throws Exception {
         return read(mvc.perform(multipart("/api/admin/imports")
                         .file(new MockMultipartFile("file", "torneo.xlsx", "application/octet-stream", file))
