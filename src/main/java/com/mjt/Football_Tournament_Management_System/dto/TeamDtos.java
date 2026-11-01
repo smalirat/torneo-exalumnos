@@ -13,7 +13,7 @@ public class TeamDtos {
         /** Optional: empty or a phone as people type it */
         @Pattern(regexp = "^(" + AuthDtos.PHONE_BODY + ")?$", message = "solo números, espacios, guiones, paréntesis y +")
         private String phone;
-        @Email @Size(max = 120) private String email;
+        @Email(regexp = AuthDtos.EMAIL_DOMAIN, message = "mail inválido") @Size(max = 120) private String email;
     }
 
     /** Jersey number and/or DNI of a player, changed directly (no approval). Missing field = unchanged; blank DNI = none */

@@ -21,16 +21,25 @@ internet ─► Caddy ─────────► nginx ───────
 | **Imágenes maliciosas** | El formato se detecta por el contenido, no por lo que dice el navegador. Se lee el tamaño antes de decodificar (un PNG de 1 KB que dice medir 50000×50000 ocuparía 10 GB de memoria). Lo que se guarda es la imagen **redibujada**: sin metadatos (la ubicación GPS de una foto de celular) ni nada escondido después de la imagen | [`SafeImages`](../src/main/java/com/mjt/Football_Tournament_Management_System/service/SafeImages.java) |
 | **Adivinar contraseñas** | BCrypt para guardarlas; bloqueo de 5 minutos tras 5 intentos fallidos por usuario (con tope de memoria), y nginx corta por IP | `security/` |
 | **Tokens falsos** | JWT firmado con HMAC-SHA256 y una clave de 32+ caracteres del entorno; se rechaza un token sin firma (`alg: none`), firmado con otra clave, de otro emisor o vencido | [`JwtService`](../src/main/java/com/mjt/Football_Tournament_Management_System/security/JwtService.java) |
-| **Ver o tocar datos ajenos** | Cada operación de un capitán verifica que el equipo sea suyo (`ownedTeam`); `/api/admin/**` exige rol de admin. Los DNI, mails y teléfonos nunca salen en las respuestas públicas | `service/`, `SecurityConfig` |
+| **Clave o contraseña de ejemplo** | La API no arranca si la clave de los JWT falta, es el valor de `.env.example` (público en GitHub: con él cualquiera firmaría tokens de admin) o es trivial (`aaaa…`), ni si la contraseña del admin inicial tiene menos de 12 caracteres | `JwtService`, `AdminBootstrap` |
+| **Averiguar qué usuarios existen** | El login responde lo mismo para un usuario que no existe que para una contraseña incorrecta | `GlobalExceptionHandler` |
+| **Mails inventados** | Además del formato, el dominio tiene que tener punto (`ana@localhost` no pasa). Verificar que el mail sea de verdad requiere mandar un correo (no hay servidor de correo); los capitanes igual pasan por la aprobación del admin | `dto/` |
+| **Ver o tocar datos ajenos** | Cada operación de un capitán verifica que el equipo sea suyo (`ownedTeam`): plantel, jugadores, escudo, inscripción, resumen. `/api/admin/**` exige rol de admin, y no hay forma de crear otro admin desde la API. Los DNI, mails y teléfonos nunca salen en las respuestas públicas | `service/`, `SecurityConfig` |
+| **Otros sitios usando tu sesión** | CORS solo permite el dominio de la app. Además la sesión va en un token que el frontend manda a mano (no en una cookie), así que otro sitio no puede hacer pedidos "en nombre" de un usuario logueado | `SecurityConfig` |
 | **Mensajes de error que filtran** | Los errores devuelven un mensaje genérico en castellano, nunca el stack trace ni el SQL | `GlobalExceptionHandler` |
 
 Los tests de [`SecurityHardeningApiTests`](../src/test/java/com/mjt/Football_Tournament_Management_System/SecurityHardeningApiTests.java)
-prueban estos ataques en cada push: recorren todos los endpoints públicos buscando DNI, mail o teléfono, mandan
-tokens falsificados, textos gigantes o con caracteres invisibles, imágenes con HTML escondido y "bombas" de
-descompresión.
+prueban estos ataques en cada push:
+- recorren todos los endpoints públicos buscando DNI, mail o teléfono;
+- intentan cada operación sobre el equipo de otro capitán;
+- piden permiso de CORS desde otro dominio;
+- mandan tokens falsificados, claves de ejemplo, mails sin dominio y textos gigantes o con caracteres invisibles;
+- suben SVG con scripts, imágenes con HTML escondido y "bombas" de descompresión.
 
 ## 2. Borde (nginx y Caddy)
 
+- **Tamaño de los pedidos:** 1 MB como máximo (cualquier JSON de la app pesa pocos KB); solo las cuatro rutas de
+  subida de archivos aceptan hasta 12 MB. Lo más grande se corta en nginx (413) sin llegar al backend.
 - **Límites de pedidos por IP:** login, registro e invitaciones, 10 por minuto; el resto de la API, 20 por segundo
   con margen para ráfagas. Arriba de eso, 429. La IP real viene del `X-Forwarded-For` que agrega Caddy, y nginx solo
   le cree a redes privadas: alguien de afuera no puede inventarse una IP distinta en cada intento.

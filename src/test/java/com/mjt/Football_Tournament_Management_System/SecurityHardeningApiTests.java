@@ -117,6 +117,85 @@ class SecurityHardeningApiTests extends ApiTestSupport {
         var gif = new ByteArrayOutputStream();
         ImageIO.write(new BufferedImage(2, 2, BufferedImage.TYPE_INT_RGB), "gif", gif);
         uploadCrest(team, gif.toByteArray(), "image/png", admin).andExpect(status().isBadRequest());
+
+        // An SVG with a script, sent as SVG or disguised as PNG/JPEG: never stored (a browser would run it)
+        byte[] svg = "<svg xmlns=\"http://www.w3.org/2000/svg\"><script>alert(1)</script></svg>".getBytes(StandardCharsets.UTF_8);
+        for (String type : List.of("image/svg+xml", "image/png", "image/jpeg")) {
+            uploadCrest(team, svg, type, admin).andExpect(status().isBadRequest());
+        }
+    }
+
+    @Test
+    void otherOriginsCannotCallTheApi() throws Exception {
+        // A page on another site asking the browser for permission (CORS preflight): refused
+        mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options("/api/auth/me")
+                        .header("Origin", "https://evil.example").header("Access-Control-Request-Method", "GET")
+                        .header("Access-Control-Request-Headers", "Authorization"))
+                .andExpect(status().isForbidden())
+                .andExpect(header().doesNotExist("Access-Control-Allow-Origin"));
+        // The configured frontend origin is allowed
+        mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options("/api/auth/me")
+                        .header("Origin", "http://localhost:5173").header("Access-Control-Request-Method", "GET"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Access-Control-Allow-Origin", "http://localhost:5173"));
+    }
+
+    @Test
+    void captainsCannotTouchOtherTeams() throws Exception {
+        String admin = admin();
+        String owner = newUser(), intruder = newUser();
+        long team = newTeam(owner);
+        long player = read(post("/api/teams/" + team + "/players", "{\"players\":[{\"fullName\":\"Ajeno, Uno\",\"jerseyNo\":1}]}", owner)
+                .andExpect(status().isOk())).get(0).get("id").asLong();
+        long tournament = newTournament(admin);
+
+        get("/api/teams/" + team + "/roster", intruder).andExpect(status().isForbidden());
+        put("/api/teams/" + team, "{\"name\":\"Robado\"}", intruder).andExpect(status().isForbidden());
+        post("/api/teams/" + team + "/players", "{\"players\":[{\"fullName\":\"Intruso\",\"jerseyNo\":2}]}", intruder)
+                .andExpect(status().isForbidden());
+        patch("/api/teams/" + team + "/players/" + player, "{\"jerseyNo\":99}", intruder).andExpect(status().isForbidden());
+        delete("/api/teams/" + team + "/players/" + player, intruder).andExpect(status().isForbidden());
+        delete("/api/teams/" + team + "/crest", intruder).andExpect(status().isForbidden());
+        uploadCrest(team, png(4, 4), "image/png", intruder).andExpect(status().isForbidden());
+        post("/api/teams/" + team + "/tournaments/" + tournament + "/register", "", intruder).andExpect(status().isForbidden());
+        get("/api/teams/" + team + "/tournaments/" + tournament + "/dashboard", intruder).andExpect(status().isForbidden());
+        delete("/api/teams/" + team, intruder).andExpect(status().isForbidden());
+        // Organizer-only areas
+        get("/api/admin/requests", intruder).andExpect(status().isForbidden());
+        get("/api/admin/banned", intruder).andExpect(status().isForbidden());
+        get("/api/admin/protests", intruder).andExpect(status().isForbidden());
+        post("/api/admin/teams/" + team + "/invite", "", intruder).andExpect(status().isForbidden());
+
+        // Nothing changed
+        get("/api/teams/" + team + "/roster", owner).andExpect(jsonPath("$[0].jerseyNo").value(1)).andExpect(jsonPath("$.length()").value(1));
+    }
+
+    @Test
+    void loginDoesNotRevealWhichUsernamesExist() throws Exception {
+        String unknown = post("/api/auth/login", "{\"username\":\"nadie-" + UUID.randomUUID() + "\",\"password\":\"password123\"}", null)
+                .andExpect(status().isUnauthorized()).andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
+        String wrongPassword = post("/api/auth/login", "{\"username\":\"admin\",\"password\":\"incorrecta-" + UUID.randomUUID() + "\"}", null)
+                .andExpect(status().isUnauthorized()).andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
+        assertThat(json.readTree(unknown).get("detail")).isEqualTo(json.readTree(wrongPassword).get("detail"));
+    }
+
+    @Test
+    void emailsNeedARealLookingDomain() throws Exception {
+        String user = "m" + UUID.randomUUID().toString().substring(0, 8);
+        for (String email : List.of("ana@localhost", "ana", "ana@mail.c", "a na@mail.com")) {
+            post("/api/auth/register", "{\"username\":\"" + user + "\",\"password\":\"password123\",\"email\":\"" + email
+                    + "\",\"phone\":\"11 5555-1234\",\"teamName\":\"Mails " + user + "\"}", null).andExpect(status().isBadRequest());
+        }
+    }
+
+    @Test
+    void publicOrGuessableJwtSecretsAreRefused() {
+        // The example value is public on GitHub; the others are long enough but trivial to guess
+        for (String secret : List.of("change-me-to-a-long-random-secret-of-32-chars-or-more", "a".repeat(64),
+                "abababababababababababababababab", "")) {
+            org.junit.jupiter.api.Assertions.assertThrows(IllegalStateException.class,
+                    () -> new com.mjt.Football_Tournament_Management_System.security.JwtService(secret, 60), secret);
+        }
     }
 
     private org.springframework.test.web.servlet.ResultActions uploadCrest(long team, byte[] data, String type, String token) throws Exception {

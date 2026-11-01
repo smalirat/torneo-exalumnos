@@ -13,6 +13,8 @@ public class AuthDtos {
     /** A phone as people type it: "11 5555-1234", "+54 9 11 5555 1234", "(011) 4555-1234" */
     static final String PHONE_BODY = "\\+?[0-9 ()\\-]{6,30}";
     static final String PHONE = "^" + PHONE_BODY + "$";
+    /** @Email alone accepts "ana@localhost": also require a domain with a dot ("ana@mail.com") */
+    static final String EMAIL_DOMAIN = "^[^@\\s]+@[^@\\s]+\\.[^@\\s]{2,}$";
 
     @Data
     public static class LoginReq {
@@ -27,7 +29,7 @@ public class AuthDtos {
         private String username;
         @NotBlank @Size(min = 8, max = 100)
         private String password;
-        @NotBlank @Email @Size(max = 120) private String email;
+        @NotBlank @Email(regexp = EMAIL_DOMAIN, message = "mail inválido") @Size(max = 120) private String email;
         @NotBlank @Pattern(regexp = PHONE, message = "solo números, espacios, guiones, paréntesis y +") @Size(max = 30)
         private String phone;
         /** Signing up goes with a team: either a new one (teamName) or one without captain (claimTeamId). */
@@ -50,7 +52,7 @@ public class AuthDtos {
         private String username;
         @NotBlank @Size(min = 8, max = 100)
         private String password;
-        @NotBlank @Email @Size(max = 120) private String email;
+        @NotBlank @Email(regexp = EMAIL_DOMAIN, message = "mail inválido") @Size(max = 120) private String email;
         @NotBlank @Pattern(regexp = PHONE, message = "solo números, espacios, guiones, paréntesis y +") @Size(max = 30)
         private String phone;
     }
@@ -58,7 +60,7 @@ public class AuthDtos {
     /** The user's own contact ("Mis datos") */
     @Data
     public static class ContactReq {
-        @NotBlank @Email @Size(max = 120) private String email;
+        @NotBlank @Email(regexp = EMAIL_DOMAIN, message = "mail inválido") @Size(max = 120) private String email;
         @NotBlank @Pattern(regexp = PHONE, message = "solo números, espacios, guiones, paréntesis y +") @Size(max = 30)
         private String phone;
     }

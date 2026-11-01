@@ -94,7 +94,7 @@ public class TeamController {
     }
 
     @GetMapping("/{teamId}/tournaments/{tournamentId}/dashboard")
-    public ViewDtos.TeamDashboard dashboard(@PathVariable Long teamId, @PathVariable Long tournamentId) {
-        return teamService.dashboard(teamId, tournamentId);
+    public ViewDtos.TeamDashboard dashboard(@PathVariable Long teamId, @PathVariable Long tournamentId, Authentication auth) {
+        return teamService.dashboard(teamId, tournamentId, auth);
     }
 }

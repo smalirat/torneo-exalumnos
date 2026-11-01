@@ -483,8 +483,10 @@ public class TeamService {
         return ResponseDtos.RegistrationRes.from(regRepo.save(r));
     }
 
-    public ViewDtos.TeamDashboard dashboard(Long teamId, Long tournamentId) {
-        var team = findTeam(teamId);
+    /** For the team's captain or the admin (a team still in review is not public) */
+    @Transactional(readOnly = true)
+    public ViewDtos.TeamDashboard dashboard(Long teamId, Long tournamentId, Authentication auth) {
+        var team = ownedTeam(teamId, auth);
         var t = findTournament(tournamentId);
         var matches = matchRepo.findByTournamentAndTeam(t, team);
         var pending = MatchGame.pendingWalkovers(matchRepo.findByTournament(t));

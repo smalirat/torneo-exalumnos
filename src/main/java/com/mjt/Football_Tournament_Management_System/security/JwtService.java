@@ -28,10 +28,25 @@ public class JwtService {
 
     public JwtService(@Value("${app.jwt.secret}") String secret,
                       @Value("${app.jwt.expiration-minutes}") long expMinutes) {
+        checkSecret(secret);
         byte[] bytes = secret.length() >= 32 ? secret.getBytes(StandardCharsets.UTF_8) : Decoders.BASE64.decode(secret);
-        this.key = Keys.hmacShaKeyFor(bytes);
+        this.key = Keys.hmacShaKeyFor(bytes); // also refuses keys under 256 bits
         this.expirationMinutes = expMinutes;
         this.expirationMillis = expMinutes * 60 * 1000;
+    }
+
+    /**
+     * Whoever knows the secret can sign a token saying "I am the admin". Refuse to start with one that is public
+     * (the placeholder of .env.example is on GitHub) or guessable (a few repeated characters).
+     */
+    static void checkSecret(String secret) {
+        if (secret == null || secret.isBlank()) throw new IllegalStateException("APP_JWT_SECRET is not set");
+        if (secret.toLowerCase().contains("change-me")) {
+            throw new IllegalStateException("APP_JWT_SECRET is still the example value: generate one with openssl rand -base64 48");
+        }
+        if (secret.chars().distinct().count() < 12) {
+            throw new IllegalStateException("APP_JWT_SECRET is too predictable: generate one with openssl rand -base64 48");
+        }
     }
 
     public String generate(UserDetails user) {
