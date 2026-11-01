@@ -15,6 +15,8 @@ RUN --mount=type=cache,target=/root/.m2 mvn -q -B -DskipTests package \
 
 # ---- run (one per target platform: amd64, arm64)
 FROM eclipse-temurin:21-jre-alpine
+# Alpine security fixes published after the base image was built (CI scans the result, see .github/workflows/security.yml)
+RUN apk upgrade --no-cache
 # Never run as root inside the container
 RUN addgroup -S app && adduser -S app -G app
 USER app

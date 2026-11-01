@@ -1,6 +1,14 @@
 # Caddy gets and renews the HTTPS certificate for {$DOMAIN} by itself (Let's Encrypt). It needs the domain pointing
 # to this server and ports 80 and 443 open. With DOMAIN=localhost it uses its own local certificate instead.
 {$DOMAIN} {
-	# Everything goes to the web container (nginx), which serves the app and forwards /api to the backend
-	reverse_proxy web:80
+	header {
+		# HSTS: once a browser has visited, for a year it only uses HTTPS for this domain, even if someone types http://
+		# or a network tries to downgrade the connection. The rest of the security headers come from nginx.
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		# Do not say which server software answers
+		-Server
+	}
+	# Everything goes to the web container (nginx), which serves the app and forwards /api to the backend.
+	# Caddy replaces any X-Forwarded-For the client sent with the real address, so nginx can trust it.
+	reverse_proxy web:8080
 }
