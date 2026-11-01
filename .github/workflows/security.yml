@@ -36,7 +36,7 @@ jobs:
           - name: web
             context: frontend
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Build the ${{ matrix.name }} image
         run: docker build -t scan/${{ matrix.name }} ${{ matrix.context }}
@@ -57,7 +57,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Scan Dockerfiles and compose files
         run: |
           docker run --rm -v "$PWD:/src:ro" \
@@ -71,7 +71,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0   # every commit, not only the last one
       - name: Scan the git history
@@ -94,7 +94,7 @@ jobs:
       matrix:
         language: [java-kotlin, javascript-typescript]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: github/codeql-action/init@v4
         with:
           languages: ${{ matrix.language }}
