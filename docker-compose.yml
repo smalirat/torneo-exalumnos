@@ -2,10 +2,29 @@
 # Settings and secrets come from .env (copy .env.example; .env is never committed).
 name: torneo
 
+# Same container hardening and network split as production (deploy/docker-compose.yml explains each line), so a
+# problem they cause shows up here first and not on the server
+x-hardening: &hardening
+  security_opt:
+    - no-new-privileges:true
+  cap_drop:
+    - ALL
+  pids_limit: 200
+
+networks:
+  app:            # web <-> api (web also publishes its port, so this one cannot be internal)
+  data:           # api <-> db, no internet access
+    internal: true
+
 services:
   db:
+    <<: *hardening
     image: postgres:16-alpine
     restart: unless-stopped
+    cap_add: [CHOWN, DAC_OVERRIDE, FOWNER, SETUID, SETGID]
+    networks: [data]
+    read_only: true
+    tmpfs: [/var/run/postgresql, /tmp]
     environment:
       POSTGRES_DB: football_tournament
       POSTGRES_USER: ${DB_USERNAME:-postgres}
@@ -23,6 +42,11 @@ services:
     build: .
     image: torneo-api
     restart: unless-stopped
+    <<: *hardening
+    networks: [app, data]
+    read_only: true
+    tmpfs: [/tmp]
+    pids_limit: 400
     depends_on:
       db:
         condition: service_healthy
@@ -34,18 +58,21 @@ services:
       APP_ADMIN_USERNAME: ${APP_ADMIN_USERNAME:-admin}
       APP_ADMIN_PASSWORD: ${APP_ADMIN_PASSWORD:-}
       APP_CORS_ALLOWED_ORIGINS: ${PUBLIC_URL:-http://localhost:8080}
-      APP_SWAGGER_ENABLED: ${APP_SWAGGER_ENABLED:-false}
     # No published port: the browser reaches it through the web container (/api)
 
   web:
     build: ./frontend
     image: torneo-web
     restart: unless-stopped
+    <<: *hardening
+    networks: [app]
+    read_only: true
+    tmpfs: ['/var/cache/nginx:uid=101,gid=101', '/tmp:uid=101,gid=101']   # nginx runs as uid 101
     depends_on:
       api:
         condition: service_healthy
     ports:
-      - "${WEB_PORT:-8080}:80"
+      - "${WEB_PORT:-8080}:8080"
 
 volumes:
   db-data:

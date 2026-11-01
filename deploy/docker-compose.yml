@@ -10,10 +10,46 @@ x-logging: &logging
     max-size: "10m"
     max-file: "3"
 
+# Container hardening, merged into every service (<<: *hardening). If someone takes over a container through a bug,
+# these limit what they can do from there:
+# - no-new-privileges: a process can never gain more privileges than it started with (setuid binaries, sudo, etc.)
+# - cap_drop ALL: Linux "capabilities" are pieces of root's power (change file owners, bind ports < 1024, ...). Drop
+#   them all; the few services that need one add it back by name with cap_add
+# - pids_limit: a cap on processes/threads, so a runaway one (or a "fork bomb") cannot freeze the whole server
+x-hardening: &hardening
+  security_opt:
+    - no-new-privileges:true
+  cap_drop:
+    - ALL
+  pids_limit: 200
+
+# Network segmentation: each service only sees the ones it talks to. Caddy (exposed to the internet) cannot reach the
+# database; the database and the API have no internet access at all (internal networks), so even a compromised API
+# could not download tools or send data out.
+#   edge (internet)   caddy <-> web
+#   app (internal)    web <-> api <- prometheus
+#   data (internal)   api <-> db
+#   monitoring        prometheus, node-exporter, grafana (not internal: their 127.0.0.1 ports need it)
+networks:
+  edge:
+  app:
+    internal: true
+  data:
+    internal: true
+  monitoring:
+
 services:
   db:
+    <<: *hardening
     image: postgres:16-alpine
     restart: unless-stopped
+    # The entrypoint starts as root, fixes the data folder's owner and switches to the postgres user
+    cap_add: [CHOWN, DAC_OVERRIDE, FOWNER, SETUID, SETGID]
+    networks: [data]
+    read_only: true          # the image cannot be modified; only the data volume and these temporary folders can
+    tmpfs:
+      - /var/run/postgresql
+      - /tmp
     environment:
       POSTGRES_DB: football_tournament
       POSTGRES_USER: ${DB_USERNAME:-postgres}
@@ -28,8 +64,14 @@ services:
     logging: *logging
 
   api:
+    <<: *hardening
     image: ghcr.io/smalirat/torneo-api:${TAG:-latest}
     restart: unless-stopped
+    networks: [app, data]
+    read_only: true
+    tmpfs:
+      - /tmp                 # uploads in progress and Tomcat's work folder
+    pids_limit: 400          # every Java thread counts (Tomcat alone can use 200)
     depends_on:
       db:
         condition: service_healthy
@@ -50,8 +92,14 @@ services:
     logging: *logging
 
   web:
+    <<: *hardening
     image: ghcr.io/smalirat/torneo-web:${TAG:-latest}
     restart: unless-stopped
+    networks: [edge, app]
+    read_only: true
+    tmpfs:                   # owned by the nginx user (uid 101): nginx runs without root
+      - /var/cache/nginx:uid=101,gid=101
+      - /tmp:uid=101,gid=101
     # Started, not healthy: nginx looks the api up on each request, so the site is served while a slow api starts
     # (only /api answers 502 meanwhile) instead of waiting, and failing, with it
     depends_on:
@@ -61,8 +109,14 @@ services:
     # No published port anymore: Caddy is the only door from the internet
 
   caddy:
-    image: caddy:2.8-alpine
+    <<: *hardening
+    image: caddy:2.11-alpine
     restart: unless-stopped
+    cap_add: [NET_BIND_SERVICE]   # ports 80 and 443
+    networks: [edge]
+    read_only: true
+    tmpfs:
+      - /tmp
     depends_on:
       web:
         condition: service_healthy
@@ -81,8 +135,11 @@ services:
   # ---- Monitoring: Prometheus collects the metrics, Grafana shows them. Both only on 127.0.0.1 of the server: reach
   # them with an SSH tunnel (docs/observability.md). Memory caps keep them from starving the app on a 1 GB machine.
   prometheus:
+    <<: *hardening
     image: prom/prometheus:v3.5.0
     restart: unless-stopped
+    networks: [app, monitoring]
+    read_only: true
     command:
       - --config.file=/etc/prometheus/prometheus.yml
       - --storage.tsdb.path=/prometheus
@@ -103,8 +160,11 @@ services:
 
   # Server metrics (CPU, RAM, swap, disk, network) read from the host's /proc and /sys
   node-exporter:
+    <<: *hardening
     image: prom/node-exporter:v1.9.1
     restart: unless-stopped
+    networks: [monitoring]
+    read_only: true
     command:
       - --path.procfs=/host/proc
       - --path.sysfs=/host/sys
@@ -124,8 +184,13 @@ services:
     logging: *logging
 
   grafana:
+    <<: *hardening
     image: grafana/grafana-oss:12.1.1
     restart: unless-stopped
+    networks: [monitoring]
+    read_only: true
+    tmpfs:
+      - /tmp
     depends_on:
       prometheus:
         condition: service_healthy
