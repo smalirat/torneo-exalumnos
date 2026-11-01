@@ -54,8 +54,12 @@ services:
       POSTGRES_DB: football_tournament
       POSTGRES_USER: ${DB_USERNAME:-postgres}
       POSTGRES_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env}
+      # Passwords of the two users db-roles.sh creates (the owner runs migrations, the app reads and writes rows)
+      DB_OWNER_PASSWORD: ${DB_OWNER_PASSWORD:?Set DB_OWNER_PASSWORD in .env}
+      DB_APP_PASSWORD: ${DB_APP_PASSWORD:?Set DB_APP_PASSWORD in .env}
     volumes:
       - db-data:/var/lib/postgresql/data
+      - ./db-roles.sh:/docker-entrypoint-initdb.d/10-roles.sh:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d football_tournament"]
       interval: 5s
@@ -77,8 +81,11 @@ services:
         condition: service_healthy
     environment:
       DB_URL: jdbc:postgresql://db:5432/football_tournament
-      DB_USERNAME: ${DB_USERNAME:-postgres}
-      DB_PASSWORD: ${DB_PASSWORD}
+      # Never the superuser: the app's user only reads and writes rows; the tables' owner only runs the migrations
+      DB_USERNAME: torneo_app
+      DB_PASSWORD: ${DB_APP_PASSWORD}
+      DB_MIGRATION_USERNAME: torneo_owner
+      DB_MIGRATION_PASSWORD: ${DB_OWNER_PASSWORD}
       APP_JWT_SECRET: ${APP_JWT_SECRET:?Set APP_JWT_SECRET in .env (32+ characters)}
       APP_ADMIN_USERNAME: ${APP_ADMIN_USERNAME:-admin}
       APP_ADMIN_PASSWORD: ${APP_ADMIN_PASSWORD:-}

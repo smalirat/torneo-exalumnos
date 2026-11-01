@@ -10,6 +10,24 @@ internet ─► Caddy ─────────► nginx ───────
             └──────────── contenedores sin root, sin capabilities, solo lectura ──────────┘
 ```
 
+## Modelo de amenazas
+
+Antes de defender hay que saber de quién y qué. Lo que vale en esta app son los **datos personales** (DNI,
+teléfonos, mails) y la **cuenta del admin**, que puede cambiar resultados y planteles.
+
+| Quién | Qué querría | Qué lo frena |
+|---|---|---|
+| Bot de internet (escanea todo, sin objetivo) | Paneles abiertos, versiones con fallas conocidas, contraseñas por defecto | Solo 22/80/443 abiertos; nada interno expuesto; imágenes escaneadas cada semana; la API no arranca con claves de ejemplo |
+| Alguien que quiere entrar como admin | Adivinar la contraseña, falsificar un token | Límite por IP y bloqueo por usuario; contraseña de 12+; JWT firmado y verificado |
+| Un capitán curioso o con mala intención | Ver o tocar otros equipos, ver DNI ajenos | Cada operación verifica que el equipo sea suyo; tests que lo intentan |
+| Alguien que sube archivos o textos armados | XSS, ejecutar código, tirar el servidor | Imágenes redibujadas, límites de tamaño, CSP, texto siempre mostrado como texto |
+| Alguien que llega a ejecutar código en un contenedor (un bug futuro) | Pasar a otros servicios, sacar los datos | Sin root, sin capabilities, solo lectura, redes separadas y sin internet, usuario de base sin poder |
+| Quien consiga el bucket de backups | Leer los DNI | Backups cifrados; la clave privada no está en el servidor |
+| Una dependencia o action comprometida | Meter código en la imagen o robar el token de publicación | Versiones fijas, actions de terceros por hash, escaneo de imágenes y de secretos |
+
+Fuera de alcance (lo cubre el proveedor): acceso físico al servidor u Oracle mismo. Alguien con la cuenta de GitHub o
+de Oracle del admin podría todo: por eso el 2FA en esas cuentas es lo primero de *Lo que falta*.
+
 ## 1. Aplicación (backend)
 
 | Ataque | Defensa | Dónde |
@@ -19,7 +37,8 @@ internet ─► Caddy ─────────► nginx ───────
 | **Caracteres invisibles** | Todo texto JSON pierde los caracteres de control (PostgreSQL rechaza `\u0000` con un error 500) y los de dirección bidireccional (U+202E hace que un nombre se lea al revés) | [`TextSanitizing`](../src/main/java/com/mjt/Football_Tournament_Management_System/config/TextSanitizing.java) |
 | **XSS** (meter un `<script>`) | Vue siempre muestra los datos como texto (no hay `v-html`), y la CSP de nginx no deja correr scripts que no vengan del propio sitio. El HTML no se borra en el backend a propósito: se mostraría tal cual y borrarlo solo corrompería datos | frontend + nginx |
 | **Imágenes maliciosas** | El formato se detecta por el contenido, no por lo que dice el navegador. Se lee el tamaño antes de decodificar (un PNG de 1 KB que dice medir 50000×50000 ocuparía 10 GB de memoria). Lo que se guarda es la imagen **redibujada**: sin metadatos (la ubicación GPS de una foto de celular) ni nada escondido después de la imagen | [`SafeImages`](../src/main/java/com/mjt/Football_Tournament_Management_System/service/SafeImages.java) |
-| **Adivinar contraseñas** | BCrypt para guardarlas; bloqueo de 5 minutos tras 5 intentos fallidos por usuario (con tope de memoria), y nginx corta por IP | `security/` |
+| **Contraseñas larguísimas** | bcrypt solo usa los primeros 72 **bytes** (una "ñ" ocupa 2). Una más larga se rechaza con un 400 claro al registrarse y cuenta como contraseña incorrecta al entrar; antes daba un error 500 | [`PasswordBytes`](../src/main/java/com/mjt/Football_Tournament_Management_System/dto/PasswordBytes.java) |
+| **Adivinar contraseñas** | BCrypt para guardarlas (con *salt* aleatorio por contraseña: dos iguales quedan distintas y no sirven tablas precalculadas); bloqueo de 5 minutos tras 5 intentos fallidos por usuario (con tope de memoria), y nginx corta por IP | `security/` |
 | **Tokens falsos** | JWT firmado con HMAC-SHA256 y una clave de 32+ caracteres del entorno; se rechaza un token sin firma (`alg: none`), firmado con otra clave, de otro emisor o vencido | [`JwtService`](../src/main/java/com/mjt/Football_Tournament_Management_System/security/JwtService.java) |
 | **Clave o contraseña de ejemplo** | La API no arranca si la clave de los JWT falta, es el valor de `.env.example` (público en GitHub: con él cualquiera firmaría tokens de admin) o es trivial (`aaaa…`), ni si la contraseña del admin inicial tiene menos de 12 caracteres | `JwtService`, `AdminBootstrap` |
 | **Averiguar qué usuarios existen** | El login responde lo mismo para un usuario que no existe que para una contraseña incorrecta | `GlobalExceptionHandler` |
@@ -72,6 +91,18 @@ filesystem de la API es de solo lectura y sus capabilities efectivas son `0`.
 
 ## 4. Datos
 
+- **Usuarios de base con lo justo** ([`db-roles.sh`](../deploy/db-roles.sh)):
+
+  | Usuario | Para qué | Puede |
+  |---|---|---|
+  | `postgres` | Crear la base y los backups; la API nunca recibe su contraseña | Todo |
+  | `torneo_owner` | Flyway, al arrancar la API | Crear y cambiar tablas de esta base |
+  | `torneo_app` | Cada pedido de la app | Leer y escribir filas. **No** borra ni cambia tablas, no lee archivos del servidor, no ejecuta programas |
+
+  Así, una inyección SQL que apareciera en el futuro quedaría limitada a filas, sin `DROP TABLE` ni
+  `COPY ... TO PROGRAM` (ejecutar comandos en el servidor). Comprobado conectándose como `torneo_app`. Una base
+  nueva crea los usuarios sola; en una existente se corre una vez (ver [deploy.md](deploy.md#usuarios-de-la-base)).
+
 - **Backups cifrados fuera del servidor:** [`backup.sh`](../deploy/backup.sh) cifra con una **clave pública** la copia
   que sube al bucket. El servidor puede cerrar el archivo pero no abrirlo; solo la clave privada (que no está en el
   servidor) lo descifra. Sin `backup-key.asc` no sube nada: un backup con DNI nunca sale del servidor sin cifrar.
@@ -111,12 +142,48 @@ CVE nuevos:
   y los compose. Las excepciones van en [`.trivyignore`](../.trivyignore), cada una con su motivo.
 - **CodeQL** (análisis estático de GitHub) lee el código Java y TypeScript buscando patrones vulnerables. Los
   hallazgos aparecen en la pestaña *Security* del repo.
+- **gitleaks** revisa **todo el historial** de git buscando contraseñas, claves o tokens commiteados por error (un
+  secreto borrado en un commit posterior sigue en el viejo). Hoy: 0 en 119 commits.
+- Las actions de terceros (las de Docker, que reciben el permiso de publicar imágenes) están fijadas por **hash de
+  commit**, no por tag: un tag se puede mover a otro código, un hash no.
 - **Dependabot** ([`dependabot.yml`](../.github/dependabot.yml)) abre un pull request por semana con las dependencias
   nuevas: Maven, npm, imágenes base, imágenes del compose y actions.
 
 El primer escaneo encontró **60 vulnerabilidades altas o críticas** en la imagen web (la base `nginx:1.27-alpine` era
 vieja) y varias en Jackson, Tomcat y el driver de PostgreSQL. Spring Boot 3.5 ya no recibe parches gratuitos, así que
 esas tres versiones se fuerzan en el `pom.xml`. Hoy las dos imágenes dan 0.
+
+## Conceptos de seguridad, uno por uno
+
+| Concepto | Estado |
+|---|---|
+| SQL Injection | ✅ consultas parametrizadas; además el usuario de la app no puede borrar tablas |
+| XSS | ✅ Vue escapa todo, sin `v-html`; CSP estricta |
+| CSRF | ✅ no aplica: la sesión va en un token que se manda a mano, no en una cookie |
+| CORS | ✅ solo el dominio de la app (test) |
+| SSRF | ✅ la API no hace pedidos salientes, y su red no tiene internet |
+| IDOR / autorización del lado del servidor | ✅ `ownedTeam` en cada operación de capitán (test con 10 intentos) |
+| Path Traversal | ✅ no se usan archivos del disco; las imágenes viven en la base |
+| Mass Assignment | ✅ los pedidos se leen en DTOs, nunca directo en entidades |
+| Clickjacking, CSP, cabeceras | ✅ nginx (sección 2) |
+| Validación de entrada | ✅ largo y formato en cada campo; caracteres invisibles fuera |
+| RBAC / mínimo privilegio | ✅ roles ADMIN y CAPTAIN; usuarios de base separados; contenedores sin root |
+| Row-Level Security | ➖ no hace falta: el control por equipo está en el código, con tests |
+| Secretos | ✅ `.env` con permisos 600 e ignorado por git; GitHub Secrets en el CI; gitleaks en el historial |
+| Rotación de claves | 🟡 a mano: cambiar `APP_JWT_SECRET` y reiniciar cierra todas las sesiones; la URL del bucket vence al año |
+| Hashing vs cifrado, salt, bcrypt | ✅ contraseñas con bcrypt (hash con salt: no se pueden descifrar); backups cifrados (sí se descifran, con la clave) |
+| Vencimiento del JWT | ✅ 3 horas; sin refresh tokens (se vuelve a entrar) |
+| OAuth / OIDC | ➖ no hace falta: usuarios propios, sin "entrar con Google" |
+| Session fixation | ➖ no aplica: no hay sesión en el servidor |
+| MFA | 🟡 no en la app (ver abajo); sí conviene en GitHub y Oracle |
+| Fuerza bruta, enumeración, timing | ✅ límites por IP y por usuario; mismo mensaje y mismo tiempo para usuario inexistente o contraseña mal (Spring compara igual contra un hash de mentira) |
+| Subida de archivos | ✅ sección 1 |
+| Webhooks firmados | ➖ no hay webhooks |
+| Vencimiento del certificado, HSTS | ✅ Caddy lo renueva; el monitor de uptime avisa si quedan menos de 14 días |
+| Cifrado en reposo | ✅ disco de Oracle y backups cifrados |
+| Dependencias y cadena de suministro | ✅ Trivy, Dependabot, lockfile de npm, versiones fijas, actions por hash |
+| Límite de tamaño de pedidos | ✅ 1 MB; archivos, 12 MB |
+| Rotación de logs | ✅ 3 × 10 MB por contenedor (también limita cuánto tiempo se guardan las IPs) |
 
 ## Lo que falta
 
@@ -125,11 +192,16 @@ esas tres versiones se fuerzan en el `pom.xml`. Hoy las dos imágenes dan 0.
   próximo puede aplicar.
 - **Al pasar a producción**, en el servidor:
   - copiar la clave pública (`backup-key.asc`) y el `backup.sh` nuevo;
+  - crear los usuarios de la base (`db-roles.sh`, una vez) y agregar sus contraseñas al `.env`;
   - `X11Forwarding no` en SSH;
   - apagar `rpcbind`, que no se usa, aunque el firewall ya bloquea su puerto.
 - **Cifrar columnas** (DNI) dentro de la base: protegería contra un volcado robado de la base, pero la clave tendría
   que estar en el mismo servidor, y buscar por DNI (transferencias, sancionados) exigiría un índice aparte. Con los
   backups cifrados y la base sin acceso desde afuera, el beneficio extra es chico frente a la complejidad.
-- **Base con usuario de mínimos privilegios:** hoy la API usa el usuario dueño de la base; uno que no pueda borrar
-  tablas limitaría el daño de un bug.
+- **2FA en las cuentas que mandan:** GitHub (puede cambiar el código y desplegar) y Oracle (puede borrar el servidor).
+  Es lo más importante de esta lista y no requiere código.
+- **Proteger la rama `main`** en GitHub: que no se pueda pushear sin que pase el CI.
+- **MFA para el admin de la app** (un código de una app tipo Google Authenticator): es la cuenta de más poder. Se puede
+  agregar; con contraseña de 12+ y límites de intentos, el riesgo hoy es bajo.
+- **Vencimiento de las invitaciones** de capitán: hoy valen hasta que se usan.
 - **Revocar sesiones:** un JWT vale hasta que vence (3 horas); no hay forma de cerrarlo antes.

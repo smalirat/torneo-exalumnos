@@ -180,6 +180,19 @@ class SecurityHardeningApiTests extends ApiTestSupport {
     }
 
     @Test
+    void passwordsLongerThanBcryptTakesAreRefusedCleanly() throws Exception {
+        // 50 characters but 100 bytes: bcrypt only takes 72. A clear 400, not a 500
+        String user = "p" + UUID.randomUUID().toString().substring(0, 8);
+        post("/api/auth/register", "{\"username\":\"" + user + "\",\"password\":\"" + "ñ".repeat(50)
+                + "\",\"email\":\"ana@mail.com\",\"phone\":\"11 5555-1234\",\"teamName\":\"Largas " + user + "\"}", null)
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors.password").exists());
+        // At the login it is just a wrong password (401), counted as a failed attempt
+        post("/api/auth/login", "{\"username\":\"admin\",\"password\":\"" + "ñ".repeat(50) + "\"}", null)
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
     void emailsNeedARealLookingDomain() throws Exception {
         String user = "m" + UUID.randomUUID().toString().substring(0, 8);
         for (String email : List.of("ana@localhost", "ana", "ana@mail.c", "a na@mail.com")) {

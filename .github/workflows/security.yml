@@ -64,6 +64,24 @@ jobs:
             aquasec/trivy:0.75.0@sha256:af6acf9a6b85dfe389a1941505c0ce9efef52a4719635e1a962f022a3d855daa \
             config --severity MEDIUM,HIGH,CRITICAL --exit-code 1 --skip-dirs /src/frontend/node_modules /src
 
+  # Passwords, keys or tokens committed by mistake, in the whole history (a secret deleted in a later commit is
+  # still in the old one). Values are redacted in the log
+  secrets:
+    name: Committed secrets (gitleaks)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # every commit, not only the last one
+      - name: Scan the git history
+        run: |
+          # safe.directory: the checkout belongs to another user than the container's, and git refuses those by default
+          docker run --rm -v "$PWD:/repo:ro" \
+            -e GIT_CONFIG_COUNT=1 -e GIT_CONFIG_KEY_0=safe.directory -e GIT_CONFIG_VALUE_0='*' \
+            zricethezav/gitleaks:v8.30.1@sha256:c00b6bd0aeb3071cbcb79009cb16a60dd9e0a7c60e2be9ab65d25e6bc8abbb7f \
+            git /repo --redact --no-banner --exit-code 1
+
   codeql:
     name: Code analysis (CodeQL)
     runs-on: ubuntu-latest

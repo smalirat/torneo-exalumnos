@@ -10,6 +10,7 @@ if [ $# -ne 1 ] || [ ! -f "$1" ]; then
 fi
 
 docker compose stop api
-gunzip -c "$1" | docker compose exec -T db sh -c 'psql -q -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB"'
+# As torneo_owner, not the superuser: the restored tables belong to it and torneo_app gets its usual grants
+gunzip -c "$1" | docker compose exec -T db sh -c 'psql -q -v ON_ERROR_STOP=1 -U torneo_owner -d "$POSTGRES_DB"'
 docker compose start api
 echo "restored $1"

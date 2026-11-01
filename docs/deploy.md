@@ -171,6 +171,28 @@ Un cron que falla no avisa a nadie. Con `HEALTHCHECK_URL` (un chequeo gratis de 
 período 1 día, gracia 1 hora), `backup.sh` avisa cuando empieza, cuando termina bien y cuando falla. Si una noche no
 llega el aviso, healthchecks.io manda un mail.
 
+## Usuarios de la base
+
+La API no usa el superusuario `postgres`. [`db-roles.sh`](../deploy/db-roles.sh) crea dos usuarios con lo justo:
+`torneo_owner` (dueño de las tablas, lo usa Flyway para las migraciones) y `torneo_app` (el de todos los días: lee
+y escribe filas, no puede borrar ni cambiar tablas). Por qué: [security.md](security.md#4-datos).
+
+- **Base nueva** (servidor nuevo, volumen nuevo): Postgres corre el script solo la primera vez. Solo hace falta
+  `DB_OWNER_PASSWORD` y `DB_APP_PASSWORD` en el `.env` (distintas, `openssl rand -base64 24`).
+- **Base que ya existe** (sus tablas son de `postgres`), una sola vez, **antes** de desplegar la versión que los usa:
+
+```bash
+# 1. agregar DB_OWNER_PASSWORD y DB_APP_PASSWORD al .env, y copiar db-roles.sh y el docker-compose.yml nuevos
+docker compose up -d db                                       # recrea db con las variables nuevas (los datos quedan)
+docker compose exec db sh /docker-entrypoint-initdb.d/10-roles.sh
+#    "database roles ready": las tablas pasan a torneo_owner y torneo_app recibe sus permisos
+# 2. recién ahí, desplegar
+```
+
+Se puede volver a correr cuando se quiera: crea lo que falte y vuelve a poner las contraseñas del `.env` (así se
+cambian). Los backups se siguen haciendo como `postgres`, y `restore.sh` restaura como `torneo_owner`, así las tablas
+restauradas quedan con el dueño y los permisos correctos.
+
 ## Probarlo local
 
 El mismo stack se puede levantar en la propia máquina con `DOMAIN=localhost`. Caddy usa un certificado propio (el

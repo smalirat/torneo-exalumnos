@@ -27,7 +27,7 @@ public class AuthDtos {
         @NotBlank @Size(min = 3, max = 50)
         @Pattern(regexp = "^[A-Za-z0-9._-]+$", message = "solo letras, números, punto, guion y guion bajo")
         private String username;
-        @NotBlank @Size(min = 8, max = 100)
+        @NotBlank @Size(min = 8, max = 100) @PasswordBytes
         private String password;
         @NotBlank @Email(regexp = EMAIL_DOMAIN, message = "mail inválido") @Size(max = 120) private String email;
         @NotBlank @Pattern(regexp = PHONE, message = "solo números, espacios, guiones, paréntesis y +") @Size(max = 30)
@@ -50,7 +50,7 @@ public class AuthDtos {
         @NotBlank @Size(min = 3, max = 50)
         @Pattern(regexp = "^[A-Za-z0-9._-]+$", message = "solo letras, números, punto, guion y guion bajo")
         private String username;
-        @NotBlank @Size(min = 8, max = 100)
+        @NotBlank @Size(min = 8, max = 100) @PasswordBytes
         private String password;
         @NotBlank @Email(regexp = EMAIL_DOMAIN, message = "mail inválido") @Size(max = 120) private String email;
         @NotBlank @Pattern(regexp = PHONE, message = "solo números, espacios, guiones, paréntesis y +") @Size(max = 30)

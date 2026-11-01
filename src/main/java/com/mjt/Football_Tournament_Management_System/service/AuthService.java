@@ -40,6 +40,10 @@ public class AuthService {
         if (locked > 0) throw new TooManyRequestsException(
                 "Demasiados intentos fallidos. Probá de nuevo en " + Math.max(1, (locked + 59) / 60) + " min.", locked);
         try {
+            // Longer than bcrypt takes: no stored password can match it (and bcrypt would refuse it with an error)
+            if (!com.mjt.Football_Tournament_Management_System.dto.PasswordBytes.Validator.fits(req.getPassword())) {
+                throw new org.springframework.security.authentication.BadCredentialsException("password too long");
+            }
             am.authenticate(new UsernamePasswordAuthenticationToken(req.getUsername(), req.getPassword()));
         } catch (AuthenticationException e) {
             attempts.failed(req.getUsername());
