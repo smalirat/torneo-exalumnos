@@ -12,13 +12,16 @@ import java.util.concurrent.ConcurrentHashMap;
  * Brute-force protection for the login: after MAX_FAILURES wrong passwords for a username within WINDOW, that
  * username is locked for LOCK (the 429 says when to retry). Per username and not per IP: behind the hosting
  * proxy every request comes from the same address, so locking an IP would lock everyone out.
- * In memory: enough for a single instance, and a restart just clears the counters.
+ * In memory: enough for a single instance, and a restart just clears the counters. Bounded: trying millions of made-up
+ * usernames would otherwise fill the memory, so past MAX_ENTRIES the stale entries are dropped (and, if every entry
+ * is recent, the counters start over). Floods of attempts are also cut earlier, per IP, by nginx.
  */
 @Component
 public class LoginAttempts {
     static final int MAX_FAILURES = 5;
     static final Duration WINDOW = Duration.ofMinutes(15);
     static final Duration LOCK = Duration.ofMinutes(5);
+    static final int MAX_ENTRIES = 10_000;
 
     private record Entry(int failures, Instant firstFailure, Instant lockedUntil) {}
 
@@ -39,6 +42,7 @@ public class LoginAttempts {
 
     public void failed(String username) {
         var now = clock.instant();
+        if (entries.size() >= MAX_ENTRIES) evict(now);
         entries.compute(key(username), (k, e) -> {
             if (e == null || now.isAfter(e.firstFailure().plus(WINDOW)) || (e.lockedUntil() != null && now.isAfter(e.lockedUntil()))) {
                 e = new Entry(0, now, null);
@@ -49,6 +53,12 @@ public class LoginAttempts {
     }
 
     public void succeeded(String username) { entries.remove(key(username)); }
+
+    private void evict(Instant now) {
+        entries.values().removeIf(e -> now.isAfter(e.firstFailure().plus(WINDOW))
+                && (e.lockedUntil() == null || now.isAfter(e.lockedUntil())));
+        if (entries.size() >= MAX_ENTRIES) entries.clear();
+    }
 
     private static String key(String username) { return username == null ? "" : username.trim().toLowerCase(Locale.ROOT); }
 }

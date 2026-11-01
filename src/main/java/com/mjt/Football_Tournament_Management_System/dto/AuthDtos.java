@@ -11,12 +11,13 @@ import java.util.List;
 
 public class AuthDtos {
     /** A phone as people type it: "11 5555-1234", "+54 9 11 5555 1234", "(011) 4555-1234" */
-    static final String PHONE = "^\\+?[0-9 ()\\-]{6,30}$";
+    static final String PHONE_BODY = "\\+?[0-9 ()\\-]{6,30}";
+    static final String PHONE = "^" + PHONE_BODY + "$";
 
     @Data
     public static class LoginReq {
-        @NotBlank private String username;
-        @NotBlank private String password;
+        @NotBlank @Size(max = 100) private String username;
+        @NotBlank @Size(max = 100) private String password;
     }
 
     @Data
@@ -43,7 +44,7 @@ public class AuthDtos {
     /** Claim a pending captain account from an invitation link: the real captain picks username and password. */
     @Data
     public static class ClaimReq {
-        @NotBlank private String token;
+        @NotBlank @Size(max = 64) private String token;
         @NotBlank @Size(min = 3, max = 50)
         @Pattern(regexp = "^[A-Za-z0-9._-]+$", message = "solo letras, números, punto, guion y guion bajo")
         private String username;

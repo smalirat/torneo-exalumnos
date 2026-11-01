@@ -11,19 +11,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import javax.imageio.ImageIO;
-import java.awt.image.BufferedImage;
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Set;
 
 /** Champions' collage: upload, free layout (move/resize/bring to front), featured photo, delete. */
 @Service
 @RequiredArgsConstructor
 public class CollageService {
-    private static final Set<String> TYPES = Set.of("image/jpeg", "image/png");
     private static final long MAX_BYTES = 5 * 1024 * 1024;
     /** New photos start in a loose 4-column grid, slightly overlapped; the admin moves them afterwards. */
     private static final int COLUMNS = 4;
@@ -39,25 +33,14 @@ public class CollageService {
 
     @Transactional
     public ResponseDtos.CollagePhotoRes upload(MultipartFile file) {
-        if (file == null || file.isEmpty()) throw new BadRequestException("Elegí una foto");
-        if (!TYPES.contains(file.getContentType())) throw new BadRequestException("La foto tiene que ser JPG o PNG");
-        if (file.getSize() > MAX_BYTES) throw new BadRequestException("La foto pesa más de 5 MB");
-        byte[] data;
-        BufferedImage img;
-        try {
-            data = file.getBytes();
-            img = ImageIO.read(new ByteArrayInputStream(data));
-        } catch (IOException e) {
-            throw new BadRequestException("No se pudo leer la foto");
-        }
-        if (img == null) throw new BadRequestException("No se pudo leer la foto");
+        var img = SafeImages.read(file, MAX_BYTES, "La foto");
 
         int n = (int) repo.count();
         var p = new CollagePhoto();
-        p.setContentType(file.getContentType());
-        p.setImageData(data);
-        p.setWidth(img.getWidth());
-        p.setHeight(img.getHeight());
+        p.setContentType(img.contentType());
+        p.setImageData(img.data());
+        p.setWidth(img.width());
+        p.setHeight(img.height());
         p.setSize(NEW_SIZE);
         // Small deterministic offsets so the grid does not look ruled
         p.setPosX(0.005 + (n % COLUMNS) * 0.24 + (n * 7 % 3) / 200.0); // right edge stays inside the board

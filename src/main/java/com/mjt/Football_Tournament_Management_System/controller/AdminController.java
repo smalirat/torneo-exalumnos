@@ -155,7 +155,7 @@ public class AdminController {
 
     @PostMapping("/registrations/{id}/withdraw")
     @Operation(summary = "The team withdraws from the edition: its unplayed matches become 3-0 walkovers flagged as withdrawal")
-    public ResponseDtos.RegistrationRes withdraw(@PathVariable Long id, @RequestBody(required = false) AdminDtos.WithdrawReq req) {
+    public ResponseDtos.RegistrationRes withdraw(@PathVariable Long id, @Valid @RequestBody(required = false) AdminDtos.WithdrawReq req) {
         return cService.withdraw(id, req == null ? null : req.getDate());
     }
 

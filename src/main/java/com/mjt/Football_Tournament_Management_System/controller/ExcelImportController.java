@@ -1,5 +1,6 @@
 package com.mjt.Football_Tournament_Management_System.controller;
 
+import jakarta.validation.Valid;
 import com.mjt.Football_Tournament_Management_System.dto.AdminDtos;
 import com.mjt.Football_Tournament_Management_System.dto.ResponseDtos;
 import com.mjt.Football_Tournament_Management_System.service.ExcelImportService;
@@ -30,7 +31,7 @@ public class ExcelImportController {
 
     @PostMapping("/{id}/apply")
     @Operation(summary = "Apply a previewed upload; `overwrite` lists the conflict keys to replace with the Excel value")
-    public ResponseDtos.ImportPreviewRes apply(@PathVariable Long id, @RequestBody(required = false) AdminDtos.ApplyImportReq req) {
+    public ResponseDtos.ImportPreviewRes apply(@PathVariable Long id, @Valid @RequestBody(required = false) AdminDtos.ApplyImportReq req) {
         return service.apply(id, req == null || req.getOverwrite() == null ? new HashSet<>() : new HashSet<>(req.getOverwrite()));
     }
 

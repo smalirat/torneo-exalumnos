@@ -12,17 +12,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import javax.imageio.ImageIO;
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import java.util.Locale;
-import java.util.Set;
 
 /** Banner (cover) and logo of an edition: PNG or JPG up to 5 MB, set by the admin. */
 @Service
 @RequiredArgsConstructor
 public class TournamentImageService {
-    private static final Set<String> TYPES = Set.of("image/png", "image/jpeg");
     private static final long MAX_BYTES = 5 * 1024 * 1024;
 
     private final TournamentRepository tournamentRepo;
@@ -32,21 +27,12 @@ public class TournamentImageService {
     public ResponseDtos.TournamentRes set(Long tournamentId, String kindName, MultipartFile file) {
         var t = findTournament(tournamentId);
         var kind = kind(kindName);
-        if (file == null || file.isEmpty()) throw new BadRequestException("Elegí una imagen");
-        if (!TYPES.contains(file.getContentType())) throw new BadRequestException("La imagen tiene que ser PNG o JPG");
-        if (file.getSize() > MAX_BYTES) throw new BadRequestException("La imagen pesa más de 5 MB");
-        byte[] data;
-        try {
-            data = file.getBytes();
-            if (ImageIO.read(new ByteArrayInputStream(data)) == null) throw new IOException("not an image");
-        } catch (IOException e) {
-            throw new BadRequestException("No se pudo leer la imagen");
-        }
+        var img = SafeImages.read(file, MAX_BYTES, "La imagen");
         var image = imageRepo.findByTournamentIdAndKind(t.getId(), kind).orElseGet(TournamentImage::new);
         image.setTournamentId(t.getId());
         image.setKind(kind);
-        image.setContentType(file.getContentType());
-        image.setImageData(data);
+        image.setContentType(img.contentType());
+        image.setImageData(img.data());
         imageRepo.save(image);
         // Seconds since epoch: a new value on every upload, so cached URLs never go stale
         setVersion(t, kind, (int) (System.currentTimeMillis() / 1000));

@@ -23,9 +23,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import javax.imageio.ImageIO;
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -49,7 +46,6 @@ public class TeamService {
     private final ChampionRepository championRepo;
     private final TeamCrestRepository crestRepo;
 
-    private static final Set<String> CREST_TYPES = Set.of("image/png", "image/jpeg");
     private static final long CREST_MAX_BYTES = 2 * 1024 * 1024;
 
     /**
@@ -172,17 +168,8 @@ public class TeamService {
     @Transactional
     public ResponseDtos.TeamRef setCrest(Long teamId, MultipartFile file, Authentication auth) {
         var t = ownedTeam(teamId, auth);
-        if (file == null || file.isEmpty()) throw new BadRequestException("Elegí una imagen");
-        if (!CREST_TYPES.contains(file.getContentType())) throw new BadRequestException("El escudo tiene que ser PNG o JPG");
-        if (file.getSize() > CREST_MAX_BYTES) throw new BadRequestException("El escudo pesa más de 2 MB");
-        byte[] data;
-        try {
-            data = file.getBytes();
-            if (ImageIO.read(new ByteArrayInputStream(data)) == null) throw new IOException("not an image");
-        } catch (IOException e) {
-            throw new BadRequestException("No se pudo leer la imagen");
-        }
-        crestRepo.save(new TeamCrest(t.getId(), file.getContentType(), data));
+        var img = SafeImages.read(file, CREST_MAX_BYTES, "El escudo");
+        crestRepo.save(new TeamCrest(t.getId(), img.contentType(), img.data()));
         // Seconds since epoch: a new value on every upload (also after removing one), so cached URLs never go stale
         t.setCrestVersion((int) (System.currentTimeMillis() / 1000));
         return ResponseDtos.TeamRef.from(t);

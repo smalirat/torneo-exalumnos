@@ -39,6 +39,9 @@ public class ExcelImportService {
     public ResponseDtos.ImportPreviewRes preview(MultipartFile file, String username) {
         if (file == null || file.isEmpty()) throw new BadRequestException("Falta el archivo");
         var name = file.getOriginalFilename() == null ? "planilla.xlsx" : file.getOriginalFilename();
+        // Only shown in the history: no folders (some browsers send the full path), no invisible characters, fits the column
+        name = com.mjt.Football_Tournament_Management_System.config.TextSanitizing.clean(name.replaceAll(".*[/\\\\]", "")).strip();
+        if (name.length() > 200) name = name.substring(name.length() - 200);
         if (!name.toLowerCase().endsWith(".xlsx")) throw new BadRequestException("El archivo tiene que ser un Excel .xlsx");
         byte[] bytes;
         try {

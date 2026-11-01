@@ -16,8 +16,8 @@ import java.util.List;
 public class AdminDtos {
     @Data
     public static class CreateTournamentReq {
-        @NotBlank private String name;
-        private String location;
+        @NotBlank @Size(max = 100) private String name;
+        @Size(max = 150) private String location;
         /** Informative only: shown to the public, they do not open or close registration */
         private LocalDate registrationStart, registrationEnd;
         private LocalDate matchStart, matchEnd;
@@ -27,8 +27,8 @@ public class AdminDtos {
     }
     @Data
     public static class UpdateTournamentReq {
-        @NotBlank private String name;
-        private String location;
+        @NotBlank @Size(max = 100) private String name;
+        @Size(max = 150) private String location;
         private LocalDate registrationStart, registrationEnd;
         private LocalDate matchStart, matchEnd;
         @Min(1900) @Max(2100) private Integer seasonYear;
@@ -172,7 +172,7 @@ public class AdminDtos {
     @Data
     public static class ApplyImportReq {
         /** Conflict keys (from the preview) to overwrite with the Excel value. */
-        private List<String> overwrite;
+        @Size(max = 5000) private List<@Size(max = 300) String> overwrite;
     }
 
     /** Name for a category or zone. */
