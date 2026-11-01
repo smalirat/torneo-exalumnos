@@ -168,7 +168,7 @@ services:
   # Server metrics (CPU, RAM, swap, disk, network) read from the host's /proc and /sys
   node-exporter:
     <<: *hardening
-    image: prom/node-exporter:v1.9.1
+    image: prom/node-exporter:v1.12.1
     restart: unless-stopped
     networks: [monitoring]
     read_only: true
