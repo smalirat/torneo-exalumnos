@@ -68,6 +68,10 @@ prueban estos ataques en cada push:
   - `X-Frame-Options` / `frame-ancestors`: ningún sitio puede meter la app en un frame.
   - `nosniff`, `Referrer-Policy`, `Permissions-Policy`: sin cámara, micrófono ni ubicación.
   - `Cross-Origin-Opener/Resource-Policy`.
+- **Caché de 30 segundos para los datos públicos** (tablas, fixture, goleadores): la mayoría de las visitas no llega a
+  Java. Si llegan muchas juntas, una sola va al backend (*thundering herd*); si el backend se cae, se sigue mostrando
+  lo último (*graceful degradation*). Un pedido con token (alguien logueado) nunca se guarda ni se sirve de la caché,
+  así no se mezclan datos de usuarios.
 - **HSTS** en Caddy: después de la primera visita, el navegador usa solo HTTPS durante un año. Caddy además oculta
   qué servidor es.
 - **Nada interno expuesto:** Swagger apagado y sin ruta en nginx; métricas en otro puerto; Grafana y Prometheus

@@ -190,8 +190,13 @@ services:
       retries: 5
     logging: *logging
 
+  # On demand: it takes ~90 MB of a 1 GB machine and is only looked at now and then (through the SSH tunnel), so a
+  # plain "up" does not start it. Prometheus keeps collecting meanwhile, no history is lost.
+  #   docker compose --profile grafana up -d grafana     # before opening the tunnel
+  #   docker compose stop grafana                        # when done
   grafana:
     <<: *hardening
+    profiles: [grafana]
     image: grafana/grafana-oss:12.1.1
     restart: unless-stopped
     networks: [monitoring]

@@ -14,7 +14,7 @@ prometheus        :9090 (a sí mismo) ─────────┘          12
 | **Actuator + Micrometer** (en la API) | Expone métricas en formato Prometheus: memoria de Java y GC, cada request HTTP (endpoint, código, tiempo), pool de conexiones a la base | dentro de la API |
 | **node-exporter** | Lee `/proc` y `/sys` del servidor: CPU, RAM, swap, disco, red | ~10 MB (tope 48) |
 | **Prometheus** | Cada 30 s le pide las métricas a cada uno (*scrape*) y las guarda como series de tiempo: 30 días, máximo 1 GB | ~30–60 MB (tope 192) |
-| **Grafana** | Dashboards sobre Prometheus. El origen de datos y el dashboard vienen del repo (*provisioning*), no se configuran a mano | ~90 MB (tope 256) |
+| **Grafana** | Dashboards sobre Prometheus. El origen de datos y el dashboard vienen del repo (*provisioning*), no se configuran a mano. Se prende a pedido | ~90 MB (tope 256) |
 
 Archivos: [`deploy/monitoring/`](../deploy/monitoring), servicios en [`deploy/docker-compose.yml`](../deploy/docker-compose.yml).
 
@@ -27,6 +27,16 @@ Archivos: [`deploy/monitoring/`](../deploy/monitoring), servicios en [`deploy/do
   siquiera si se abre el puerto en Oracle. Se entra por un **túnel SSH**.
 
 ## Entrar a Grafana
+
+Grafana está **apagado por defecto**: ocupa unos 90 MB de un servidor de 1 GB y solo se mira de vez en cuando
+(con él prendido, Java terminaba en el swap y cada pedido tardaba casi un segundo). Prometheus sigue juntando
+métricas mientras tanto, así que no se pierde historial. En el servidor:
+
+```bash
+cd /opt/torneo
+docker compose --profile grafana up -d grafana      # antes de abrir el túnel
+docker compose stop grafana                         # al terminar
+```
 
 Desde tu máquina (tiene que estar apagado lo que use el 3000 y el 9090 en tu máquina, por ejemplo el stack local):
 
