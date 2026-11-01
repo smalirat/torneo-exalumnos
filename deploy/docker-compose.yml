@@ -143,7 +143,7 @@ services:
   # them with an SSH tunnel (docs/observability.md). Memory caps keep them from starving the app on a 1 GB machine.
   prometheus:
     <<: *hardening
-    image: prom/prometheus:v3.5.0
+    image: prom/prometheus:v3.15.1
     restart: unless-stopped
     networks: [app, monitoring]
     read_only: true
