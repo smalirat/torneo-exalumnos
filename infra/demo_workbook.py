@@ -31,7 +31,7 @@ PLAYER_SHEETS = {'Goleadores': 'B', 'Figuras': 'B', 'Imbatibles': 'B', 'Sanciona
 FIRST_DATA_ROW = 8  # headers are on rows 7-9; titles above
 HEADERS = {'EQUIPO', 'JUGADOR', 'EQUIPO CAMPEON', 'AÑO', 'POSICIÓN', 'GOLES', 'TOTAL', 'TOTALES'}
 NOT_TEAMS = re.compile(r'(?i)^(libre|control|total(es)?|s\.?n\.?|proximamente!*|equipo.*|jugador|-|\d.*|.*\bcat\b.*|'
-                       r'dados de alta.*|ganador.*|perdedor.*|.*°.*|partido suspendido|'
+                       r'ganador.*|perdedor.*|.*°.*|partido suspendido|'
                        # the date of each round sits in a team column ("Domingo 20 de Septiembre")
                        r'(lunes|martes|mi[eé]rcoles|jueves|viernes|s[aá]bado|domingo)\b.*)$')
 PLAYER = re.compile(r"^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ'´` .-]+,\s*[A-Za-zÁÉÍÓÚÜÑáéíóúüñ'´` .-]+$")
