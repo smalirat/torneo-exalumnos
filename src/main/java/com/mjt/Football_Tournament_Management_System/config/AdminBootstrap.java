@@ -27,8 +27,16 @@ public class AdminBootstrap implements ApplicationRunner {
     /** Outside the local profiles (dev's H2 and tests use admin123) the admin password must be long */
     static final int MIN_ADMIN_PASSWORD = 12;
 
+    @Value("${app.demo.enabled:false}")
+    private boolean demo;
+    @Value("${app.demo.username:demo}")
+    private String demoUsername;
+    @Value("${app.demo.password:}")
+    private String demoPassword;
+
     @Override
     public void run(ApplicationArguments args) {
+        demoAdmin();
         if (userRepo.existsByUsername(adminUsername)) return;
         if (adminPassword == null || adminPassword.isBlank()) {
             log.warn("No admin user '{}' and APP_ADMIN_PASSWORD is empty: no admin was created", adminUsername);
@@ -41,5 +49,21 @@ public class AdminBootstrap implements ApplicationRunner {
         }
         userRepo.save(new AppUser(null, adminUsername, encoder.encode(adminPassword), AppUser.Role.ADMIN));
         log.info("Admin user '{}' created", adminUsername);
+    }
+
+    /**
+     * Public demo only: a second admin whose password is published on the site, so visitors can try the panel. The
+     * password from the configuration always wins (changing it there changes it here). The real admin stays private.
+     */
+    private void demoAdmin() {
+        if (!demo || demoPassword.isBlank()) return;
+        var user = userRepo.findByUsername(demoUsername).orElse(null);
+        if (user == null) {
+            userRepo.save(new AppUser(null, demoUsername, encoder.encode(demoPassword), AppUser.Role.ADMIN));
+            log.info("Demo admin '{}' created (public demo)", demoUsername);
+        } else if (!encoder.matches(demoPassword, user.getPasswordHash())) {
+            user.setPasswordHash(encoder.encode(demoPassword));
+            userRepo.save(user);
+        }
     }
 }

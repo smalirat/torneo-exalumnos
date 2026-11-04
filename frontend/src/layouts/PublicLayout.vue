@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import AppIcon from '../components/AppIcon.vue'
-import { leagueApi } from '../api/endpoints'
+import { league, loadLeague } from '../league'
 import { isAdmin, isLoggedIn } from '../auth'
 import { AUTH, PANEL } from '../paths'
 import { t } from '../i18n'
@@ -11,14 +11,8 @@ import { t } from '../i18n'
 // the page's navigation (#nav slot, e.g. the home tabs) next to it and the login / panel link on the right.
 // The #hero slot is a full-width band right under the bar.
 const route = useRoute()
-const leagueName = ref('')
-onMounted(async () => {
-  try {
-    leagueName.value = (await leagueApi.info()).title
-  } catch {
-    leagueName.value = ''
-  }
-})
+const leagueName = computed(() => league.value?.title ?? '')
+onMounted(loadLeague)
 /** "TORNEO DE EXALUMNOS - COLEGIO MARIANISTA" → "TORNEO DE EXALUMNOS": the logo already says the school */
 const shortName = computed(() => (leagueName.value || t('publicSite.brand')).split(' - ')[0])
 </script>

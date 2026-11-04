@@ -39,11 +39,18 @@ public class PublicApiController {
 
     @Value("${app.league.title:TORNEO DE EXALUMNOS - COLEGIO MARIANISTA}")
     private String leagueTitle;
+    @Value("${app.demo.enabled:false}")
+    private boolean demo;
+    @Value("${app.demo.username:demo}")
+    private String demoUsername;
+    @Value("${app.demo.password:}")
+    private String demoPassword;
 
     @GetMapping("/league")
-    @Operation(summary = "League name shown on the public site (property app.league.title)")
+    @Operation(summary = "League name shown on the public site (property app.league.title); in the public demo, also the demo login")
     public ResponseDtos.LeagueRes league() {
-        return new ResponseDtos.LeagueRes(leagueTitle);
+        boolean showDemo = demo && !demoPassword.isBlank();
+        return new ResponseDtos.LeagueRes(leagueTitle, showDemo ? new ResponseDtos.DemoAccess(demoUsername, demoPassword) : null);
     }
 
     @GetMapping("/seasons")

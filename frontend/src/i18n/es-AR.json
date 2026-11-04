@@ -178,10 +178,21 @@
   },
   "editionStatus": {
     "to": {
-      "DRAFT": { "OPEN": "Abrir inscripción", "LIVE": "Empezar torneo" },
-      "OPEN": { "LIVE": "Empezar torneo", "DRAFT": "Volver a preparación" },
-      "LIVE": { "COMPLETE": "Finalizar", "OPEN": "Reabrir inscripción" },
-      "COMPLETE": { "LIVE": "Reabrir torneo" }
+      "DRAFT": {
+        "OPEN": "Abrir inscripción",
+        "LIVE": "Empezar torneo"
+      },
+      "OPEN": {
+        "LIVE": "Empezar torneo",
+        "DRAFT": "Volver a preparación"
+      },
+      "LIVE": {
+        "COMPLETE": "Finalizar",
+        "OPEN": "Reabrir inscripción"
+      },
+      "COMPLETE": {
+        "LIVE": "Reabrir torneo"
+      }
     },
     "hint": {
       "DRAFT": "Nadie la ve todavía como edición actual. Los capitanes no pueden inscribirse.",
@@ -277,7 +288,10 @@
     "venue": "Campo",
     "pitch": "Cancha",
     "notes": "Nota",
-    "matchTypes": { "PROMOTION": "Promociones", "FINAL": "Finales" },
+    "matchTypes": {
+      "PROMOTION": "Promociones",
+      "FINAL": "Finales"
+    },
     "interzonal": "Interzonal",
     "noMatches": "Esta edición todavía no tiene partidos.",
     "progress": "Cargados {loaded} de {total}",
@@ -510,7 +524,10 @@
     "lastRound": "Última fecha",
     "registrationUntil": "Inscripción hasta el {date}",
     "year": "Año",
-    "views": { "resultados": "Resultados", "posiciones": "Posiciones" },
+    "views": {
+      "resultados": "Resultados",
+      "posiciones": "Posiciones"
+    },
     "table": "Tabla de posiciones",
     "nextRound": "Próxima fecha",
     "seeFixture": "Ver fixture",
@@ -698,5 +715,13 @@
     "resolve": "Resolver",
     "showResolved": "Ver resueltas ({n})",
     "hideResolved": "Ocultar resueltas"
+  },
+  "demo": {
+    "badge": "Demo",
+    "fictional": "Todos los equipos, jugadores y resultados son ficticios.",
+    "tryPanel": "Probá el panel de administración:",
+    "enter": "Entrar",
+    "loginHint": "Es una demo: podés entrar como administrador con",
+    "fill": "Completar"
   }
 }

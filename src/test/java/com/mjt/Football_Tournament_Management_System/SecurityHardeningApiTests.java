@@ -48,6 +48,12 @@ class SecurityHardeningApiTests extends ApiTestSupport {
     }
 
     @Test
+    void outsideTheDemoNoLoginIsPublished() throws Exception {
+        // (whether a "demo" user exists depends on the shared test database: DemoModeApiTests creates one)
+        get("/api/public/league", null).andExpect(status().isOk()).andExpect(jsonPath("$.demo").doesNotExist());
+    }
+
+    @Test
     void invisibleCharactersAreRemovedFromText() throws Exception {
         String admin = admin();
         // \u0000 would make PostgreSQL fail; ‮ (right-to-left override) would make the name display reversed

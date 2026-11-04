@@ -5,8 +5,11 @@ import type {
   TeamSummary, TokenRes, Tournament, TournamentStatus, YellowTally, Zone,
 } from './types'
 
+/** demo: only in the public demo, the login anyone may use to try the panel */
+export interface LeagueInfo { title: string; demo?: { username: string; password: string } }
+
 export const leagueApi = {
-  info: () => get<{ title: string }>('/api/public/league'),
+  info: () => get<LeagueInfo>('/api/public/league'),
 }
 
 export const authApi = {
