@@ -126,6 +126,26 @@ class ExcelImportApiTests {
         }
     }
 
+    /** Listed with "A" in one row and "A/B" in another (the real file does this): the file in A is closed too */
+    @Test
+    void aTransferClosesTheEarlierFileAlsoWhenAnotherRowListedIt() throws Exception {
+        String admin = login();
+        String s = UUID.randomUUID().toString().substring(0, 5).toUpperCase();
+        int year = 2806;
+        String player = "Lopez, Eva " + s;
+        apply(upload(workbook(year, s, "2", "1", null,
+                new Object[]{player, "ALFA " + s, 1, player, "ALFA " + s + "/BETA " + s, 3}), admin), "{}", admin);
+
+        long alfa = -1, beta = -1;
+        for (var t : read(mvc.perform(get("/api/teams").header("Authorization", "Bearer " + admin)))) {
+            if (t.get("name").asText().equals("ALFA " + s)) alfa = t.get("id").asLong();
+            if (t.get("name").asText().equals("BETA " + s)) beta = t.get("id").asLong();
+        }
+        assertTrue(!read(mvc.perform(get("/api/public/teams/" + alfa + "/players"))).toString().contains(player), "still active in ALFA");
+        assertTrue(read(mvc.perform(get("/api/public/teams/" + alfa + "/players?former=true"))).toString().contains(player));
+        assertTrue(read(mvc.perform(get("/api/public/teams/" + beta + "/players"))).toString().contains(player));
+    }
+
     @Test
     void webEditsAreConflictsUntilTheAdminChoosesToOverwrite() throws Exception {
         String admin = login();
@@ -288,7 +308,12 @@ class ExcelImportApiTests {
             row(scorers, 7, null, "Jugador", "Equipo", "Goles");
             row(scorers, 8, null, "Perez, Juan " + s, "ALFA " + s, 7);
             int next = 9;
-            if (extraScorer != null) row(scorers, next++, null, extraScorer[0], extraScorer[1], extraScorer[2]);
+            if (extraScorer != null) {
+                // more than one row: {player, team, goals, player, team, goals, ...}
+                for (int i = 0; i + 2 < extraScorer.length; i += 3) {
+                    row(scorers, next++, null, extraScorer[i], extraScorer[i + 1], extraScorer[i + 2]);
+                }
+            }
             row(scorers, next, null, null, "control", 0);
             wb.write(out);
             return out.toByteArray();

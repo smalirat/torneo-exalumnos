@@ -663,7 +663,11 @@ public class ExcelImporter {
                 boolean isNew = existing == null;
                 last = isNew ? player(team, name, person) : existing;
                 person = last.getPerson();
-                if (isNew && i < parts.size() - 1) last.setLeftAt(LocalDate.now()); // left that team during the year
+                // Left the earlier teams during the year, also when another sheet already listed them there
+                if (i < parts.size() - 1 && last.getLeftAt() == null) {
+                    last.setLeftAt(LocalDate.now());
+                    if (!isNew) report.updated(PLAYERS, last.getFullName() + " deja " + team.getName() + " (pase)");
+                }
             }
             report.notices.add(name.trim() + " figura en \"" + teamCell.trim() + "\": se carga como pase de "
                     + String.join(" a ", parts) + " (los totales del año, con " + parts.getLast() + ")");
