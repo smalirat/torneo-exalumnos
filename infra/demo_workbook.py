@@ -11,6 +11,11 @@ Both workbooks stay in design/, which git ignores. ExcelImportApiTests checks th
 - Team names inside free text ("Nota: X se dio de baja") are replaced too.
 - It fails if any real team or player name is left anywhere in the output.
 - Values only: formulas are written as their last computed value (the importer reads values).
+
+Careful: the invented names depend on the whole list of real names, so a change here (or in the real workbook) can
+give every team a different name. Never load a regenerated workbook into a demo that already has data without
+looking at the import preview first: it must say "nothing to change", or it would add a second league on top.
+The workbook the deployed demo was loaded with is /opt/torneo/demo.xlsx on the server (and design/DEMO 2026.xlsx).
 """
 import random
 import re
