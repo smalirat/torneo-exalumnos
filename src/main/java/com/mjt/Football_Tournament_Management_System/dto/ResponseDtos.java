@@ -183,12 +183,7 @@ public class ResponseDtos {
     /** What a captain sees: their pending requests and the latest answers */
     public record MyRequestsRes(List<RequestRes> pending, List<DecisionRes> decisions) {}
 
-    /** demo: only in the public demo, the account anyone may use to try the panel (its password is public on purpose) */
-    public record LeagueRes(String title,
-                            @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
-                            DemoAccess demo) {}
-
-    public record DemoAccess(String username, String password) {}
+    public record LeagueRes(String title) {}
 
     public record TournamentRes(Long id, String name, String location,
                                 LocalDate registrationStart, LocalDate registrationEnd,

@@ -33,6 +33,8 @@ public class AdminBootstrap implements ApplicationRunner {
     private String demoUsername;
     @Value("${app.demo.password:}")
     private String demoPassword;
+    @Value("${app.demo.captains:}")
+    private java.util.List<String> demoCaptains;
 
     @Override
     public void run(ApplicationArguments args) {
@@ -52,16 +54,29 @@ public class AdminBootstrap implements ApplicationRunner {
     }
 
     /**
-     * Public demo only: a second admin whose password is published on the site, so visitors can try the panel. The
-     * password from the configuration always wins (changing it there changes it here). The real admin stays private.
+     * Public demo only: a second admin, and a few existing captains, with the demo password (published in the
+     * README), so visitors can try the panel as either. The password from the configuration always wins (changing
+     * it there changes it here). The real admin and the other captains keep their own private passwords.
      */
-    private void demoAdmin() {
+    void demoAdmin() {
         if (!demo || demoPassword.isBlank()) return;
         var user = userRepo.findByUsername(demoUsername).orElse(null);
         if (user == null) {
             userRepo.save(new AppUser(null, demoUsername, encoder.encode(demoPassword), AppUser.Role.ADMIN));
             log.info("Demo admin '{}' created (public demo)", demoUsername);
-        } else if (!encoder.matches(demoPassword, user.getPasswordHash())) {
+        } else {
+            usePassword(user);
+        }
+        for (var name : demoCaptains == null ? java.util.List.<String>of() : demoCaptains) {
+            if (name.isBlank()) continue;
+            userRepo.findByUsername(name.trim())
+                    .filter(u -> u.getRole() == AppUser.Role.CAPTAIN && !u.isPending())
+                    .ifPresentOrElse(this::usePassword, () -> log.warn("Demo captain '{}' not found (or not a captain)", name.trim()));
+        }
+    }
+
+    private void usePassword(AppUser user) {
+        if (!encoder.matches(demoPassword, user.getPasswordHash())) {
             user.setPasswordHash(encoder.encode(demoPassword));
             userRepo.save(user);
         }

@@ -715,13 +715,5 @@
     "resolve": "Resolver",
     "showResolved": "Ver resueltas ({n})",
     "hideResolved": "Ocultar resueltas"
-  },
-  "demo": {
-    "badge": "Demo",
-    "fictional": "Todos los equipos, jugadores y resultados son ficticios.",
-    "tryPanel": "Probá el panel de administración:",
-    "enter": "Entrar",
-    "loginHint": "Es una demo: podés entrar como administrador con",
-    "fill": "Completar"
   }
 }

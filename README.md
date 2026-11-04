@@ -10,6 +10,21 @@ automatically to a free cloud server on every push.
 
 **Live demo:** https://torneo-marianista-demo.duckdns.org
 
+### Try it
+
+The demo runs a full season with **fictional data**: every team and player name is invented (generated from the
+league's real workbook, so results, rules and structure are real). You can log in and change anything; the database
+goes back to a clean copy every night.
+
+| Role | Username | Password | What you can do |
+|---|---|---|---|
+| Organizer (admin) | `demo` | `probar-la-demo` | Editions, fixtures, results, Excel import/export, approvals, sanctions, banned list |
+| Captain · Defensores de Lapacho (Clausura, Cat. A) | `cap.defensores-de-lapacho` | `probar-la-demo` | The team's roster, crest, player changes, protests |
+| Captain · Central Ceibo (Clausura, Cat. B) | `cap.central-ceibo` | `probar-la-demo` | Same, for another team (and no access to the first one) |
+| Captain · Estrella Aromo (Apertura) | `cap.estrella-aromo` | `probar-la-demo` | Same |
+
+Log in at [/ingresar](https://torneo-marianista-demo.duckdns.org/ingresar).
+
 ---
 
 ## The problem

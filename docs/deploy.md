@@ -198,9 +198,10 @@ restauradas quedan con el dueño y los permisos correctos.
 La instancia publicada es una **demo con datos ficticios** (los generan [`demo_workbook.py`](../infra/demo_workbook.py)
 a partir de la planilla real, con todos los nombres inventados). Para que cualquiera pueda probar el panel:
 
-- `APP_DEMO_ENABLED=true` y `APP_DEMO_PASSWORD=...` en el `.env`: la API crea un admin `demo` con esa contraseña, y
-  el sitio la muestra en un aviso ("Demo · datos ficticios") y en la página de ingreso. El admin real sigue aparte,
-  con su contraseña privada. **Nunca** activarlo en una liga con datos reales.
+- `APP_DEMO_ENABLED=true`, `APP_DEMO_PASSWORD=...` y `APP_DEMO_CAPTAINS=cap.x,cap.y` en el `.env`: al arrancar, la
+  API crea un admin `demo` con esa contraseña y se la pone también a esos capitanes. Los datos de acceso están en el
+  README (el sitio no los muestra). El admin real y el resto de los capitanes siguen con sus contraseñas privadas.
+  **Nunca** activarlo en una liga con datos reales.
 - Como cualquiera puede cambiar todo, la base vuelve cada noche a una copia limpia con
   [`demo-reset.sh`](../deploy/demo-reset.sh) (cómo guardar esa copia y la línea de cron están al principio del
   script). Para cambiar la demo a propósito: hacer los cambios y volver a guardar la copia limpia.

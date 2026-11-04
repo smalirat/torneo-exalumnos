@@ -91,9 +91,10 @@ services:
       APP_ADMIN_PASSWORD: ${APP_ADMIN_PASSWORD:-}
       APP_CORS_ALLOWED_ORIGINS: https://${DOMAIN:?Set DOMAIN in .env}
       APP_SWAGGER_ENABLED: "false"
-      # Public demo only (fictional data): a "demo" admin whose password the site shows (see demo-reset.sh)
+      # Public demo only (fictional data): a "demo" admin and these captains get a known password (README; demo-reset.sh)
       APP_DEMO_ENABLED: ${APP_DEMO_ENABLED:-false}
       APP_DEMO_PASSWORD: ${APP_DEMO_PASSWORD:-}
+      APP_DEMO_CAPTAINS: ${APP_DEMO_CAPTAINS:-}
       # The image default is 75% of the RAM: fine on a big server, too much on a 1 GB one (see .env.example)
       JAVA_OPTS: ${JAVA_OPTS:--XX:MaxRAMPercentage=75}
     healthcheck:

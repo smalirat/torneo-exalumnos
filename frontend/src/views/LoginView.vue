@@ -7,16 +7,8 @@ import { teamApi } from '../api/endpoints'
 import type { TeamRef } from '../api/types'
 import { AUTH, PANEL, safeRedirect } from '../paths'
 import { t } from '../i18n'
-import { league, loadLeague } from '../league'
 
 const props = defineProps<{ mode: 'login' | 'register' }>()
-loadLeague()
-/** Public demo: fill the form with the published demo login */
-function useDemo() {
-  if (!league.value?.demo) return
-  username.value = league.value.demo.username
-  password.value = league.value.demo.password
-}
 const router = useRouter()
 const route = useRoute()
 /** Only same-app paths, never an external URL; a new captain goes to their team */
@@ -65,10 +57,6 @@ async function submit() {
   <div class="page">
     <form class="card" @submit.prevent="submit">
       <h1>{{ mode === 'login' ? t('auth.loginTitle') : t('auth.registerTitle') }}</h1>
-      <div v-if="mode === 'login' && league?.demo" class="demo-hint">
-        <p>{{ t('demo.loginHint') }} <code>{{ league.demo.username }}</code> / <code>{{ league.demo.password }}</code></p>
-        <button type="button" class="btn secondary" @click="useDemo">{{ t('demo.fill') }}</button>
-      </div>
       <div class="field">
         <label for="username">{{ t('auth.username') }}</label>
         <input id="username" v-model="username" class="input" autocomplete="username" required />
@@ -128,10 +116,4 @@ h1 { font-size: 22px; margin-bottom: 20px; color: var(--navy); }
 .team legend { font-size: 13px; font-weight: 500; color: var(--muted); padding: 0 4px; }
 .choice { display: flex; align-items: center; gap: 8px; font-size: 14px; cursor: pointer; }
 .hint { font-size: 12px; margin: 0 0 6px; }
-.demo-hint {
-  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px;
-  margin-bottom: 16px; padding: 10px 12px; border-radius: 8px; background: #fff4d6; color: #5c4400; font-size: 14px;
-}
-.demo-hint p { margin: 0; }
-.demo-hint code { background: #fff; border-radius: 4px; padding: 0 5px; }
 </style>
