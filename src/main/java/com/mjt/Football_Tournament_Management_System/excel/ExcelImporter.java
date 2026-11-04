@@ -479,11 +479,24 @@ public class ExcelImporter {
             for (var v : wb.goalsConceded) totals.merge(key(v), new Totals(v.player(), v.team(), null, null, v.value()),
                     (a, b) -> new Totals(a.player(), a.team(), a.goals(), a.figures(), b.conceded()));
 
+            // One row per player file: "A/B" in one sheet and "B" in another are the same person in B (a transfer),
+            // so their goals, figures and goals conceded go together
+            var byPlayer = new LinkedHashMap<Long, Totals>();
+            var players = new HashMap<Long, Player>();
+            for (var tot : totals.values()) {
+                var player = playerIn(tot.team(), tot.player());
+                players.put(player.getId(), player);
+                byPlayer.merge(player.getId(), tot, (a, b) -> new Totals(a.player(), a.team(),
+                        b.goals() != null ? b.goals() : a.goals(), b.figures() != null ? b.figures() : a.figures(),
+                        b.conceded() != null ? b.conceded() : a.conceded()));
+            }
+
             var existing = new HashMap<Long, PlayerSeasonStat>();
             for (var s : statRepo.findBySeason(season)) existing.put(s.getPlayer().getId(), s);
-            for (var tot : totals.values()) {
-                var team = team(tot.team());
-                var player = player(team, tot.player());
+            for (var entry : byPlayer.entrySet()) {
+                var tot = entry.getValue();
+                var player = players.get(entry.getKey());
+                var team = player.getTeam();
                 var label = player.getFullName() + " (" + team.getName() + ")";
                 var stat = existing.get(player.getId());
                 if (stat == null) {
@@ -517,8 +530,8 @@ public class ExcelImporter {
         void importSanctions() {
             var existing = sanctionRepo.findBySeasonOrderByIdAsc(season);
             for (var s : wb.sanctions) {
-                var team = team(s.team());
-                var player = player(team, s.player());
+                var player = playerIn(s.team(), s.player());
+                var team = player.getTeam();
                 var tournament = s.stage() == null ? null : tournament(s.stage());
                 var label = player.getFullName() + " (" + team.getName() + ") — " + (s.notes() == null ? s.type() : s.notes());
                 var match = existing.stream().filter(e -> e.getPlayer().getId().equals(player.getId()) && e.getType() == s.type()
@@ -565,8 +578,8 @@ public class ExcelImporter {
             }
             for (var y : unique.values()) {
                 var t = tournament(y.stage());
-                var team = team(y.team());
-                var player = player(team, y.player());
+                var player = playerIn(y.team(), y.player());
+                var team = player.getTeam();
                 var label = t.getName() + " · " + player.getFullName() + " (" + team.getName() + ")";
                 var tally = yellowRepo.findByTournamentAndPlayer(t, player).orElse(null);
                 if (tally == null) {
@@ -629,7 +642,63 @@ public class ExcelImporter {
             });
         }
 
+        /**
+         * The player a row of a player sheet (scorers, sanctions, yellows) talks about. The league writes "TEAM A/TEAM B"
+         * for someone who played for both during the year: that is a transfer, not a team called "A/B". The same
+         * person gets a file in each team, the earlier ones closed (former player) and the last one active, which is
+         * the one returned (the year's totals go with it: the Excel does not split them). Only split when every part
+         * is a team that plays in this workbook or already exists, so a name that really has a "/" stays whole.
+         */
+        Player playerIn(String teamCell, String name) {
+            var parts = Arrays.stream(teamCell.split("/")).map(String::trim).filter(p -> !p.isEmpty()).toList();
+            if (parts.size() < 2 || !parts.stream().allMatch(p -> knownTeams().contains(Sheet.norm(p)))) {
+                return player(team(teamCell), name);
+            }
+            Person person = null;
+            Player last = null;
+            for (int i = 0; i < parts.size(); i++) {
+                var team = team(parts.get(i));
+                var existing = rosterOf(team).get(Sheet.norm(name));
+                if (person == null && existing != null) person = existing.getPerson();
+                boolean isNew = existing == null;
+                last = isNew ? player(team, name, person) : existing;
+                person = last.getPerson();
+                if (isNew && i < parts.size() - 1) last.setLeftAt(LocalDate.now()); // left that team during the year
+            }
+            report.notices.add(name.trim() + " figura en \"" + teamCell.trim() + "\": se carga como pase de "
+                    + String.join(" a ", parts) + " (los totales del año, con " + parts.getLast() + ")");
+            return last;
+        }
+
+        private Set<String> knownTeamNames;
+
+        /** Teams of the standings tables and the fixtures of this workbook, plus the ones already in the database */
+        Set<String> knownTeams() {
+            if (knownTeamNames == null) {
+                knownTeamNames = new HashSet<>(teams.keySet());
+                for (var t : wb.tableTeams) knownTeamNames.add(Sheet.norm(t.team()));
+                for (var m : wb.matches) {
+                    if (m.home() != null && m.home().team() != null) knownTeamNames.add(Sheet.norm(m.home().team()));
+                    if (m.away() != null && m.away().team() != null) knownTeamNames.add(Sheet.norm(m.away().team()));
+                }
+            }
+            return knownTeamNames;
+        }
+
+        Map<String, Player> rosterOf(Team team) {
+            return playersByTeam.computeIfAbsent(team.getId(), id -> {
+                var map = new HashMap<String, Player>();
+                for (var p : playerRepo.findByTeamOrderByJerseyNoAscFullNameAsc(team)) map.put(Sheet.norm(p.getFullName()), p);
+                return map;
+            });
+        }
+
         Player player(Team team, String name) {
+            return player(team, name, null);
+        }
+
+        /** person: who the new file belongs to (another file of the same person, in a transfer); null: a new person */
+        Player player(Team team, String name, Person person) {
             var roster = playersByTeam.computeIfAbsent(team.getId(), id -> {
                 var map = new HashMap<String, Player>();
                 for (var p : playerRepo.findByTeamOrderByJerseyNoAscFullNameAsc(team)) map.put(Sheet.norm(p.getFullName()), p);
@@ -639,7 +708,7 @@ public class ExcelImporter {
                 var p = new Player();
                 p.setFullName(name.trim());
                 p.setTeam(team);
-                p.setPerson(personRepo.save(new Person(null, name.trim(), null)));
+                p.setPerson(person != null ? person : personRepo.save(new Person(null, name.trim(), null)));
                 report.created(PLAYERS, p.getFullName() + " (" + team.getName() + ")");
                 return playerRepo.save(p);
             });

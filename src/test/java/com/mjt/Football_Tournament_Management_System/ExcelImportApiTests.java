@@ -74,6 +74,58 @@ class ExcelImportApiTests {
         assertEquals(0, count(again, "Partidos", "created") + count(again, "Partidos", "updated"));
     }
 
+    /**
+     * The league writes "TEAM A/TEAM B" for a player who played for both (a transfer during the year). That is one
+     * person with a file in each team, not a team called "A/B": closed in A, active in B, the year's totals in B.
+     */
+    @Test
+    void aPlayerWrittenWithTwoTeamsIsATransferNotANewTeam() throws Exception {
+        String admin = login();
+        String s = UUID.randomUUID().toString().substring(0, 5).toUpperCase();
+        int year = 2805;
+        String player = "Gomez, Ana " + s;
+        byte[] file = workbook(year, s, "2", "1", null, new Object[]{player, "ALFA " + s + "/BETA " + s, 3});
+
+        JsonNode preview = upload(file, admin);
+        assertEquals(2, count(preview, "Equipos", "created"), "only ALFA and BETA, no team called ALFA/BETA");
+        assertTrue(preview.get("notices").toString().contains("pase de ALFA " + s + " a BETA " + s), preview.get("notices").toString());
+        apply(preview, "{}", admin);
+
+        var teams = read(mvc.perform(get("/api/teams").header("Authorization", "Bearer " + admin)));
+        long alfa = -1, beta = -1;
+        for (var t : teams) {
+            assertTrue(!t.get("name").asText().contains("/"), "team " + t.get("name").asText());
+            if (t.get("name").asText().equals("ALFA " + s)) alfa = t.get("id").asLong();
+            if (t.get("name").asText().equals("BETA " + s)) beta = t.get("id").asLong();
+        }
+        // Active in BETA, a former player of ALFA, the same person in both
+        var betaRoster = read(mvc.perform(get("/api/public/teams/" + beta + "/players")));
+        assertTrue(betaRoster.toString().contains(player), betaRoster.toString());
+        var alfaNow = read(mvc.perform(get("/api/public/teams/" + alfa + "/players")));
+        assertTrue(!alfaNow.toString().contains(player), alfaNow.toString());
+        var alfaAll = read(mvc.perform(get("/api/public/teams/" + alfa + "/players?former=true")));
+        assertTrue(alfaAll.toString().contains(player), alfaAll.toString());
+
+        // The year's 3 goals, with BETA
+        long seasonId = seasonsWithYear(year).get(0).get("id").asLong();
+        var scorers = read(mvc.perform(get("/api/public/seasons/" + seasonId + "/scorers")));
+        boolean found = false;
+        for (var row : scorers) {
+            if (row.get("player").get("fullName").asText().equals(player)) {
+                found = true;
+                assertEquals(3, row.get("value").asInt());
+                assertEquals("BETA " + s, row.get("team").get("name").asText());
+            }
+        }
+        assertTrue(found, scorers.toString());
+
+        // Importing it again changes nothing
+        JsonNode again = upload(file, admin);
+        for (var c : again.get("counters")) {
+            assertEquals(0, c.get("created").asInt() + c.get("updated").asInt(), "re-import changed " + c);
+        }
+    }
+
     @Test
     void webEditsAreConflictsUntilTheAdminChoosesToOverwrite() throws Exception {
         String admin = login();
@@ -207,6 +259,11 @@ class ExcelImportApiTests {
 
     /** Minimal workbook with the league's layout: one zone, one played match, one scorer. */
     private byte[] workbook(int year, String s, String homeGoals, String awayGoals, String note) throws Exception {
+        return workbook(year, s, homeGoals, awayGoals, note, null);
+    }
+
+    /** extraScorer: {player, team cell, goals} written as one more row of the scorers sheet */
+    private byte[] workbook(int year, String s, String homeGoals, String awayGoals, String note, Object[] extraScorer) throws Exception {
         try (var wb = new XSSFWorkbook(); var out = new ByteArrayOutputStream()) {
             var table = wb.createSheet("Tabla Apertura ");
             set(table, 1, 0, "TORNEO DE EXALUMNOS - COLEGIO MARIANISTA - AÑO " + year);
@@ -230,7 +287,9 @@ class ExcelImportApiTests {
             set(scorers, 1, 0, "TORNEO DE EXALUMNOS - COLEGIO MARIANISTA - AÑO " + year);
             row(scorers, 7, null, "Jugador", "Equipo", "Goles");
             row(scorers, 8, null, "Perez, Juan " + s, "ALFA " + s, 7);
-            row(scorers, 9, null, null, "control", 0);
+            int next = 9;
+            if (extraScorer != null) row(scorers, next++, null, extraScorer[0], extraScorer[1], extraScorer[2]);
+            row(scorers, next, null, null, "control", 0);
             wb.write(out);
             return out.toByteArray();
         }
